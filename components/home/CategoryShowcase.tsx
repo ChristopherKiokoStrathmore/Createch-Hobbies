@@ -51,19 +51,19 @@ const categories = categoryMeta.map((meta) => ({
 
 export default function CategoryShowcase() {
   return (
-    <section className="section-alt py-28 px-4 sm:px-6">
+    <section className="section-alt py-14 sm:py-28 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-14"
+          className="text-center mb-8 sm:mb-14"
         >
           <span className="text-brand-purple-light font-inter font-semibold text-xs uppercase tracking-[0.2em]">
             Browse by Type
           </span>
-          <h2 className="font-playfair font-bold text-4xl md:text-5xl text-white mt-4">
+          <h2 className="font-playfair font-bold text-3xl sm:text-4xl md:text-5xl text-white mt-4">
             Something for{" "}
             <em className="text-gradient not-italic">Every Kid</em>
           </h2>

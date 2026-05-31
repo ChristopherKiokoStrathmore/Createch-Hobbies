@@ -28,19 +28,19 @@ const steps = [
 
 export default function HowItWorks() {
   return (
-    <section className="section-alt py-28 px-4 sm:px-6">
+    <section className="section-alt py-14 sm:py-28 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-18"
+          className="text-center mb-10 sm:mb-18"
         >
           <span className="text-brand-purple-light font-inter font-semibold text-xs uppercase tracking-[0.2em]">
             How It Works
           </span>
-          <h2 className="font-playfair font-bold text-4xl md:text-5xl text-white mt-4">
+          <h2 className="font-playfair font-bold text-3xl sm:text-4xl md:text-5xl text-white mt-4">
             Three Steps to{" "}
             <em className="text-gradient not-italic">Building Fun</em>
           </h2>
@@ -59,7 +59,7 @@ export default function HowItWorks() {
               {i < steps.length - 1 && (
                 <div className="hidden md:block absolute top-12 left-full w-full h-px bg-gradient-to-r from-brand-purple/30 to-transparent z-0" />
               )}
-              <div className="section-card rounded-2xl p-8 border border-brand-yellow/8 hover:border-brand-yellow/20 transition-all duration-300 card-glow relative z-10">
+              <div className="section-card rounded-2xl p-5 sm:p-8 border border-brand-yellow/8 hover:border-brand-yellow/20 transition-all duration-300 card-glow relative z-10">
                 <div className="text-5xl mb-5">{step.icon}</div>
                 <div className="text-brand-yellow font-playfair font-bold text-sm mb-2 tracking-widest uppercase">
                   Step {step.step}

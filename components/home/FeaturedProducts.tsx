@@ -8,20 +8,20 @@ import ProductCard from "@/components/products/ProductCard";
 
 export default function FeaturedProducts() {
   return (
-    <section className="section-base py-28 px-4 sm:px-6">
+    <section className="section-base py-14 sm:py-28 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-14 gap-4"
+          className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-8 sm:mb-14 gap-3 sm:gap-4"
         >
           <div>
             <span className="text-brand-purple-light font-inter font-semibold text-xs uppercase tracking-[0.2em]">
               Top Picks
             </span>
-            <h2 className="font-playfair font-bold text-4xl md:text-5xl text-white mt-4">
+            <h2 className="font-playfair font-bold text-3xl sm:text-4xl md:text-5xl text-white mt-4">
               Most Popular{" "}
               <em className="text-gradient not-italic">Kits</em>
             </h2>

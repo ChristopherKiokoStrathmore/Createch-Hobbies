@@ -49,19 +49,19 @@ const reasons = [
 
 export default function WhyCreatech() {
   return (
-    <section className="section-base py-28 px-4 sm:px-6">
+    <section className="section-base py-14 sm:py-28 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-14"
+          className="text-center mb-8 sm:mb-14"
         >
           <span className="text-brand-purple-light font-inter font-semibold text-xs uppercase tracking-[0.2em]">
             Why Choose Us
           </span>
-          <h2 className="font-playfair font-bold text-4xl md:text-5xl text-white mt-4">
+          <h2 className="font-playfair font-bold text-3xl sm:text-4xl md:text-5xl text-white mt-4">
             Why Parents{" "}
             <em className="text-gradient not-italic">Love Createch</em>
           </h2>
@@ -75,7 +75,7 @@ export default function WhyCreatech() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.08 }}
-              className="section-card rounded-2xl p-7 border border-white/5 hover:border-brand-yellow/15 transition-all duration-300 group card-glow"
+              className="section-card rounded-2xl p-5 sm:p-7 border border-white/5 hover:border-brand-yellow/15 transition-all duration-300 group card-glow"
             >
               <div className="text-4xl mb-5">{reason.emoji}</div>
               <h3 className="font-playfair font-bold text-white text-lg mb-3">
