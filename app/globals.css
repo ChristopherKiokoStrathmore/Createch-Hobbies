@@ -114,14 +114,8 @@
     border-color: rgba(117, 67, 152, 0.2);
   }
 
-  /* Orientation-aware hero videos — use opacity so hidden video still loads+plays */
-  .hero-vid-landscape { opacity: 1; transition: opacity 0.4s ease; }
-  .hero-vid-portrait  { opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
-
-  @media (orientation: portrait) {
-    .hero-vid-landscape { opacity: 0; pointer-events: none; }
-    .hero-vid-portrait  { opacity: 1; }
-  }
+  /* Prevent any element from causing horizontal scroll on mobile */
+  body { overflow-x: hidden; }
 
   /* Lenis smooth scroll */
   html.lenis, html.lenis body {

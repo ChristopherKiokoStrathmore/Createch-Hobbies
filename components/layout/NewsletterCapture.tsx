@@ -26,18 +26,18 @@ export default function NewsletterCapture() {
       <p className="text-white/40 text-sm font-inter mb-4">
         New kits, promotions, and STEM ideas — straight to your WhatsApp.
       </p>
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-2">
         <input
           type="text"
           placeholder="Your first name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSubscribe()}
-          className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/25 text-sm font-inter focus:outline-none focus:border-brand-yellow/30 transition-colors"
+          className="w-full sm:flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/25 text-sm font-inter focus:outline-none focus:border-brand-yellow/30 transition-colors"
         />
         <button
           onClick={handleSubscribe}
-          className="shrink-0 bg-[#25D366] hover:bg-[#20bd5a] text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors font-inter"
+          className="w-full sm:w-auto shrink-0 bg-[#25D366] hover:bg-[#20bd5a] text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors font-inter"
         >
           Subscribe via WhatsApp
         </button>

@@ -3,104 +3,94 @@
 import { useRef, useEffect, useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 
+const LANDSCAPE_SRC = "/video/hero-landscape.mp4";
+const PORTRAIT_SRC  = "/video/hero-portrait.mp4";
+
 export default function VideoBackground() {
-  const landscapeRef = useRef<HTMLVideoElement>(null);
-  const portraitRef  = useRef<HTMLVideoElement>(null);
-  const mutedRef     = useRef(true);
-  const [mutedUI, setMutedUI] = useState(true);
+  const videoRef   = useRef<HTMLVideoElement>(null);
+  const mutedRef   = useRef(true);
+  const activeSrc  = useRef("");
+  const [mutedUI, setMutedUI]     = useState(true);
   const [interacted, setInteracted] = useState(false);
 
-  const isPortrait = () =>
-    typeof window !== "undefined" &&
-    window.matchMedia("(orientation: portrait)").matches;
-
   useEffect(() => {
-    const land = landscapeRef.current;
-    const port = portraitRef.current;
-    if (!land || !port) return;
+    const vid = videoRef.current;
+    if (!vid) return;
 
-    land.muted = true;
-    port.muted = true;
+    const getSrc = () =>
+      window.matchMedia("(orientation: portrait)").matches
+        ? PORTRAIT_SRC
+        : LANDSCAPE_SRC;
 
-    const getActive   = () => (isPortrait() ? port : land);
-    const getInactive = () => (isPortrait() ? land : port);
-
-    /* Resume active video and silence inactive */
-    const sync = () => {
-      const active   = getActive();
-      const inactive = getInactive();
-
-      if (!inactive.paused) {
-        inactive.pause();
-        inactive.muted = true;
-      }
-
-      active.muted = mutedRef.current;
-      if (active.paused && !active.ended) {
-        active.play().catch(() => {});
-      }
+    const tryPlay = () => {
+      vid.muted = mutedRef.current;
+      if (vid.paused && !vid.ended) vid.play().catch(() => {});
     };
 
-    /* ─── pause event — fires the instant the browser pauses either video */
-    const onLandPause = () => { if (getActive() === land) sync(); };
-    const onPortPause = () => { if (getActive() === port) sync(); };
-    land.addEventListener("pause", onLandPause);
-    port.addEventListener("pause", onPortPause);
+    const loadSrc = () => {
+      const src = getSrc();
+      if (activeSrc.current === src) { tryPlay(); return; }
+      activeSrc.current = src;
+      vid.src = src;
+      vid.muted = mutedRef.current;
+      vid.load();
+      // play() after load — will likely fail until canplay, but canplay will retry
+      vid.play().catch(() => {});
+    };
 
-    /* ─── 500 ms heartbeat — safety net for any pause the event misses */
-    const interval = setInterval(sync, 500);
+    // canplay is the reliable mobile hook — fires when browser has enough data
+    vid.addEventListener("canplay", tryPlay);
 
-    /* ─── Orientation swap */
+    // 500 ms heartbeat — safety net for any edge case
+    const interval = setInterval(tryPlay, 500);
+
+    // Orientation change → swap src
     const mq = window.matchMedia("(orientation: portrait)");
-    mq.addEventListener("change", sync);
+    mq.addEventListener("change", loadSrc);
 
-    /* ─── Tab visibility */
+    // Tab regains focus → ensure playing
     const onVisible = () => {
-      if (document.visibilityState === "visible") sync();
+      if (document.visibilityState === "visible") loadSrc();
     };
     document.addEventListener("visibilitychange", onVisible);
 
-    /* Kick off immediately */
-    sync();
+    // Initial load
+    loadSrc();
 
     return () => {
       clearInterval(interval);
-      land.removeEventListener("pause", onLandPause);
-      port.removeEventListener("pause", onPortPause);
-      mq.removeEventListener("change", sync);
+      vid.removeEventListener("canplay", tryPlay);
+      mq.removeEventListener("change", loadSrc);
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
 
-  /* ─── Unmute on first click / tap */
+  // Unmute on first click / tap
   useEffect(() => {
     if (interacted) return;
-
     const unlock = () => {
       mutedRef.current = false;
       setMutedUI(false);
       setInteracted(true);
+      const vid = videoRef.current;
+      if (vid) vid.muted = false;
     };
-
     window.addEventListener("click",      unlock, { once: true });
     window.addEventListener("touchstart", unlock, { once: true });
-
     return () => {
       window.removeEventListener("click",      unlock);
       window.removeEventListener("touchstart", unlock);
     };
   }, [interacted]);
 
-  /* ─── Manual mute toggle */
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
     const next = !mutedRef.current;
     mutedRef.current = next;
     setMutedUI(next);
     setInteracted(true);
-
-    const active = isPortrait() ? portraitRef.current : landscapeRef.current;
-    if (active) active.muted = next;
+    const vid = videoRef.current;
+    if (vid) vid.muted = next;
   };
 
   return (
@@ -110,31 +100,16 @@ export default function VideoBackground() {
         style={{ zIndex: -1 }}
         aria-hidden="true"
       >
+        {/* Single video element — src is swapped via JS based on orientation */}
         <video
-          ref={landscapeRef}
-          className="hero-vid-landscape absolute inset-0 w-full h-full object-cover"
-          autoPlay
+          ref={videoRef}
+          className="absolute inset-0 w-full h-full object-cover"
           muted
           loop
           playsInline
           preload="auto"
           poster="/images/hero-poster.jpg"
-        >
-          <source src="/video/hero-landscape.mp4" type="video/mp4" />
-        </video>
-
-        <video
-          ref={portraitRef}
-          className="hero-vid-portrait absolute inset-0 w-full h-full object-cover"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          poster="/images/hero-poster.jpg"
-        >
-          <source src="/video/hero-portrait.mp4" type="video/mp4" />
-        </video>
+        />
       </div>
 
       <button
