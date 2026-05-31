@@ -4,7 +4,7 @@ import { CheckCircle2 } from "lucide-react";
 import { products } from "@/data/products";
 import { formatPrice } from "@/lib/utils";
 import ProductCard from "@/components/products/ProductCard";
-import ProductImage from "@/components/products/ProductImage";
+import ProductImageGallery from "@/components/products/ProductImageGallery";
 import OrderButton from "@/components/products/OrderButton";
 
 interface Props {
@@ -41,10 +41,13 @@ export default async function ProductPage({ params }: Props) {
     .slice(0, 3);
 
   return (
-    <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6" style={{ backgroundColor: "rgba(10,10,15,0.85)", backdropFilter: "blur(3px)" }}>
+    <div
+      className="min-h-screen pt-20 pb-16 px-4 sm:px-6"
+      style={{ backgroundColor: "rgba(10,10,15,0.85)", backdropFilter: "blur(3px)" }}
+    >
       <div className="max-w-7xl mx-auto">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-white/30 text-sm mb-10 font-inter">
+        <div className="flex items-center gap-2 text-white/30 text-sm mb-6 font-inter">
           <Link href="/" className="hover:text-white transition-colors">Home</Link>
           <span className="text-white/15">/</span>
           <Link href="/shop" className="hover:text-white transition-colors">Shop</Link>
@@ -52,42 +55,18 @@ export default async function ProductPage({ params }: Props) {
           <span className="text-white/60">{product.name}</span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-14">
-          {/* Image panel */}
-          <div className="space-y-4">
-            <div className="aspect-square relative bg-[#120e1e] rounded-2xl overflow-hidden border border-white/6">
-              <ProductImage
-                src={product.images[0]}
-                alt={product.name}
-                fill
-                className="object-cover"
-                fallbackEmoji={categoryEmoji[product.category]}
-              />
-            </div>
-            {product.images.length > 1 && (
-              <div className="flex gap-3">
-                {product.images.map((img, i) => (
-                  <div
-                    key={i}
-                    className="w-20 h-20 relative bg-[#120e1e] rounded-xl overflow-hidden border border-white/6"
-                  >
-                    <ProductImage
-                      src={img}
-                      alt={`${product.name} view ${i + 1}`}
-                      fill
-                      className="object-cover"
-                      fallbackEmoji={categoryEmoji[product.category]}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
+          {/* Image gallery — thumbnails are clickable to swap main image */}
+          <ProductImageGallery
+            images={product.images}
+            productName={product.name}
+            fallbackEmoji={categoryEmoji[product.category]}
+          />
 
           {/* Info panel */}
           <div>
             {/* Tags */}
-            <div className="flex flex-wrap gap-2 mb-5">
+            <div className="flex flex-wrap gap-2 mb-4">
               <span className="bg-brand-purple/15 text-brand-purple-light border border-brand-purple/25 text-xs font-semibold px-3 py-1 rounded-full font-inter">
                 {product.category}
               </span>
@@ -99,26 +78,26 @@ export default async function ProductPage({ params }: Props) {
               </span>
             </div>
 
-            <h1 className="font-playfair font-bold text-4xl md:text-5xl text-white mb-6 leading-tight">
+            <h1 className="font-playfair font-bold text-3xl md:text-4xl text-white mb-3 leading-tight">
               {product.name}
             </h1>
 
-            <p className="text-white/50 leading-relaxed text-base mb-8 font-inter">
+            <p className="text-white/50 leading-relaxed text-sm mb-5 font-inter">
               {product.description}
             </p>
 
             {/* What you'll learn */}
-            <div className="mb-8">
-              <h3 className="font-inter font-semibold text-white/40 text-xs uppercase tracking-widest mb-4">
+            <div className="mb-5">
+              <h3 className="font-inter font-semibold text-white/40 text-xs uppercase tracking-widest mb-3">
                 What Your Child Will Learn
               </h3>
               <div className="flex flex-wrap gap-2">
                 {product.whatYouLearn.map((skill) => (
                   <span
                     key={skill}
-                    className="flex items-center gap-1.5 bg-brand-yellow/10 border border-brand-yellow/20 text-brand-yellow text-sm font-medium px-3 py-1.5 rounded-full font-inter"
+                    className="flex items-center gap-1.5 bg-brand-yellow/10 border border-brand-yellow/20 text-brand-yellow text-xs font-medium px-3 py-1.5 rounded-full font-inter"
                   >
-                    <CheckCircle2 size={12} />
+                    <CheckCircle2 size={11} />
                     {skill}
                   </span>
                 ))}
@@ -126,11 +105,11 @@ export default async function ProductPage({ params }: Props) {
             </div>
 
             {/* Box contents */}
-            <div className="section-card rounded-2xl p-5 border border-white/5 mb-8">
-              <h3 className="font-inter font-semibold text-white/40 text-xs uppercase tracking-widest mb-4">
+            <div className="section-card rounded-2xl p-4 border border-white/5 mb-5">
+              <h3 className="font-inter font-semibold text-white/40 text-xs uppercase tracking-widest mb-3">
                 What&apos;s in the Box
               </h3>
-              <ul className="text-white/50 text-sm space-y-2 font-inter">
+              <ul className="text-white/50 text-sm space-y-1.5 font-inter">
                 {[
                   "All kit parts (pre-cut, snap-fit — no glue)",
                   "Step-by-step illustrated instructions",
@@ -138,17 +117,17 @@ export default async function ProductPage({ params }: Props) {
                   "Quality checked before shipping",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2.5">
-                    <span className="text-brand-yellow">✓</span> {item}
+                    <span className="text-brand-yellow shrink-0">✓</span> {item}
                   </li>
                 ))}
               </ul>
             </div>
 
             {/* Price + CTA */}
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <div className="text-white/35 text-xs font-inter uppercase tracking-widest mb-1">Price</div>
-                <div className="font-playfair font-bold text-4xl text-white">
+                <div className="text-white/35 text-xs font-inter uppercase tracking-widest mb-0.5">Price</div>
+                <div className="font-playfair font-bold text-3xl text-white">
                   {formatPrice(product.price)}
                 </div>
               </div>
@@ -158,7 +137,7 @@ export default async function ProductPage({ params }: Props) {
             </div>
 
             <OrderButton product={product} />
-            <p className="text-white/25 text-xs text-center mt-3 font-inter">
+            <p className="text-white/25 text-xs text-center mt-2.5 font-inter">
               Review your cart, then send to us on WhatsApp
             </p>
           </div>
@@ -166,7 +145,7 @@ export default async function ProductPage({ params }: Props) {
 
         {/* Related */}
         {related.length > 0 && (
-          <div className="mt-24">
+          <div className="mt-20">
             <h2 className="font-playfair font-bold text-3xl text-white mb-8">
               You Might Also Like
             </h2>
