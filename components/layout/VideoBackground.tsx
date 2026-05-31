@@ -1,76 +1,63 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 
 const LANDSCAPE_SRC = "/video/hero-landscape.mp4";
 const PORTRAIT_SRC  = "/video/hero-portrait.mp4";
 
 export default function VideoBackground() {
-  const videoRef   = useRef<HTMLVideoElement>(null);
-  const mutedRef   = useRef(true);
-  const activeSrc  = useRef("");
-  const [mutedUI, setMutedUI]     = useState(true);
+  /*
+   * src lives in React state so it becomes a JSX prop on <video>.
+   * key={src} forces a full DOM remount when orientation changes.
+   * That guarantees autoPlay + muted + src are ALL present at insertion
+   * time — the only pattern iOS Safari reliably autoplays.
+   */
+  const [src, setSrc]               = useState(LANDSCAPE_SRC);
+  const [userMuted, setUserMuted]   = useState(true);
   const [interacted, setInteracted] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
+  /* ── Pick the right src on mount; swap on orientation change ── */
+  useEffect(() => {
+    const mq   = window.matchMedia("(orientation: portrait)");
+    const pick = () => setSrc(mq.matches ? PORTRAIT_SRC : LANDSCAPE_SRC);
+
+    pick(); // set immediately on client
+    mq.addEventListener("change", pick);
+    return () => mq.removeEventListener("change", pick);
+  }, []);
+
+  /*
+   * After every key-remount (src change), the new video element starts
+   * muted (required for autoplay). Restore the user's actual preference.
+   */
   useEffect(() => {
     const vid = videoRef.current;
     if (!vid) return;
+    vid.muted = userMuted;
 
-    const getSrc = () =>
-      window.matchMedia("(orientation: portrait)").matches
-        ? PORTRAIT_SRC
-        : LANDSCAPE_SRC;
+    // Extra insurance: if autoPlay somehow didn't fire, nudge it.
+    if (vid.paused) vid.play().catch(() => {});
+  }, [src, userMuted]);
 
-    const tryPlay = () => {
-      vid.muted = mutedRef.current;
-      if (vid.paused && !vid.ended) vid.play().catch(() => {});
-    };
-
-    const loadSrc = () => {
-      const src = getSrc();
-      if (activeSrc.current === src) { tryPlay(); return; }
-      activeSrc.current = src;
-      vid.src = src;
-      vid.muted = mutedRef.current;
-      vid.load();
-      // play() after load — will likely fail until canplay, but canplay will retry
-      vid.play().catch(() => {});
-    };
-
-    // canplay is the reliable mobile hook — fires when browser has enough data
-    vid.addEventListener("canplay", tryPlay);
-
-    // 500 ms heartbeat — safety net for any edge case
-    const interval = setInterval(tryPlay, 500);
-
-    // Orientation change → swap src
-    const mq = window.matchMedia("(orientation: portrait)");
-    mq.addEventListener("change", loadSrc);
-
-    // Tab regains focus → ensure playing
+  /* ── Tab visibility ── */
+  useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === "visible") loadSrc();
+      if (document.visibilityState === "visible") {
+        const vid = videoRef.current;
+        if (vid?.paused) vid.play().catch(() => {});
+      }
     };
     document.addEventListener("visibilitychange", onVisible);
-
-    // Initial load
-    loadSrc();
-
-    return () => {
-      clearInterval(interval);
-      vid.removeEventListener("canplay", tryPlay);
-      mq.removeEventListener("change", loadSrc);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
 
-  // Unmute on first click / tap
+  /* ── Unmute on first tap / click anywhere ── */
   useEffect(() => {
     if (interacted) return;
     const unlock = () => {
-      mutedRef.current = false;
-      setMutedUI(false);
+      setUserMuted(false);
       setInteracted(true);
       const vid = videoRef.current;
       if (vid) vid.muted = false;
@@ -85,9 +72,8 @@ export default function VideoBackground() {
 
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const next = !mutedRef.current;
-    mutedRef.current = next;
-    setMutedUI(next);
+    const next = !userMuted;
+    setUserMuted(next);
     setInteracted(true);
     const vid = videoRef.current;
     if (vid) vid.muted = next;
@@ -100,24 +86,31 @@ export default function VideoBackground() {
         style={{ zIndex: -1 }}
         aria-hidden="true"
       >
-        {/* Single video element — src is swapped via JS based on orientation */}
+        {/*
+         * key={src} → React destroys + recreates the DOM node on src change.
+         * The browser then sees autoPlay + muted + src all at insertion time
+         * → guaranteed autoplay on iOS Safari and Chrome Android.
+         */}
         <video
+          key={src}
           ref={videoRef}
-          className="absolute inset-0 w-full h-full object-cover"
+          src={src}
+          autoPlay
           muted
           loop
           playsInline
           preload="auto"
           poster="/images/hero-poster.jpg"
+          className="absolute inset-0 w-full h-full object-cover"
         />
       </div>
 
       <button
         onClick={toggleMute}
-        aria-label={mutedUI ? "Unmute video" : "Mute video"}
+        aria-label={userMuted ? "Unmute video" : "Mute video"}
         className="fixed top-[4.5rem] left-4 z-50 flex items-center gap-2 bg-black/50 hover:bg-black/70 backdrop-blur-md border border-white/15 hover:border-brand-yellow/40 px-3.5 py-2 rounded-full transition-all duration-200 text-xs font-inter group"
       >
-        {mutedUI ? (
+        {userMuted ? (
           <>
             <VolumeX size={14} className="text-white/50 group-hover:text-brand-yellow transition-colors" />
             <span className="text-white/60 group-hover:text-white transition-colors">
