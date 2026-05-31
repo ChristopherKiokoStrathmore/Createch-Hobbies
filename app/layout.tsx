@@ -5,6 +5,7 @@ import Footer from "@/components/layout/Footer";
 import WhatsAppBubble from "@/components/layout/WhatsAppBubble";
 import LenisProvider from "@/components/providers/LenisProvider";
 import VideoBackground from "@/components/layout/VideoBackground";
+import SplashScreen from "@/components/layout/SplashScreen";
 
 export const metadata: Metadata = {
   title: "Createch Hobbies — DIY Kits for Kids",
@@ -22,6 +23,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
+        {/* Branded splash screen — fades out after 1.9 s */}
+        <SplashScreen />
         {/* Fixed video layer — behind everything, plays across all pages */}
         <VideoBackground />
         <LenisProvider>
