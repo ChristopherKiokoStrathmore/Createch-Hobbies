@@ -1,0 +1,139 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400;1,700&family=Inter:wght@300;400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --brand-yellow: #f5be4d;
+    --brand-purple: #754398;
+    --brand-dark: #0a0a0f;
+  }
+
+  * {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    /* transparent so the fixed video shows through everywhere */
+    background-color: transparent;
+    color: #f1eef8;
+    font-family: "Inter", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Playfair Display", Georgia, serif;
+    font-weight: 700;
+  }
+}
+
+@layer utilities {
+  .hero-overlay {
+    background: linear-gradient(
+      to bottom,
+      rgba(10, 10, 15, 0.55) 0%,
+      rgba(10, 10, 15, 0.40) 40%,
+      rgba(10, 10, 15, 0.85) 100%
+    );
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, #f5be4d 0%, #754398 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-reverse {
+    background: linear-gradient(135deg, #754398 0%, #f5be4d 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .card-glow:hover {
+    box-shadow: 0 0 36px rgba(117, 67, 152, 0.18), 0 0 12px rgba(245, 190, 77, 0.08);
+  }
+
+  .btn-yellow {
+    background: linear-gradient(135deg, #f5be4d 0%, #d4a030 100%);
+    color: #0a0a0f;
+    font-weight: 700;
+    transition: all 0.25s ease;
+  }
+  .btn-yellow:hover {
+    background: linear-gradient(135deg, #ffd06a 0%, #e8b040 100%);
+    box-shadow: 0 8px 32px rgba(245, 190, 77, 0.35);
+    transform: translateY(-1px);
+  }
+
+  .btn-purple {
+    background: linear-gradient(135deg, #754398 0%, #5a3278 100%);
+    color: #fff;
+    font-weight: 700;
+    transition: all 0.25s ease;
+  }
+  .btn-purple:hover {
+    background: linear-gradient(135deg, #9b5cc4 0%, #754398 100%);
+    box-shadow: 0 8px 32px rgba(117, 67, 152, 0.4);
+    transform: translateY(-1px);
+  }
+
+  /*
+   * Semi-transparent so the fixed background video glows through.
+   * ~82% opacity = video visible but text stays fully readable.
+   */
+  .section-base {
+    background-color: rgba(10, 10, 15, 0.82);
+    backdrop-filter: blur(2px);
+  }
+
+  .section-alt {
+    background-color: rgba(14, 12, 24, 0.82);
+    backdrop-filter: blur(2px);
+  }
+
+  .section-card {
+    background-color: rgba(26, 22, 37, 0.88);
+    backdrop-filter: blur(4px);
+  }
+
+  .border-subtle {
+    border-color: rgba(245, 190, 77, 0.12);
+  }
+
+  .border-purple-subtle {
+    border-color: rgba(117, 67, 152, 0.2);
+  }
+
+  /* Orientation-aware hero videos */
+  .hero-vid-landscape { display: block; }
+  .hero-vid-portrait  { display: none;  }
+
+  @media (orientation: portrait) {
+    .hero-vid-landscape { display: none;  }
+    .hero-vid-portrait  { display: block; }
+  }
+
+  /* Lenis smooth scroll */
+  html.lenis, html.lenis body {
+    height: auto;
+  }
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+  .lenis.lenis-smooth [data-lenis-prevent] {
+    overscroll-behavior: contain;
+  }
+  .lenis.lenis-stopped {
+    overflow: hidden;
+  }
+}

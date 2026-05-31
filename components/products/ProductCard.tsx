@@ -1,0 +1,113 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { MessageCircle } from "lucide-react";
+import type { Product } from "@/data/products";
+import { formatPrice } from "@/lib/utils";
+import { whatsappProductLink } from "@/lib/whatsapp";
+
+const difficultyStyles = {
+  Beginner:
+    "bg-green-500/15 text-green-400 border-green-500/25",
+  Intermediate:
+    "bg-brand-yellow/15 text-brand-yellow border-brand-yellow/25",
+  Advanced:
+    "bg-brand-purple/20 text-brand-purple-light border-brand-purple/30",
+};
+
+const categoryEmoji: Record<string, string> = {
+  Vehicles: "🚗",
+  Machines: "⚙️",
+  Science: "🔬",
+  Space: "🚀",
+  Robots: "🤖",
+  Architecture: "🏗️",
+};
+
+interface Props {
+  product: Product;
+}
+
+export default function ProductCard({ product }: Props) {
+  return (
+    <div className="group section-card rounded-2xl overflow-hidden border border-white/5 hover:border-brand-yellow/20 transition-all duration-300 hover:-translate-y-1 card-glow flex flex-col">
+      {/* Image */}
+      <Link
+        href={`/shop/${product.slug}`}
+        className="block relative aspect-[4/3] overflow-hidden bg-[#120e1e]"
+      >
+        {/* Fallback emoji shown behind image */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-7xl select-none opacity-30">
+            {categoryEmoji[product.category]}
+          </span>
+        </div>
+        <Image
+          src={product.images[0]}
+          alt={product.name}
+          fill
+          className="object-cover group-hover:scale-105 transition-transform duration-500"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = "none";
+          }}
+        />
+        {/* Badges */}
+        <div className="absolute top-3 left-3">
+          <span className="bg-black/60 backdrop-blur-sm text-white text-xs font-medium px-2.5 py-1 rounded-full border border-white/10 font-inter">
+            {product.ageRange} yrs
+          </span>
+        </div>
+        {product.featured && (
+          <div className="absolute top-3 right-3">
+            <span
+              className="text-xs font-bold px-2.5 py-1 rounded-full font-inter"
+              style={{
+                background: "linear-gradient(135deg, #f5be4d, #d4a030)",
+                color: "#0a0a0f",
+              }}
+            >
+              Popular
+            </span>
+          </div>
+        )}
+      </Link>
+
+      {/* Content */}
+      <div className="p-5 flex flex-col flex-1">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <Link
+            href={`/shop/${product.slug}`}
+            className="font-playfair font-bold text-white text-lg leading-tight hover:text-brand-yellow transition-colors"
+          >
+            {product.name}
+          </Link>
+          <span
+            className={`shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full border font-inter ${difficultyStyles[product.difficulty]}`}
+          >
+            {product.difficulty}
+          </span>
+        </div>
+
+        <p className="text-white/40 text-sm leading-relaxed mb-4 flex-1 font-inter">
+          {product.description.slice(0, 85)}...
+        </p>
+
+        <div className="flex items-center justify-between gap-3">
+          <span className="font-playfair font-bold text-2xl text-white">
+            {formatPrice(product.price)}
+          </span>
+          <a
+            href={whatsappProductLink(product.name)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 bg-[#25D366] hover:bg-[#20bd5a] text-white font-semibold px-4 py-2 rounded-full text-sm transition-all hover:shadow-lg hover:shadow-green-500/25 active:scale-95 font-inter"
+          >
+            <MessageCircle size={13} />
+            Order
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
