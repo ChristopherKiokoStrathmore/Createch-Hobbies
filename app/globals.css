@@ -114,13 +114,13 @@
     border-color: rgba(117, 67, 152, 0.2);
   }
 
-  /* Orientation-aware hero videos */
-  .hero-vid-landscape { display: block; }
-  .hero-vid-portrait  { display: none;  }
+  /* Orientation-aware hero videos — use opacity so hidden video still loads+plays */
+  .hero-vid-landscape { opacity: 1; transition: opacity 0.4s ease; }
+  .hero-vid-portrait  { opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
 
   @media (orientation: portrait) {
-    .hero-vid-landscape { display: none;  }
-    .hero-vid-portrait  { display: block; }
+    .hero-vid-landscape { opacity: 0; pointer-events: none; }
+    .hero-vid-portrait  { opacity: 1; }
   }
 
   /* Lenis smooth scroll */

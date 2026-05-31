@@ -29,19 +29,19 @@ const reviews = [
 
 export default function Testimonials() {
   return (
-    <section className="section-alt py-28 px-4 sm:px-6">
+    <section className="section-alt py-14 sm:py-28 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-14"
+          className="text-center mb-8 sm:mb-14"
         >
           <span className="text-brand-purple-light font-inter font-semibold text-xs uppercase tracking-[0.2em]">
             Customer Feedback
           </span>
-          <h2 className="font-playfair font-bold text-4xl md:text-5xl text-white mt-4">
+          <h2 className="font-playfair font-bold text-3xl sm:text-4xl md:text-5xl text-white mt-4">
             What Families{" "}
             <em className="text-gradient not-italic">Are Saying</em>
           </h2>
@@ -58,7 +58,7 @@ export default function Testimonials() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="rounded-2xl p-7"
+              className="rounded-2xl p-5 sm:p-7"
               style={{
                 background: `linear-gradient(135deg, rgba(26,22,37,0.95) 0%, ${r.accent} 100%)`,
                 border: `1px solid ${r.border}`,
