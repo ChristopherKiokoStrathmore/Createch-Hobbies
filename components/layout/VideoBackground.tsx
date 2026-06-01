@@ -8,12 +8,12 @@ const PORTRAIT_SRC  = "/video/hero-portrait.mp4";
 
 export default function VideoBackground() {
   /*
-   * src lives in React state so it becomes a JSX prop on <video>.
-   * key={src} forces a full DOM remount when orientation changes.
-   * That guarantees autoPlay + muted + src are ALL present at insertion
-   * time — the only pattern iOS Safari reliably autoplays.
+   * Start null — no video element until we detect orientation on the client.
+   * This ensures only ONE video element is ever created per load (the right one),
+   * preventing any race where a briefly-created landscape element blocks
+   * the portrait autoplay slot on iOS Safari.
    */
-  const [src, setSrc]               = useState(LANDSCAPE_SRC);
+  const [src, setSrc]               = useState<string | null>(null);
   const [userMuted, setUserMuted]   = useState(true);
   const [interacted, setInteracted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -86,23 +86,25 @@ export default function VideoBackground() {
         style={{ zIndex: -1 }}
         aria-hidden="true"
       >
-        {/*
-         * key={src} → React destroys + recreates the DOM node on src change.
-         * The browser then sees autoPlay + muted + src all at insertion time
-         * → guaranteed autoplay on iOS Safari and Chrome Android.
+          {/*
+         * Only render once src is known (after orientation detected on client).
+         * key={src} forces full remount on orientation change so autoPlay + muted
+         * + src are all present at insertion time — required by iOS Safari.
          */}
-        <video
-          key={src}
-          ref={videoRef}
-          src={src}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          poster="/images/hero-poster.jpg"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+        {src && (
+          <video
+            key={src}
+            ref={videoRef}
+            src={src}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            poster="/images/hero-poster.jpg"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        )}
       </div>
 
       <button
