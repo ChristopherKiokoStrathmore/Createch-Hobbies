@@ -1,5 +1,5 @@
 import { galleryVideos } from "@/lib/gallery-videos";
-import VideoGrid from "@/components/gallery/VideoGrid";
+import GalleryGrid from "@/components/gallery/GalleryGrid";
 
 export const metadata = {
   title: "Our Community | Createch Hobbies",
@@ -28,10 +28,10 @@ export default function GalleryPage() {
 
         {/* Tap-for-sound hint */}
         <p className="text-center text-white/30 text-xs font-inter mb-6 sm:mb-10">
-          Tap any video to unmute · Only one plays with sound at a time
+          Tap any clip to watch · Use arrows or keyboard to navigate
         </p>
 
-        <VideoGrid videos={galleryVideos} />
+        <GalleryGrid videos={galleryVideos} />
       </div>
     </main>
   );
