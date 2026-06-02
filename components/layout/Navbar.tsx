@@ -36,6 +36,7 @@ const navLinks = [
   { href: "/",           label: "Home"       },
   { href: "/shop",       label: "Shop"       },
   { href: "/gift-guide", label: "Gift Guide" },
+  { href: "/gallery",    label: "Gallery"    },
   { href: "/about",      label: "About"      },
   { href: "/contact",    label: "Contact"    },
 ];

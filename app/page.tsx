@@ -4,6 +4,7 @@ import HowItWorks from "@/components/home/HowItWorks";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 import CategoryShowcase from "@/components/home/CategoryShowcase";
 import WhyCreatech from "@/components/home/WhyCreatech";
+import OurCommunity from "@/components/home/OurCommunity";
 import Testimonials from "@/components/home/Testimonials";
 import WhatsAppCTA from "@/components/home/WhatsAppCTA";
 
@@ -27,6 +28,7 @@ export default function HomePage() {
         <FeaturedProducts />
         <CategoryShowcase />
         <WhyCreatech />
+        <OurCommunity />
         <Testimonials />
         <WhatsAppCTA />
       </div>
