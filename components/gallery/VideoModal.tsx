@@ -20,9 +20,9 @@ export default function VideoModal({ videos, index, onClose, onNavigate }: Props
 
   /* ── Lock body scroll ── */
   useEffect(() => {
-    const prev = document.body.style.overflow;
+    const savedOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    return () => { document.body.style.overflow = savedOverflow; };
   }, []);
 
   /* ── Keyboard nav ── */
