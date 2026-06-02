@@ -117,6 +117,15 @@
   /* Prevent any element from causing horizontal scroll on mobile */
   body { overflow-x: hidden; }
 
+  /* Hide scrollbar while keeping scroll behaviour */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Lenis smooth scroll */
   html.lenis, html.lenis body {
     height: auto;
