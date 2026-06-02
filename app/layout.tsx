@@ -6,6 +6,8 @@ import WhatsAppBubble from "@/components/layout/WhatsAppBubble";
 import LenisProvider from "@/components/providers/LenisProvider";
 import VideoBackground from "@/components/layout/VideoBackground";
 import SplashScreen from "@/components/layout/SplashScreen";
+import { CartProvider } from "@/context/CartContext";
+import CartDrawer from "@/components/cart/CartDrawer";
 
 export const metadata: Metadata = {
   title: "Createch Hobbies — DIY Kits for Kids",
@@ -30,12 +32,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SplashScreen />
         {/* Fixed video layer — behind everything, plays across all pages */}
         <VideoBackground />
-        <LenisProvider>
-          <Navbar />
-          <main>{children}</main>
-          <Footer />
-          <WhatsAppBubble />
-        </LenisProvider>
+        <CartProvider>
+          <LenisProvider>
+            <Navbar />
+            <CartDrawer />
+            <main>{children}</main>
+            <Footer />
+            <WhatsAppBubble />
+          </LenisProvider>
+        </CartProvider>
       </body>
     </html>
   );
