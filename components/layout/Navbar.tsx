@@ -56,7 +56,7 @@ export default function Navbar() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-400 ${
         scrolled
-          ? "bg-brand-dark/95 backdrop-blur-xl shadow-lg shadow-black/30 border-b border-brand-yellow/10"
+          ? "bg-[#f5be4d]/95 backdrop-blur-xl shadow-lg shadow-brand-dark/10 border-b border-brand-dark/10"
           : "bg-transparent"
       }`}
     >
@@ -73,7 +73,7 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-white/70 hover:text-white font-medium transition-colors text-sm tracking-wide"
+                className="text-brand-dark/70 hover:text-brand-dark font-medium transition-colors text-sm tracking-wide"
               >
                 {link.label}
               </Link>
@@ -85,7 +85,7 @@ export default function Navbar() {
             <button
               onClick={() => dispatch({ type: "OPEN_CART" })}
               aria-label="Open cart"
-              className="relative flex items-center justify-center w-10 h-10 rounded-full border border-white/15 text-white/70 hover:border-brand-yellow/50 hover:text-brand-yellow transition-all"
+              className="relative flex items-center justify-center w-10 h-10 rounded-full border border-brand-dark/20 text-brand-dark/70 hover:border-brand-dark/50 hover:text-brand-dark transition-all"
             >
               <ShoppingCart size={18} />
               {totalItems > 0 && (
@@ -107,7 +107,7 @@ export default function Navbar() {
             <button
               onClick={() => dispatch({ type: "OPEN_CART" })}
               aria-label="Open cart"
-              className="relative flex items-center justify-center w-9 h-9 text-white/70"
+              className="relative flex items-center justify-center w-9 h-9 text-brand-dark/70"
             >
               <ShoppingCart size={20} />
               {totalItems > 0 && (
@@ -133,12 +133,12 @@ export default function Navbar() {
           menuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
         }`}
       >
-        <div className="bg-brand-dark/98 backdrop-blur-xl px-4 pb-6 pt-2 border-t border-brand-yellow/10">
+        <div className="bg-[#f5be4d]/98 backdrop-blur-xl px-4 pb-6 pt-2 border-t border-brand-dark/10">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="block py-3 text-white/70 hover:text-white font-medium border-b border-white/5 transition-colors"
+              className="block py-3 text-brand-dark/70 hover:text-brand-dark font-medium border-b border-brand-dark/10 transition-colors"
               onClick={() => setMenuOpen(false)}
             >
               {link.label}

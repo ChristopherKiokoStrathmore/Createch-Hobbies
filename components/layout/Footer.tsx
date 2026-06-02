@@ -21,7 +21,7 @@ const footerLinks = {
 
 export default function Footer() {
   return (
-    <footer className="border-t border-brand-yellow/10" style={{ backgroundColor: "rgba(7,6,14,0.88)", backdropFilter: "blur(4px)" }}>
+    <footer className="border-t border-brand-dark/10" style={{ backgroundColor: "#e8b238" }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-10">
 
         {/* Subscribe strip */}

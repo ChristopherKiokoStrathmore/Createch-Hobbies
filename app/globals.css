@@ -22,9 +22,8 @@
   }
 
   body {
-    /* transparent so the fixed video shows through everywhere */
-    background-color: transparent;
-    color: #f1eef8;
+    background-color: #f5be4d;
+    color: #0a0a0f;
     font-family: "Inter", sans-serif;
     -webkit-font-smoothing: antialiased;
   }
@@ -39,39 +38,39 @@
   .hero-overlay {
     background: linear-gradient(
       to bottom,
-      rgba(10, 10, 15, 0.55) 0%,
-      rgba(10, 10, 15, 0.40) 40%,
-      rgba(10, 10, 15, 0.85) 100%
+      rgba(245, 190, 77, 0.30) 0%,
+      rgba(245, 190, 77, 0.10) 40%,
+      rgba(245, 190, 77, 0.60) 100%
     );
   }
 
   .text-gradient {
-    background: linear-gradient(135deg, #f5be4d 0%, #754398 100%);
+    background: linear-gradient(135deg, #0a0a0f 0%, #754398 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .text-gradient-reverse {
-    background: linear-gradient(135deg, #754398 0%, #f5be4d 100%);
+    background: linear-gradient(135deg, #754398 0%, #0a0a0f 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .card-glow:hover {
-    box-shadow: 0 0 36px rgba(117, 67, 152, 0.18), 0 0 12px rgba(245, 190, 77, 0.08);
+    box-shadow: 0 0 36px rgba(117, 67, 152, 0.20), 0 0 12px rgba(10, 10, 15, 0.08);
   }
 
   .btn-yellow {
-    background: linear-gradient(135deg, #f5be4d 0%, #d4a030 100%);
-    color: #0a0a0f;
+    background: linear-gradient(135deg, #0a0a0f 0%, #1a1400 100%);
+    color: #f5be4d;
     font-weight: 700;
     transition: all 0.25s ease;
   }
   .btn-yellow:hover {
-    background: linear-gradient(135deg, #ffd06a 0%, #e8b040 100%);
-    box-shadow: 0 8px 32px rgba(245, 190, 77, 0.35);
+    background: linear-gradient(135deg, #1a1400 0%, #2d2400 100%);
+    box-shadow: 0 8px 32px rgba(10, 10, 15, 0.25);
     transform: translateY(-1px);
   }
 
@@ -87,37 +86,32 @@
     transform: translateY(-1px);
   }
 
-  /*
-   * Semi-transparent so the fixed background video glows through.
-   * ~82% opacity = video visible but text stays fully readable.
-   */
   .section-base {
-    background-color: rgba(10, 10, 15, 0.82);
-    backdrop-filter: blur(2px);
+    background-color: #f5be4d;
+    backdrop-filter: none;
   }
 
   .section-alt {
-    background-color: rgba(14, 12, 24, 0.82);
-    backdrop-filter: blur(2px);
+    background-color: #f0b93e;
+    backdrop-filter: none;
   }
 
   .section-card {
-    background-color: rgba(26, 22, 37, 0.88);
-    backdrop-filter: blur(4px);
+    background-color: rgba(255, 255, 255, 0.45);
+    backdrop-filter: none;
+    border-color: rgba(10, 10, 15, 0.08);
   }
 
   .border-subtle {
-    border-color: rgba(245, 190, 77, 0.12);
+    border-color: rgba(10, 10, 15, 0.12);
   }
 
   .border-purple-subtle {
-    border-color: rgba(117, 67, 152, 0.2);
+    border-color: rgba(117, 67, 152, 0.3);
   }
 
-  /* Prevent any element from causing horizontal scroll on mobile */
   body { overflow-x: hidden; }
 
-  /* Hide scrollbar while keeping scroll behaviour */
   .scrollbar-none {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -126,17 +120,51 @@
     display: none;
   }
 
-  /* Lenis smooth scroll */
-  html.lenis, html.lenis body {
-    height: auto;
-  }
-  .lenis.lenis-smooth {
-    scroll-behavior: auto !important;
-  }
-  .lenis.lenis-smooth [data-lenis-prevent] {
-    overscroll-behavior: contain;
-  }
-  .lenis.lenis-stopped {
-    overflow: hidden;
-  }
+  html.lenis, html.lenis body { height: auto; }
+  .lenis.lenis-smooth { scroll-behavior: auto !important; }
+  .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-stopped { overflow: hidden; }
 }
+
+/*
+ * ─────────────────────────────────────────────────────────────────────────────
+ * YELLOW THEME CASCADE OVERRIDES
+ * Written outside @layer so these rules beat @layer utilities in the cascade.
+ * Converts every text-white/* variant to its dark equivalent inside sections.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+/* Section and page backgrounds → yellow */
+.bg-brand-dark    { background-color: #f5be4d !important; }
+.bg-brand-charcoal { background-color: #f0b93e !important; }
+
+/* ── text-white opacities → dark equivalents ── */
+.section-base .text-white,
+.section-alt .text-white,
+.section-card .text-white,
+.bg-brand-dark .text-white,
+.bg-brand-charcoal .text-white { color: #0a0a0f !important; }
+
+.section-base .text-white\/80, .section-alt .text-white\/80, .bg-brand-dark .text-white\/80 { color: rgba(10,10,15,0.80) !important; }
+.section-base .text-white\/70, .section-alt .text-white\/70, .bg-brand-dark .text-white\/70 { color: rgba(10,10,15,0.70) !important; }
+.section-base .text-white\/60, .section-alt .text-white\/60, .bg-brand-dark .text-white\/60 { color: rgba(10,10,15,0.60) !important; }
+.section-base .text-white\/50, .section-alt .text-white\/50, .bg-brand-dark .text-white\/50 { color: rgba(10,10,15,0.50) !important; }
+.section-base .text-white\/40, .section-alt .text-white\/40, .bg-brand-dark .text-white\/40 { color: rgba(10,10,15,0.40) !important; }
+.section-base .text-white\/35, .section-alt .text-white\/35, .bg-brand-dark .text-white\/35 { color: rgba(10,10,15,0.35) !important; }
+.section-base .text-white\/30, .section-alt .text-white\/30, .bg-brand-dark .text-white\/30 { color: rgba(10,10,15,0.30) !important; }
+.section-base .text-white\/25, .section-alt .text-white\/25, .bg-brand-dark .text-white\/25 { color: rgba(10,10,15,0.25) !important; }
+.section-base .text-white\/20, .section-alt .text-white\/20, .bg-brand-dark .text-white\/20 { color: rgba(10,10,15,0.20) !important; }
+.section-base .text-white\/15, .section-alt .text-white\/15, .bg-brand-dark .text-white\/15 { color: rgba(10,10,15,0.15) !important; }
+.section-base .text-white\/10, .section-alt .text-white\/10, .bg-brand-dark .text-white\/10 { color: rgba(10,10,15,0.10) !important; }
+.section-base .text-white\/5,  .section-alt .text-white\/5,  .bg-brand-dark .text-white\/5  { color: rgba(10,10,15,0.05) !important; }
+
+/* ── border-white opacities → dark equivalents ── */
+.section-base .border-white\/20, .section-alt .border-white\/20, .bg-brand-dark .border-white\/20 { border-color: rgba(10,10,15,0.20) !important; }
+.section-base .border-white\/15, .section-alt .border-white\/15, .bg-brand-dark .border-white\/15 { border-color: rgba(10,10,15,0.15) !important; }
+.section-base .border-white\/10, .section-alt .border-white\/10, .bg-brand-dark .border-white\/10 { border-color: rgba(10,10,15,0.10) !important; }
+.section-base .border-white\/8,  .section-alt .border-white\/8,  .bg-brand-dark .border-white\/8  { border-color: rgba(10,10,15,0.08) !important; }
+.section-base .border-white\/5,  .section-alt .border-white\/5,  .bg-brand-dark .border-white\/5  { border-color: rgba(10,10,15,0.05) !important; }
+
+/* ── bg-white card overlays → dark equivalents ── */
+.section-base .bg-white\/10, .section-alt .bg-white\/10, .bg-brand-dark .bg-white\/10 { background-color: rgba(10,10,15,0.06) !important; }
+.section-base .bg-white\/5,  .section-alt .bg-white\/5,  .bg-brand-dark .bg-white\/5  { background-color: rgba(10,10,15,0.04) !important; }
