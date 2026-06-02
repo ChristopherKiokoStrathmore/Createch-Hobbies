@@ -2,10 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { MessageCircle } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import type { Product } from "@/data/products";
 import { formatPrice } from "@/lib/utils";
-import { whatsappProductLink } from "@/lib/whatsapp";
+import { useCart } from "@/context/CartContext";
 
 const difficultyStyles = {
   Beginner:
@@ -30,6 +30,22 @@ interface Props {
 }
 
 export default function ProductCard({ product }: Props) {
+  const { dispatch } = useCart();
+
+  function addToCart() {
+    dispatch({
+      type: "ADD_ITEM",
+      item: {
+        id:       product.id,
+        slug:     product.slug,
+        name:     product.name,
+        price:    product.price,
+        quantity: 1,
+        image:    product.images[0],
+      },
+    });
+  }
+
   return (
     <div className="group section-card rounded-2xl overflow-hidden border border-white/5 hover:border-brand-yellow/20 transition-all duration-300 hover:-translate-y-1 card-glow flex flex-col">
       {/* Image */}
@@ -97,15 +113,13 @@ export default function ProductCard({ product }: Props) {
           <span className="font-playfair font-bold text-2xl text-white">
             {formatPrice(product.price)}
           </span>
-          <a
-            href={whatsappProductLink(product.name)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 bg-[#25D366] hover:bg-[#20bd5a] text-white font-semibold px-4 py-2 rounded-full text-sm transition-all hover:shadow-lg hover:shadow-green-500/25 active:scale-95 font-inter"
+          <button
+            onClick={addToCart}
+            className="flex items-center gap-1.5 btn-yellow px-4 py-2 rounded-full text-sm active:scale-95 font-inter"
           >
-            <MessageCircle size={13} />
-            Order
-          </a>
+            <ShoppingCart size={13} />
+            Add to Cart
+          </button>
         </div>
       </div>
     </div>

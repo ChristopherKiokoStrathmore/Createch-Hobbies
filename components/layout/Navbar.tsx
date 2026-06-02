@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X } from "lucide-react";
-import { whatsappGeneralLink } from "@/lib/whatsapp";
+import { Menu, X, ShoppingCart } from "lucide-react";
+import { useCart } from "@/context/CartContext";
 
 function Logo() {
   const [imgFailed, setImgFailed] = useState(false);
@@ -42,8 +42,9 @@ const navLinks = [
 ];
 
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled]   = useState(false);
+  const [menuOpen, setMenuOpen]   = useState(false);
+  const { totalItems, dispatch }  = useCart();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -81,24 +82,48 @@ export default function Navbar() {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-3">
-            <a
-              href={whatsappGeneralLink()}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => dispatch({ type: "OPEN_CART" })}
+              aria-label="Open cart"
+              className="relative flex items-center justify-center w-10 h-10 rounded-full border border-white/15 text-white/70 hover:border-brand-yellow/50 hover:text-brand-yellow transition-all"
+            >
+              <ShoppingCart size={18} />
+              {totalItems > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-brand-yellow text-brand-dark text-[10px] font-bold rounded-full flex items-center justify-center font-inter">
+                  {totalItems > 9 ? "9+" : totalItems}
+                </span>
+              )}
+            </button>
+            <Link
+              href="/checkout"
               className="btn-yellow px-5 py-2.5 rounded-full text-sm active:scale-95"
             >
-              Order via WhatsApp
-            </a>
+              Checkout
+            </Link>
           </div>
 
-          {/* Mobile hamburger */}
-          <button
-            className="md:hidden text-white/80 hover:text-white p-2 transition-colors"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Toggle menu"
-          >
-            {menuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          {/* Mobile: cart icon + hamburger */}
+          <div className="md:hidden flex items-center gap-2">
+            <button
+              onClick={() => dispatch({ type: "OPEN_CART" })}
+              aria-label="Open cart"
+              className="relative flex items-center justify-center w-9 h-9 text-white/70"
+            >
+              <ShoppingCart size={20} />
+              {totalItems > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-brand-yellow text-brand-dark text-[9px] font-bold rounded-full flex items-center justify-center font-inter">
+                  {totalItems > 9 ? "9+" : totalItems}
+                </span>
+              )}
+            </button>
+            <button
+              className="text-white/80 hover:text-white p-2 transition-colors"
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label="Toggle menu"
+            >
+              {menuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -119,14 +144,13 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
-          <a
-            href={whatsappGeneralLink()}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/checkout"
             className="mt-4 block text-center btn-yellow px-5 py-3 rounded-full text-sm"
+            onClick={() => setMenuOpen(false)}
           >
-            Order via WhatsApp
-          </a>
+            Checkout
+          </Link>
         </div>
       </div>
     </header>
