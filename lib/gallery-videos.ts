@@ -53,7 +53,6 @@ export const galleryVideos: GalleryVideo[] = [
   { id: "v47", filename: "IMG_0814.mp4" },
   { id: "v48", filename: "IMG_1268.mp4" },
   { id: "v49", filename: "IMG_1250.mp4" },
-  { id: "v50", filename: "IMG_1165.mp4" },
 ];
 
 // First 3 shown on the homepage teaser
