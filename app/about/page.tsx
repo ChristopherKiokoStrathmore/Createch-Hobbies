@@ -3,7 +3,7 @@ import { whatsappGeneralLink } from "@/lib/whatsapp";
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6" style={{ backgroundColor: "rgba(10,10,15,0.85)", backdropFilter: "blur(3px)" }}>
+    <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6" style={{ backgroundColor: "#f5be4d" }}>
       <div className="max-w-4xl mx-auto">
         {/* Hero */}
         <div className="text-center mb-24">

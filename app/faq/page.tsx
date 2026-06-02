@@ -82,7 +82,7 @@ export default function FaqPage() {
   return (
     <div
       className="min-h-screen pt-24 pb-20 px-4 sm:px-6"
-      style={{ backgroundColor: "rgba(10,10,15,0.85)", backdropFilter: "blur(3px)" }}
+      style={{ backgroundColor: "#f5be4d" }}
     >
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-14">

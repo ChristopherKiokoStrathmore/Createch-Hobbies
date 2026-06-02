@@ -43,7 +43,7 @@ export default async function ProductPage({ params }: Props) {
   return (
     <div
       className="min-h-screen pt-20 pb-16 px-4 sm:px-6"
-      style={{ backgroundColor: "rgba(10,10,15,0.85)", backdropFilter: "blur(3px)" }}
+      style={{ backgroundColor: "#f5be4d" }}
     >
       <div className="max-w-7xl mx-auto">
         {/* Breadcrumb */}
