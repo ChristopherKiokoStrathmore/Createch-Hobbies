@@ -39,6 +39,13 @@ export interface OrderStatus {
   created_at: string;
 }
 
+export interface MpesaStatusResponse {
+  order_id:       string;
+  status:         'pending' | 'paid' | 'failed' | 'cancelled';
+  receipt:        string;
+  failure_reason: string;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
@@ -58,4 +65,7 @@ export const api = {
 
   getOrder: (orderId: string) =>
     request<OrderStatus>(`/api/orders/${orderId}/`),
+
+  getMpesaStatus: (orderId: string) =>
+    request<MpesaStatusResponse>(`/api/mpesa/status/${orderId}/`),
 };

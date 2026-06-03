@@ -51,7 +51,7 @@ export const products: Product[] = [
     difficulty: "Intermediate",
     price: 1800,
     description:
-      "Assemble a robot that actually walks! Kids discover how gears and cams convert rotary motion into walking movement — the same principle used in real robotics.",
+      "Assemble a robot that actually walks! Kids discover how gears and cams convert rotary motion into walking movement, the same principle used in real robotics.",
     whatYouLearn: ["Robotics", "Gear Systems", "Motion", "Problem Solving"],
     images: [
       "/images/products/walking-robot-1.png",
@@ -70,7 +70,7 @@ export const products: Product[] = [
     difficulty: "Advanced",
     price: 2200,
     description:
-      "Build a fully functional hydraulic excavator powered by water pressure — no electricity needed! Experience the real engineering behind construction machinery.",
+      "Build a fully functional hydraulic excavator powered by water pressure. No electricity needed! Experience the real engineering behind construction machinery.",
     whatYouLearn: ["Hydraulics", "Fluid Mechanics", "Engineering"],
     images: [
       "/images/products/hydraulic-digger-1.png",

@@ -141,7 +141,7 @@ export default function CartDrawer() {
               onClick={() => dispatch({ type: "CLOSE_CART" })}
               className="btn-yellow w-full flex items-center justify-center py-4 rounded-full text-sm font-bold font-inter active:scale-[0.98] transition-transform"
             >
-              Checkout — {formatPrice(totalPrice)}
+              Checkout · {formatPrice(totalPrice)}
             </Link>
           </div>
         )}

@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { products } from "@/data/products";
 import { formatPrice } from "@/lib/utils";
@@ -13,7 +15,7 @@ const ageGroups = [
   {
     label: "Ages 7–10",
     emoji: "⚡",
-    description: "More parts, more excitement — the sweet spot for curious builders.",
+    description: "More parts, more excitement. The sweet spot for curious builders.",
     slugs: ["glider-plane", "optical-illusion-fan", "table-fan", "ferris-wheel", "cable-car"],
   },
   {
@@ -43,18 +45,39 @@ const budgetGroups = [
   },
 ];
 
+const interestGroups = [
+  { label: "Vehicles",     emoji: "🚗", category: "Vehicles" },
+  { label: "Machines",     emoji: "⚙️", category: "Machines" },
+  { label: "Science",      emoji: "🔬", category: "Science" },
+  { label: "Space",        emoji: "🚀", category: "Space" },
+  { label: "Robots",       emoji: "🤖", category: "Robots" },
+  { label: "Architecture", emoji: "🏗️", category: "Architecture" },
+];
+
+/* Card style shared across all three sections */
+const cardStyle = {
+  background: "rgba(255,255,255,0.82)",
+  border: "1px solid rgba(10,10,15,0.08)",
+};
+
 function ProductPill({ slug }: { slug: string }) {
   const product = products.find((p) => p.slug === slug);
   if (!product) return null;
   return (
     <Link
       href={`/shop/${product.slug}`}
-      className="flex items-center justify-between gap-4 section-card rounded-xl px-4 py-3 border border-white/5 hover:border-brand-yellow/20 transition-all group"
+      className="flex items-center justify-between gap-4 rounded-xl px-4 py-3 transition-all group"
+      style={{
+        background: "rgba(245,190,77,0.18)",
+        border: "1px solid rgba(10,10,15,0.07)",
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(245,190,77,0.38)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(245,190,77,0.18)"; }}
     >
-      <span className="font-inter text-sm text-white/80 group-hover:text-white transition-colors">
+      <span className="font-inter text-sm text-brand-dark/80 font-medium">
         {product.name}
       </span>
-      <span className="text-brand-yellow font-semibold text-sm font-inter shrink-0">
+      <span className="text-brand-purple font-semibold text-sm font-inter shrink-0">
         {formatPrice(product.price)}
       </span>
     </Link>
@@ -63,10 +86,7 @@ function ProductPill({ slug }: { slug: string }) {
 
 export default function GiftGuidePage() {
   return (
-    <div
-      className="min-h-screen pt-24 pb-20 px-4 sm:px-6"
-      style={{ backgroundColor: "#f5be4d" }}
-    >
+    <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6 bg-brand-dark">
       <div className="max-w-4xl mx-auto">
 
         {/* Header */}
@@ -79,11 +99,11 @@ export default function GiftGuidePage() {
             <em className="text-gradient not-italic">Every Child</em>
           </h1>
           <p className="text-white/50 text-lg font-inter max-w-xl mx-auto">
-            Not sure which kit to choose? Browse by age or budget — we&apos;ll help you pick the one they&apos;ll remember.
+            Not sure which kit to choose? Browse by age, interest, or budget. We&apos;ll help you pick the one they&apos;ll remember.
           </p>
         </div>
 
-        {/* By Age */}
+        {/* Shop by Age */}
         <div className="mb-16">
           <h2 className="font-playfair font-bold text-2xl text-white mb-8 flex items-center gap-3">
             <span className="w-1 h-6 bg-brand-yellow rounded-full inline-block" />
@@ -93,12 +113,12 @@ export default function GiftGuidePage() {
             {ageGroups.map((group) => (
               <div
                 key={group.label}
-                className="rounded-2xl p-6 border border-white/6 hover:border-brand-yellow/15 transition-colors"
-                style={{ background: "rgba(26,22,37,0.7)" }}
+                className="rounded-2xl p-6 transition-colors"
+                style={cardStyle}
               >
                 <div className="text-4xl mb-3">{group.emoji}</div>
-                <h3 className="font-playfair font-bold text-white text-lg mb-1">{group.label}</h3>
-                <p className="text-white/40 text-xs font-inter mb-5 leading-relaxed">
+                <h3 className="font-playfair font-bold text-brand-dark text-lg mb-1">{group.label}</h3>
+                <p className="text-brand-dark/45 text-xs font-inter mb-5 leading-relaxed">
                   {group.description}
                 </p>
                 <div className="space-y-2">
@@ -108,7 +128,7 @@ export default function GiftGuidePage() {
                 </div>
                 <Link
                   href={`/shop?age=${encodeURIComponent(group.label)}`}
-                  className="mt-4 block text-center text-brand-yellow/70 hover:text-brand-yellow text-xs font-inter transition-colors"
+                  className="mt-4 block text-center text-brand-purple/70 hover:text-brand-purple text-xs font-inter transition-colors font-semibold"
                 >
                   See all {group.label} kits →
                 </Link>
@@ -117,10 +137,50 @@ export default function GiftGuidePage() {
           </div>
         </div>
 
-        {/* By Budget */}
+        {/* Shop by Interest */}
         <div className="mb-16">
           <h2 className="font-playfair font-bold text-2xl text-white mb-8 flex items-center gap-3">
             <span className="w-1 h-6 bg-brand-purple rounded-full inline-block" />
+            Shop by Interest
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {interestGroups.map((group) => {
+              const kits = products.filter((p) => p.category === group.category);
+              if (kits.length === 0) return null;
+              return (
+                <div
+                  key={group.label}
+                  className="rounded-2xl p-6 transition-colors"
+                  style={cardStyle}
+                >
+                  <div className="text-4xl mb-3">{group.emoji}</div>
+                  <h3 className="font-playfair font-bold text-brand-dark text-lg mb-4">{group.label}</h3>
+                  <div className="space-y-2">
+                    {kits.slice(0, 4).map((p) => (
+                      <ProductPill key={p.slug} slug={p.slug} />
+                    ))}
+                    {kits.length > 4 && (
+                      <p className="text-brand-dark/35 text-xs font-inter pt-1 text-center">
+                        +{kits.length - 4} more
+                      </p>
+                    )}
+                  </div>
+                  <Link
+                    href={`/shop?category=${encodeURIComponent(group.category)}`}
+                    className="mt-4 block text-center text-brand-purple/70 hover:text-brand-purple text-xs font-inter transition-colors font-semibold"
+                  >
+                    See all {group.label} kits →
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Shop by Budget */}
+        <div className="mb-16">
+          <h2 className="font-playfair font-bold text-2xl text-white mb-8 flex items-center gap-3">
+            <span className="w-1 h-6 bg-[#25D366] rounded-full inline-block" />
             Shop by Budget
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -133,17 +193,17 @@ export default function GiftGuidePage() {
               return (
                 <div
                   key={group.label}
-                  className="rounded-2xl p-6 border border-white/6"
-                  style={{ background: "rgba(26,22,37,0.7)" }}
+                  className="rounded-2xl p-6"
+                  style={cardStyle}
                 >
                   <div className="text-3xl mb-3">{group.emoji}</div>
-                  <h3 className="font-playfair font-bold text-white text-lg mb-4">{group.label}</h3>
+                  <h3 className="font-playfair font-bold text-brand-dark text-lg mb-4">{group.label}</h3>
                   <div className="space-y-2">
                     {kits.slice(0, 4).map((p) => (
                       <ProductPill key={p.slug} slug={p.slug} />
                     ))}
                     {kits.length > 4 && (
-                      <p className="text-white/30 text-xs font-inter pt-1 text-center">
+                      <p className="text-brand-dark/35 text-xs font-inter pt-1 text-center">
                         +{kits.length - 4} more in this range
                       </p>
                     )}
@@ -167,7 +227,7 @@ export default function GiftGuidePage() {
             Not sure? Just ask us.
           </h3>
           <p className="text-white/50 text-sm font-inter mb-5 max-w-lg">
-            Tell us your child&apos;s age, interests, and budget — we&apos;ll recommend the perfect kit and have it delivered before the big day.
+            Tell us your child&apos;s age, interests, and budget. We&apos;ll recommend the perfect kit and have it delivered before the big day.
           </p>
           <a
             href={whatsappGeneralLink()}

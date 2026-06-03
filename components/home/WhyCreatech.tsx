@@ -7,14 +7,14 @@ const reasons = [
     emoji: "🎓",
     title: "STEM Learning in Disguise",
     description:
-      "Every kit teaches real engineering, physics, or science principles — wrapped in pure, irresistible fun that kids love.",
+      "Every kit teaches real engineering, physics, or science principles, wrapped in pure, irresistible fun that kids love.",
     color: "brand-yellow",
   },
   {
-    emoji: "🔩",
-    title: "No Glue. No Mess.",
+    emoji: "🤝",
+    title: "Parent–Child Time, Redefined",
     description:
-      "All kits use snap-fit assembly. Parents love it, kids love it. Just open the box and start building.",
+      "Step away from screens and into something real. Building together sparks conversations, creates memories, and strengthens the bond that matters most.",
     color: "brand-purple",
   },
   {
@@ -28,7 +28,7 @@ const reasons = [
     emoji: "💸",
     title: "Affordable STEM",
     description:
-      "Starting from just KES 850. Quality STEM education shouldn't require a big budget.",
+      "Starting from just KES 400. Quality STEM education shouldn't require a big budget.",
     color: "brand-purple",
   },
   {
@@ -75,7 +75,7 @@ export default function WhyCreatech() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.08 }}
-              className="section-card rounded-2xl p-5 sm:p-7 border border-white/5 hover:border-brand-yellow/15 transition-all duration-300 group card-glow"
+              className="section-card rounded-2xl p-5 sm:p-7 border border-white/5 hover:border-brand-purple/20 transition-all duration-300 group card-glow"
             >
               <div className="text-4xl mb-5">{reason.emoji}</div>
               <h3 className="font-playfair font-bold text-white text-lg mb-3">

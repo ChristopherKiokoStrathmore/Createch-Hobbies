@@ -6,14 +6,14 @@ import Image from "next/image";
 import { Menu, X, ShoppingCart } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 
-function Logo() {
+function Logo({ scrolled }: { scrolled: boolean }) {
   const [imgFailed, setImgFailed] = useState(false);
 
   if (imgFailed) {
     return (
       <span className="font-playfair font-bold text-xl leading-tight">
-        <span className="text-white">Createch</span>
-        <span className="text-brand-yellow"> Hobbies</span>
+        <span className={scrolled ? "text-brand-dark" : "text-white"}>Createch</span>
+        <span className={scrolled ? "text-brand-purple" : "text-brand-yellow"}> Hobbies</span>
       </span>
     );
   }
@@ -62,9 +62,10 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
+
           {/* Logo */}
           <Link href="/" className="flex items-center group hover:opacity-85 transition-opacity">
-            <Logo />
+            <Logo scrolled={scrolled} />
           </Link>
 
           {/* Desktop nav */}
@@ -73,7 +74,11 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-brand-dark/70 hover:text-brand-dark font-medium transition-colors text-sm tracking-wide"
+                className={`font-medium transition-colors text-sm tracking-wide ${
+                  scrolled
+                    ? "text-brand-dark/70 hover:text-brand-dark"
+                    : "text-white/90 hover:text-white drop-shadow-sm"
+                }`}
               >
                 {link.label}
               </Link>
@@ -85,7 +90,11 @@ export default function Navbar() {
             <button
               onClick={() => dispatch({ type: "OPEN_CART" })}
               aria-label="Open cart"
-              className="relative flex items-center justify-center w-10 h-10 rounded-full border border-brand-dark/20 text-brand-dark/70 hover:border-brand-dark/50 hover:text-brand-dark transition-all"
+              className={`relative flex items-center justify-center w-10 h-10 rounded-full border transition-all ${
+                scrolled
+                  ? "border-brand-dark/20 text-brand-dark/70 hover:border-brand-dark/50 hover:text-brand-dark"
+                  : "border-white/30 text-white/80 hover:border-white/60 hover:text-white"
+              }`}
             >
               <ShoppingCart size={18} />
               {totalItems > 0 && (
@@ -107,7 +116,9 @@ export default function Navbar() {
             <button
               onClick={() => dispatch({ type: "OPEN_CART" })}
               aria-label="Open cart"
-              className="relative flex items-center justify-center w-9 h-9 text-brand-dark/70"
+              className={`relative flex items-center justify-center w-9 h-9 transition-colors ${
+                scrolled ? "text-brand-dark/70" : "text-white/80"
+              }`}
             >
               <ShoppingCart size={20} />
               {totalItems > 0 && (
@@ -117,7 +128,7 @@ export default function Navbar() {
               )}
             </button>
             <button
-              className="text-white/80 hover:text-white p-2 transition-colors"
+              className={`p-2 transition-colors ${scrolled ? "text-brand-dark/70 hover:text-brand-dark" : "text-white/80 hover:text-white"}`}
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label="Toggle menu"
             >

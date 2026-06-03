@@ -13,15 +13,15 @@ export default function GalleryPage() {
 
         {/* Header */}
         <div className="text-center mb-10 sm:mb-14">
-          <span className="inline-block px-4 py-1.5 rounded-full border border-brand-yellow/30 text-brand-yellow text-xs font-inter tracking-widest uppercase mb-4">
+          <span className="inline-block px-4 py-1.5 rounded-full border border-brand-purple/30 text-brand-purple text-xs font-inter tracking-widest uppercase mb-4">
             Our Community
           </span>
           <h1 className="font-playfair text-3xl sm:text-5xl font-bold text-white mb-4">
             Real Builds. Real Kids.{" "}
-            <span className="text-brand-yellow italic">Real Fun.</span>
+            <span className="text-brand-purple italic">Real Fun.</span>
           </h1>
           <p className="text-white/60 font-inter text-sm sm:text-base max-w-xl mx-auto">
-            Watch our community in action — kits being assembled, tested, and
+            Watch our community in action: kits being assembled, tested, and
             celebrated at events across Kenya.
           </p>
         </div>

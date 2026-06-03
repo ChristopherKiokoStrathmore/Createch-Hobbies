@@ -2,7 +2,7 @@ import { whatsappGeneralLink } from "@/lib/whatsapp";
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6" style={{ backgroundColor: "#f5be4d" }}>
+    <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6 bg-brand-dark">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-14">
           <span className="text-brand-purple-light font-inter font-semibold text-xs uppercase tracking-[0.2em]">

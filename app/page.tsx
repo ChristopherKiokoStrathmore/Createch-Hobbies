@@ -1,4 +1,5 @@
 import HeroVideo from "@/components/home/HeroVideo";
+import HeroContent from "@/components/home/HeroContent";
 import TrustBar from "@/components/home/TrustBar";
 import HowItWorks from "@/components/home/HowItWorks";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
@@ -23,13 +24,14 @@ export default function HomePage() {
        * through the hero viewport before content covers it.
        */}
       <div className="relative z-10">
+        <HeroContent />
         <TrustBar />
         <HowItWorks />
         <FeaturedProducts />
-        <CategoryShowcase />
-        <WhyCreatech />
-        <OurCommunity />
         <Testimonials />
+        <WhyCreatech />
+        <CategoryShowcase />
+        <OurCommunity />
         <WhatsAppCTA />
       </div>
     </>

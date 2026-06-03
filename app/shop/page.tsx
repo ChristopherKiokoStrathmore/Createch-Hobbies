@@ -72,7 +72,7 @@ function ShopContent() {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6" style={{ backgroundColor: "#f5be4d" }}>
+    <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6 bg-brand-dark">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-10">
@@ -96,13 +96,13 @@ function ShopContent() {
               placeholder="Search kits..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full section-card border border-white/8 rounded-xl pl-10 pr-4 py-3 text-white placeholder-white/25 focus:outline-none focus:border-brand-yellow/30 transition-colors text-sm font-inter"
+              className="w-full section-card border border-white/8 rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-brand-dark/40 focus:outline-none focus:border-brand-purple/50 transition-colors text-sm font-inter"
             />
           </div>
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as typeof sort)}
-            className="section-card border border-white/8 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-yellow/30 transition-colors cursor-pointer text-sm font-inter"
+            className="section-card border border-white/8 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-purple/50 transition-colors cursor-pointer text-sm font-inter"
           >
             <option value="default">Sort: Default</option>
             <option value="price-asc">Price: Low → High</option>
@@ -121,7 +121,7 @@ function ShopContent() {
                 className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all font-inter ${
                   activeAge === age
                     ? "border-brand-yellow text-brand-dark bg-brand-yellow"
-                    : "border-white/15 text-white/50 hover:border-white/30 hover:text-white"
+                    : "border-white/15 text-white/50 hover:border-brand-dark/35 hover:text-brand-dark"
                 }`}
               >
                 {age}
@@ -141,7 +141,7 @@ function ShopContent() {
                 className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all font-inter ${
                   activeCategory === cat
                     ? "border-brand-yellow text-brand-dark bg-brand-yellow"
-                    : "border-white/15 text-white/50 hover:border-white/30 hover:text-white"
+                    : "border-white/15 text-white/50 hover:border-brand-dark/35 hover:text-brand-dark"
                 }`}
               >
                 {cat}
@@ -161,7 +161,7 @@ function ShopContent() {
                 className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all font-inter ${
                   activeDifficulty === d
                     ? "border-brand-purple text-white bg-brand-purple"
-                    : "border-white/10 text-white/35 hover:border-white/25 hover:text-white"
+                    : "border-white/10 text-white/35 hover:border-brand-dark/30 hover:text-brand-dark"
                 }`}
               >
                 {d}
@@ -177,7 +177,7 @@ function ShopContent() {
             <p className="text-lg font-playfair font-bold text-white/50">No kits match your filters.</p>
             <button
               onClick={clearAll}
-              className="mt-4 text-brand-yellow underline text-sm font-inter"
+              className="mt-4 text-brand-purple underline text-sm font-inter font-semibold"
             >
               Clear all filters
             </button>

@@ -12,11 +12,11 @@ const faqs = [
   },
   {
     q: "How much does delivery cost?",
-    a: "Delivery charges vary by location within Nairobi. We'll confirm the cost when you message us to order — no surprises.",
+    a: "Delivery charges vary by location within Nairobi. We'll confirm the cost when you message us to order. No surprises.",
   },
   {
     q: "Do I need tools or glue to build the kits?",
-    a: "No tools, no glue, no mess. All our kits use snap-fit assembly — everything clicks together. Your child can build with just their hands.",
+    a: "No tools, no glue, no mess. All our kits use snap-fit assembly, everything clicks together. Your child can build with just their hands.",
   },
   {
     q: "What age are the kits suitable for?",
@@ -24,7 +24,7 @@ const faqs = [
   },
   {
     q: "Can my child build it alone?",
-    a: "Beginner kits (ages 5–9) can be done mostly independently with light parental guidance. Intermediate and Advanced kits (ages 10+) may need a parent to assist with the more complex steps — which also makes it a great parent-child activity.",
+    a: "Beginner kits (ages 5–9) can be done mostly independently with light parental guidance. Intermediate and Advanced kits (ages 10+) may need a parent to assist with the more complex steps, which also makes it a great parent-child activity.",
   },
   {
     q: "What if parts are missing or broken?",
@@ -36,11 +36,11 @@ const faqs = [
   },
   {
     q: "Can I return a kit?",
-    a: "We don't accept returns on opened kits. However, if your kit arrives damaged or has defective parts, we'll replace it — just send us a photo on WhatsApp.",
+    a: "We don't accept returns on opened kits. However, if your kit arrives damaged or has defective parts, we'll replace it. Just send us a photo on WhatsApp.",
   },
   {
     q: "Do you deliver outside Nairobi?",
-    a: "We're currently Nairobi-based. If you're outside Nairobi, message us — we can explore courier options for you.",
+    a: "We're currently Nairobi-based. If you're outside Nairobi, message us and we can explore courier options for you.",
   },
   {
     q: "Are these kits good for school projects?",
@@ -54,25 +54,25 @@ function FaqItem({ q, a }: { q: string; a: string }) {
     <div
       className="rounded-2xl border transition-all duration-200 overflow-hidden"
       style={{
-        borderColor: open ? "rgba(245,190,77,0.25)" : "rgba(255,255,255,0.06)",
-        background: open ? "rgba(245,190,77,0.04)" : "rgba(26,22,37,0.7)",
+        borderColor: open ? "rgba(117,67,152,0.30)" : "rgba(10,10,15,0.10)",
+        background: open ? "rgba(255,255,255,0.70)" : "rgba(26,22,37,0.75)",
       }}
     >
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left"
       >
-        <span className="font-playfair font-bold text-white text-base">{q}</span>
+        <span className={`font-playfair font-bold text-base transition-colors ${open ? "text-brand-dark" : "text-white"}`}>{q}</span>
         <ChevronDown
           size={18}
-          className={`text-brand-yellow shrink-0 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+          className={`text-brand-purple shrink-0 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
         />
       </button>
       <div
         className="overflow-hidden transition-all duration-300"
         style={{ maxHeight: open ? "200px" : "0px" }}
       >
-        <p className="px-6 pb-5 text-white/55 text-sm font-inter leading-relaxed">{a}</p>
+        <p className="px-6 pb-5 text-brand-dark/65 text-sm font-inter leading-relaxed">{a}</p>
       </div>
     </div>
   );
@@ -81,8 +81,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 export default function FaqPage() {
   return (
     <div
-      className="min-h-screen pt-24 pb-20 px-4 sm:px-6"
-      style={{ backgroundColor: "#f5be4d" }}
+      className="min-h-screen pt-24 pb-20 px-4 sm:px-6 bg-brand-dark"
     >
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-14">
@@ -116,7 +115,7 @@ export default function FaqPage() {
             Still have a question?
           </h2>
           <p className="text-white/45 text-sm font-inter mb-5">
-            Message us on WhatsApp — we reply within minutes.
+            Message us on WhatsApp. We reply within minutes.
           </p>
           <a
             href={whatsappGeneralLink()}
@@ -129,7 +128,7 @@ export default function FaqPage() {
         </div>
 
         <div className="text-center mt-8">
-          <Link href="/shop" className="text-brand-yellow text-sm font-inter hover:underline">
+          <Link href="/shop" className="text-brand-purple text-sm font-inter hover:underline font-semibold">
             Browse all kits →
           </Link>
         </div>
