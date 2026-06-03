@@ -16,6 +16,7 @@ export default function CheckoutPage() {
   const [step, setStep]     = useState<Step>("form");
   const [error, setError]   = useState("");
   const [orderId, setOrderId] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const pollRef             = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [form, setForm] = useState({
@@ -36,20 +37,20 @@ export default function CheckoutPage() {
     if (step !== "waiting" || !orderId) return;
 
     let attempts = 0;
-    const MAX    = 30; // 30 × 3s = 90s
+    const MAX    = 20; // 20 × 4s = 80s
 
     pollRef.current = setInterval(async () => {
       attempts++;
       try {
-        const order = await api.getOrder(orderId);
+        const result = await api.getMpesaStatus(orderId);
 
-        if (order.status === "paid") {
+        if (result.status === "paid") {
           clearInterval(pollRef.current!);
           dispatch({ type: "CLEAR_CART" });
           router.push(`/checkout/confirmation/${orderId}`);
-        } else if (order.status === "failed") {
+        } else if (result.status === "failed" || result.status === "cancelled") {
           clearInterval(pollRef.current!);
-          setError(order.mpesa_failure_reason || "Payment was declined or cancelled.");
+          setError(result.failure_reason || "Payment was declined or cancelled.");
           setStep("failed");
         } else if (attempts >= MAX) {
           clearInterval(pollRef.current!);
@@ -63,14 +64,16 @@ export default function CheckoutPage() {
           setStep("failed");
         }
       }
-    }, 3000);
+    }, 4000);
 
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [step, orderId, router, dispatch]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isSubmitting) return;
     setError("");
+    setIsSubmitting(true);
 
     try {
       const result = await api.createOrder({
@@ -90,6 +93,7 @@ export default function CheckoutPage() {
       setStep("waiting");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      setIsSubmitting(false);
     }
   }
 
@@ -99,9 +103,9 @@ export default function CheckoutPage() {
       <main className="min-h-screen bg-brand-dark flex items-center justify-center px-4 pt-24 pb-16">
         <div className="max-w-md w-full text-center space-y-6">
           <div className="relative mx-auto w-24 h-24">
-            <div className="absolute inset-0 rounded-full border-4 border-brand-yellow/20 animate-ping" />
+            <div className="absolute inset-0 rounded-full border-4 border-brand-purple/30 animate-ping" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <Smartphone size={36} className="text-brand-yellow" />
+              <Smartphone size={36} className="text-brand-purple" />
             </div>
           </div>
           <h2 className="font-playfair font-bold text-3xl text-white">
@@ -128,8 +132,8 @@ export default function CheckoutPage() {
     return (
       <main className="min-h-screen bg-brand-dark flex items-center justify-center px-4 pt-24 pb-16">
         <div className="max-w-md w-full text-center space-y-6">
-          <div className="mx-auto w-16 h-16 rounded-full bg-red-500/15 flex items-center justify-center">
-            <AlertCircle size={32} className="text-red-400" />
+          <div className="mx-auto w-16 h-16 rounded-full bg-red-200 flex items-center justify-center">
+            <AlertCircle size={32} className="text-red-700" />
           </div>
           <h2 className="font-playfair font-bold text-3xl text-white">Payment Failed</h2>
           <p className="text-white/60 font-inter text-sm">{error}</p>
@@ -179,7 +183,7 @@ export default function CheckoutPage() {
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     placeholder="e.g. John Kamau"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-inter text-sm placeholder:text-white/25 focus:outline-none focus:border-brand-yellow/50 transition-colors"
+                    className="w-full bg-brand-dark/[0.07] border border-brand-dark/20 rounded-xl px-4 py-3 text-brand-dark font-inter text-sm placeholder:text-brand-dark/40 focus:outline-none focus:border-brand-purple/60 transition-colors"
                   />
                 </div>
 
@@ -194,7 +198,7 @@ export default function CheckoutPage() {
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
                     placeholder="0712 345 678"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-inter text-sm placeholder:text-white/25 focus:outline-none focus:border-brand-yellow/50 transition-colors"
+                    className="w-full bg-brand-dark/[0.07] border border-brand-dark/20 rounded-xl px-4 py-3 text-brand-dark font-inter text-sm placeholder:text-brand-dark/40 focus:outline-none focus:border-brand-purple/60 transition-colors"
                   />
                   <p className="text-white/25 text-xs font-inter mt-1.5">
                     The M-Pesa prompt will be sent to this number.
@@ -211,37 +215,54 @@ export default function CheckoutPage() {
                     rows={3}
                     value={form.address}
                     onChange={(e) => setForm({ ...form, address: e.target.value })}
-                    placeholder="Estate / street, Nairobi — any landmark or notes for our rider"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-inter text-sm placeholder:text-white/25 focus:outline-none focus:border-brand-yellow/50 transition-colors resize-none"
+                    placeholder="Estate / street, Nairobi. Any landmark or notes for our rider"
+                    className="w-full bg-brand-dark/[0.07] border border-brand-dark/20 rounded-xl px-4 py-3 text-brand-dark font-inter text-sm placeholder:text-brand-dark/40 focus:outline-none focus:border-brand-purple/60 transition-colors resize-none"
                   />
                 </div>
               </div>
             </div>
 
             {error && (
-              <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-3">
-                <AlertCircle size={15} className="text-red-400 mt-0.5 shrink-0" />
-                <p className="text-red-400 text-sm font-inter">{error}</p>
+              <div className="flex items-start gap-2 bg-red-100 border border-red-300 rounded-xl px-4 py-3">
+                <AlertCircle size={15} className="text-red-700 mt-0.5 shrink-0" />
+                <p className="text-red-700 text-sm font-inter">{error}</p>
               </div>
             )}
 
             <button
               type="submit"
-              className="w-full btn-yellow py-4 rounded-full font-inter font-bold text-base active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+              disabled={isSubmitting}
+              className="w-full btn-yellow py-4 rounded-full font-inter font-bold text-base active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
             >
-              <Smartphone size={18} />
-              Pay {formatPrice(totalPrice)} via M-Pesa
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Sending prompt…
+                </>
+              ) : (
+                <>
+                  <Smartphone size={18} />
+                  Pay {formatPrice(totalPrice)} via M-Pesa
+                </>
+              )}
             </button>
 
             <p className="text-white/25 text-xs text-center font-inter">
               You will receive an M-Pesa STK push. Enter your PIN to confirm.
             </p>
+
+            <Link
+              href="/shop"
+              className="block text-center text-brand-dark/50 hover:text-brand-dark font-inter text-sm underline underline-offset-4 transition-colors"
+            >
+              ← Continue Shopping
+            </Link>
           </form>
 
           {/* ── Order summary ── */}
           <div className="section-card rounded-2xl p-6 border border-white/5 lg:sticky lg:top-28">
             <div className="flex items-center gap-2 mb-5">
-              <ShoppingBag size={16} className="text-brand-yellow" />
+              <ShoppingBag size={16} className="text-brand-purple" />
               <h2 className="font-inter font-semibold text-white text-sm uppercase tracking-widest">
                 Order Summary
               </h2>

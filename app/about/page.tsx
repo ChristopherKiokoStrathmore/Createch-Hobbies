@@ -3,7 +3,7 @@ import { whatsappGeneralLink } from "@/lib/whatsapp";
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6" style={{ backgroundColor: "#f5be4d" }}>
+    <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6 bg-brand-dark">
       <div className="max-w-4xl mx-auto">
         {/* Hero */}
         <div className="text-center mb-24">
@@ -25,7 +25,7 @@ export default function AboutPage() {
             {
               emoji: "🎯",
               title: "Our Mission",
-              body: "To turn screen time into build time. We want every child to experience the pride of creating something with their own hands — and learning why it works.",
+              body: "To turn screen time into build time. We want every child to experience the pride of creating something with their own hands, and learning why it works.",
             },
             {
               emoji: "🌍",
@@ -40,7 +40,7 @@ export default function AboutPage() {
             {
               emoji: "💚",
               title: "Affordable Access",
-              body: "Great education shouldn't cost a fortune. We've priced our kits to be accessible to as many families as possible — starting from just KES 850.",
+              body: "Great education shouldn't cost a fortune. We've priced our kits to be accessible to as many families as possible, starting from just KES 400.",
             },
           ].map((item) => (
             <div
@@ -67,7 +67,7 @@ export default function AboutPage() {
               href={whatsappGeneralLink()}
               target="_blank"
               rel="noopener noreferrer"
-              className="border border-white/15 hover:border-white/30 text-white/70 hover:text-white font-semibold px-8 py-4 rounded-full transition-all font-inter text-sm"
+              className="border border-white/15 hover:border-brand-dark/40 text-white/70 hover:text-brand-dark font-semibold px-8 py-4 rounded-full transition-all font-inter text-sm"
             >
               Chat on WhatsApp
             </a>

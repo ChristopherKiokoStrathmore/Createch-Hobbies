@@ -12,9 +12,9 @@ interface Props {
 }
 
 const difficultyStyles = {
-  Beginner: "bg-green-500/15 text-green-400 border-green-500/25",
-  Intermediate: "bg-brand-yellow/15 text-brand-yellow border-brand-yellow/25",
-  Advanced: "bg-brand-purple/20 text-brand-purple-light border-brand-purple/30",
+  Beginner: "bg-green-100 text-green-800 border-green-300",
+  Intermediate: "bg-amber-100 text-amber-800 border-amber-300",
+  Advanced: "bg-brand-purple/15 text-brand-purple border-brand-purple/30",
 };
 
 const categoryEmoji: Record<string, string> = {
@@ -42,15 +42,14 @@ export default async function ProductPage({ params }: Props) {
 
   return (
     <div
-      className="min-h-screen pt-20 pb-16 px-4 sm:px-6"
-      style={{ backgroundColor: "#f5be4d" }}
+      className="min-h-screen pt-20 pb-16 px-4 sm:px-6 bg-brand-dark"
     >
       <div className="max-w-7xl mx-auto">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-white/30 text-sm mb-6 font-inter">
-          <Link href="/" className="hover:text-white transition-colors">Home</Link>
+          <Link href="/" className="hover:text-brand-dark transition-colors">Home</Link>
           <span className="text-white/15">/</span>
-          <Link href="/shop" className="hover:text-white transition-colors">Shop</Link>
+          <Link href="/shop" className="hover:text-brand-dark transition-colors">Shop</Link>
           <span className="text-white/15">/</span>
           <span className="text-white/60">{product.name}</span>
         </div>
@@ -70,7 +69,7 @@ export default async function ProductPage({ params }: Props) {
               <span className="bg-brand-purple/15 text-brand-purple-light border border-brand-purple/25 text-xs font-semibold px-3 py-1 rounded-full font-inter">
                 {product.category}
               </span>
-              <span className="bg-white/5 text-white/50 border border-white/10 text-xs font-semibold px-3 py-1 rounded-full font-inter">
+              <span className="bg-brand-dark/8 text-brand-dark/60 border border-brand-dark/15 text-xs font-semibold px-3 py-1 rounded-full font-inter">
                 Ages {product.ageRange}
               </span>
               <span className={`text-xs font-semibold px-3 py-1 rounded-full border font-inter ${difficultyStyles[product.difficulty]}`}>
@@ -95,7 +94,7 @@ export default async function ProductPage({ params }: Props) {
                 {product.whatYouLearn.map((skill) => (
                   <span
                     key={skill}
-                    className="flex items-center gap-1.5 bg-brand-yellow/10 border border-brand-yellow/20 text-brand-yellow text-xs font-medium px-3 py-1.5 rounded-full font-inter"
+                    className="flex items-center gap-1.5 bg-white/70 border border-brand-dark/15 text-brand-dark text-xs font-medium px-3 py-1.5 rounded-full font-inter"
                   >
                     <CheckCircle2 size={11} />
                     {skill}
@@ -111,13 +110,13 @@ export default async function ProductPage({ params }: Props) {
               </h3>
               <ul className="text-white/50 text-sm space-y-1.5 font-inter">
                 {[
-                  "All kit parts (pre-cut, snap-fit — no glue)",
+                  "All kit parts (pre-cut, snap-fit, no glue)",
                   "Step-by-step illustrated instructions",
                   "Science guide explaining how it works",
                   "Quality checked before shipping",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2.5">
-                    <span className="text-brand-yellow shrink-0">✓</span> {item}
+                    <span className="text-brand-purple shrink-0">✓</span> {item}
                   </li>
                 ))}
               </ul>

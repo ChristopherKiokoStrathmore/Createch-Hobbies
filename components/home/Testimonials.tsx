@@ -8,22 +8,22 @@ const reviews = [
     text: "My son built the Hydraulic Digger over a weekend and hasn't stopped talking about hydraulics since! Worth every shilling.",
     name: "Amina W.",
     detail: "Mum · Hydraulic Digger Kit",
-    accent: "rgba(245,190,77,0.12)",
-    border: "rgba(245,190,77,0.18)",
+    avatarBg: "rgba(245,190,77,0.90)",
+    border: "rgba(245,190,77,0.40)",
   },
   {
     text: "Ordered via WhatsApp on a Saturday, received it Sunday morning. The Marble Run is now a permanent fixture in our living room.",
     name: "Grace M.",
     detail: "Mum · Marble Run Kit",
-    accent: "rgba(117,67,152,0.12)",
-    border: "rgba(117,67,152,0.22)",
+    avatarBg: "rgba(117,67,152,0.20)",
+    border: "rgba(117,67,152,0.30)",
   },
   {
-    text: "Great quality for the price. My son built the Tank kit then started modifying it — he's been at it for weeks.",
+    text: "Great quality for the price. My son built the Tank kit then started modifying it. He's been at it for weeks.",
     name: "John O.",
     detail: "Dad · Tank Kit",
-    accent: "rgba(245,190,77,0.12)",
-    border: "rgba(245,190,77,0.18)",
+    avatarBg: "rgba(245,190,77,0.90)",
+    border: "rgba(245,190,77,0.40)",
   },
 ];
 
@@ -50,7 +50,7 @@ export default function Testimonials() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8 items-stretch">
           {reviews.map((r, i) => (
             <motion.div
               key={r.name}
@@ -58,29 +58,30 @@ export default function Testimonials() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="rounded-2xl p-5 sm:p-7"
+              className="rounded-2xl p-5 sm:p-7 flex flex-col h-full"
               style={{
-                background: `linear-gradient(135deg, rgba(26,22,37,0.95) 0%, ${r.accent} 100%)`,
+                background: "rgba(255,246,220,0.70)",
                 border: `1px solid ${r.border}`,
+                boxShadow: "0 2px 24px rgba(10,10,15,0.06)",
               }}
             >
-              {/* WhatsApp-style quote mark */}
-              <div className="text-brand-yellow/30 font-playfair text-5xl leading-none mb-3 select-none">
+              {/* Quote mark */}
+              <div className="text-brand-purple font-playfair text-5xl leading-none mb-3 select-none">
                 &ldquo;
               </div>
-              <p className="text-white/70 leading-relaxed text-sm font-inter mb-6">
+              <p className="text-brand-dark/70 leading-relaxed text-base font-inter mb-6 flex-1">
                 {r.text}
               </p>
               <div className="flex items-center gap-3">
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-brand-dark shrink-0"
-                  style={{ background: "rgba(245,190,77,0.8)" }}
+                  style={{ background: r.avatarBg }}
                 >
                   {r.name[0]}
                 </div>
                 <div>
-                  <div className="font-inter font-semibold text-white text-sm">{r.name}</div>
-                  <div className="text-white/35 text-xs font-inter">{r.detail}</div>
+                  <div className="font-inter font-semibold text-brand-dark text-base">{r.name}</div>
+                  <div className="text-brand-dark/45 text-sm font-inter">{r.detail}</div>
                 </div>
               </div>
             </motion.div>
@@ -95,11 +96,11 @@ export default function Testimonials() {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="rounded-2xl p-6 text-center"
           style={{
-            background: "rgba(37,211,102,0.04)",
-            border: "1px dashed rgba(37,211,102,0.2)",
+            background: "rgba(255,255,255,0.55)",
+            border: "1px dashed rgba(37,211,102,0.45)",
           }}
         >
-          <p className="text-white/50 text-sm font-inter mb-3">
+          <p className="text-brand-dark/55 text-sm font-inter mb-3">
             Bought a kit? We&apos;d love to hear how your child got on.
           </p>
           <a

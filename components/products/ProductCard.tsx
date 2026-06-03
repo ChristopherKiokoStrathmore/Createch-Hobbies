@@ -9,11 +9,11 @@ import { useCart } from "@/context/CartContext";
 
 const difficultyStyles = {
   Beginner:
-    "bg-green-500/15 text-green-400 border-green-500/25",
+    "bg-green-100 text-green-800 border-green-300",
   Intermediate:
-    "bg-brand-yellow/15 text-brand-yellow border-brand-yellow/25",
+    "bg-amber-100 text-amber-800 border-amber-300",
   Advanced:
-    "bg-brand-purple/20 text-brand-purple-light border-brand-purple/30",
+    "bg-brand-purple/15 text-brand-purple border-brand-purple/30",
 };
 
 const categoryEmoji: Record<string, string> = {
@@ -94,7 +94,7 @@ export default function ProductCard({ product }: Props) {
         <div className="flex items-start justify-between gap-2 mb-2">
           <Link
             href={`/shop/${product.slug}`}
-            className="font-playfair font-bold text-white text-lg leading-tight hover:text-brand-yellow transition-colors"
+            className="font-playfair font-bold text-white text-lg leading-tight hover:text-brand-purple transition-colors"
           >
             {product.name}
           </Link>

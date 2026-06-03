@@ -108,8 +108,8 @@ export default async function ConfirmationPage({ params }: Props) {
         </div>
 
         {/* Delivery note */}
-        <div className="mt-5 bg-brand-yellow/10 border border-brand-yellow/20 rounded-xl px-4 py-3 text-center">
-          <p className="text-brand-yellow font-inter text-sm font-medium">
+        <div className="mt-5 bg-brand-purple/10 border border-brand-purple/20 rounded-xl px-4 py-3 text-center">
+          <p className="text-brand-purple font-inter text-sm font-medium">
             Delivery usually within 1–2 days. We will call you to confirm.
           </p>
         </div>

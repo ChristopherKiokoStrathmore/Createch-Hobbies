@@ -22,7 +22,7 @@
   }
 
   body {
-    background-color: #f5be4d;
+    background-color: transparent;
     color: #0a0a0f;
     font-family: "Inter", sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -87,12 +87,12 @@
   }
 
   .section-base {
-    background-color: #f5be4d;
+    background-color: rgba(245,190,77,0.85);
     backdrop-filter: none;
   }
 
   .section-alt {
-    background-color: #f0b93e;
+    background-color: rgba(240,185,62,0.85);
     backdrop-filter: none;
   }
 
@@ -134,9 +134,9 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-/* Section and page backgrounds → yellow */
-.bg-brand-dark    { background-color: #f5be4d !important; }
-.bg-brand-charcoal { background-color: #f0b93e !important; }
+/* Section and page backgrounds → semi-transparent yellow (video shows through) */
+.bg-brand-dark    { background-color: rgba(245,190,77,0.85) !important; }
+.bg-brand-charcoal { background-color: rgba(240,185,62,0.85) !important; }
 
 /* ── text-white opacities → dark equivalents ── */
 .section-base .text-white,
@@ -145,26 +145,32 @@
 .bg-brand-dark .text-white,
 .bg-brand-charcoal .text-white { color: #0a0a0f !important; }
 
-.section-base .text-white\/80, .section-alt .text-white\/80, .bg-brand-dark .text-white\/80 { color: rgba(10,10,15,0.80) !important; }
-.section-base .text-white\/70, .section-alt .text-white\/70, .bg-brand-dark .text-white\/70 { color: rgba(10,10,15,0.70) !important; }
-.section-base .text-white\/60, .section-alt .text-white\/60, .bg-brand-dark .text-white\/60 { color: rgba(10,10,15,0.60) !important; }
-.section-base .text-white\/50, .section-alt .text-white\/50, .bg-brand-dark .text-white\/50 { color: rgba(10,10,15,0.50) !important; }
-.section-base .text-white\/40, .section-alt .text-white\/40, .bg-brand-dark .text-white\/40 { color: rgba(10,10,15,0.40) !important; }
-.section-base .text-white\/35, .section-alt .text-white\/35, .bg-brand-dark .text-white\/35 { color: rgba(10,10,15,0.35) !important; }
-.section-base .text-white\/30, .section-alt .text-white\/30, .bg-brand-dark .text-white\/30 { color: rgba(10,10,15,0.30) !important; }
-.section-base .text-white\/25, .section-alt .text-white\/25, .bg-brand-dark .text-white\/25 { color: rgba(10,10,15,0.25) !important; }
-.section-base .text-white\/20, .section-alt .text-white\/20, .bg-brand-dark .text-white\/20 { color: rgba(10,10,15,0.20) !important; }
-.section-base .text-white\/15, .section-alt .text-white\/15, .bg-brand-dark .text-white\/15 { color: rgba(10,10,15,0.15) !important; }
-.section-base .text-white\/10, .section-alt .text-white\/10, .bg-brand-dark .text-white\/10 { color: rgba(10,10,15,0.10) !important; }
-.section-base .text-white\/5,  .section-alt .text-white\/5,  .bg-brand-dark .text-white\/5  { color: rgba(10,10,15,0.05) !important; }
+.section-base .text-white\/85, .section-alt .text-white\/85, .section-card .text-white\/85, .bg-brand-dark .text-white\/85 { color: rgba(10,10,15,0.85) !important; }
+.section-base .text-white\/80, .section-alt .text-white\/80, .section-card .text-white\/80, .bg-brand-dark .text-white\/80 { color: rgba(10,10,15,0.80) !important; }
+.section-base .text-white\/75, .section-alt .text-white\/75, .section-card .text-white\/75, .bg-brand-dark .text-white\/75 { color: rgba(10,10,15,0.75) !important; }
+.section-base .text-white\/70, .section-alt .text-white\/70, .section-card .text-white\/70, .bg-brand-dark .text-white\/70 { color: rgba(10,10,15,0.70) !important; }
+.section-base .text-white\/65, .section-alt .text-white\/65, .section-card .text-white\/65, .bg-brand-dark .text-white\/65 { color: rgba(10,10,15,0.65) !important; }
+.section-base .text-white\/60, .section-alt .text-white\/60, .section-card .text-white\/60, .bg-brand-dark .text-white\/60 { color: rgba(10,10,15,0.60) !important; }
+.section-base .text-white\/55, .section-alt .text-white\/55, .section-card .text-white\/55, .bg-brand-dark .text-white\/55 { color: rgba(10,10,15,0.55) !important; }
+.section-base .text-white\/50, .section-alt .text-white\/50, .section-card .text-white\/50, .bg-brand-dark .text-white\/50 { color: rgba(10,10,15,0.50) !important; }
+.section-base .text-white\/45, .section-alt .text-white\/45, .section-card .text-white\/45, .bg-brand-dark .text-white\/45 { color: rgba(10,10,15,0.45) !important; }
+.section-base .text-white\/40, .section-alt .text-white\/40, .section-card .text-white\/40, .bg-brand-dark .text-white\/40 { color: rgba(10,10,15,0.40) !important; }
+.section-base .text-white\/35, .section-alt .text-white\/35, .section-card .text-white\/35, .bg-brand-dark .text-white\/35 { color: rgba(10,10,15,0.35) !important; }
+.section-base .text-white\/30, .section-alt .text-white\/30, .section-card .text-white\/30, .bg-brand-dark .text-white\/30 { color: rgba(10,10,15,0.30) !important; }
+.section-base .text-white\/25, .section-alt .text-white\/25, .section-card .text-white\/25, .bg-brand-dark .text-white\/25 { color: rgba(10,10,15,0.25) !important; }
+.section-base .text-white\/20, .section-alt .text-white\/20, .section-card .text-white\/20, .bg-brand-dark .text-white\/20 { color: rgba(10,10,15,0.20) !important; }
+.section-base .text-white\/15, .section-alt .text-white\/15, .section-card .text-white\/15, .bg-brand-dark .text-white\/15 { color: rgba(10,10,15,0.15) !important; }
+.section-base .text-white\/10, .section-alt .text-white\/10, .section-card .text-white\/10, .bg-brand-dark .text-white\/10 { color: rgba(10,10,15,0.10) !important; }
+.section-base .text-white\/5,  .section-alt .text-white\/5,  .section-card .text-white\/5,  .bg-brand-dark .text-white\/5  { color: rgba(10,10,15,0.05) !important; }
 
 /* ── border-white opacities → dark equivalents ── */
-.section-base .border-white\/20, .section-alt .border-white\/20, .bg-brand-dark .border-white\/20 { border-color: rgba(10,10,15,0.20) !important; }
-.section-base .border-white\/15, .section-alt .border-white\/15, .bg-brand-dark .border-white\/15 { border-color: rgba(10,10,15,0.15) !important; }
-.section-base .border-white\/10, .section-alt .border-white\/10, .bg-brand-dark .border-white\/10 { border-color: rgba(10,10,15,0.10) !important; }
-.section-base .border-white\/8,  .section-alt .border-white\/8,  .bg-brand-dark .border-white\/8  { border-color: rgba(10,10,15,0.08) !important; }
-.section-base .border-white\/5,  .section-alt .border-white\/5,  .bg-brand-dark .border-white\/5  { border-color: rgba(10,10,15,0.05) !important; }
+.section-base .border-white\/20, .section-alt .border-white\/20, .section-card .border-white\/20, .bg-brand-dark .border-white\/20 { border-color: rgba(10,10,15,0.20) !important; }
+.section-base .border-white\/15, .section-alt .border-white\/15, .section-card .border-white\/15, .bg-brand-dark .border-white\/15 { border-color: rgba(10,10,15,0.15) !important; }
+.section-base .border-white\/10, .section-alt .border-white\/10, .section-card .border-white\/10, .bg-brand-dark .border-white\/10 { border-color: rgba(10,10,15,0.10) !important; }
+.section-base .border-white\/8,  .section-alt .border-white\/8,  .section-card .border-white\/8,  .bg-brand-dark .border-white\/8  { border-color: rgba(10,10,15,0.08) !important; }
+.section-base .border-white\/6,  .section-alt .border-white\/6,  .section-card .border-white\/6,  .bg-brand-dark .border-white\/6  { border-color: rgba(10,10,15,0.06) !important; }
+.section-base .border-white\/5,  .section-alt .border-white\/5,  .section-card .border-white\/5,  .bg-brand-dark .border-white\/5  { border-color: rgba(10,10,15,0.05) !important; }
 
 /* ── bg-white card overlays → dark equivalents ── */
-.section-base .bg-white\/10, .section-alt .bg-white\/10, .bg-brand-dark .bg-white\/10 { background-color: rgba(10,10,15,0.06) !important; }
-.section-base .bg-white\/5,  .section-alt .bg-white\/5,  .bg-brand-dark .bg-white\/5  { background-color: rgba(10,10,15,0.04) !important; }
+.section-base .bg-white\/10, .section-alt .bg-white\/10, .section-card .bg-white\/10, .bg-brand-dark .bg-white\/10 { background-color: rgba(10,10,15,0.06) !important; }
+.section-base .bg-white\/5,  .section-alt .bg-white\/5,  .section-card .bg-white\/5,  .bg-brand-dark .bg-white\/5  { background-color: rgba(10,10,15,0.04) !important; }
