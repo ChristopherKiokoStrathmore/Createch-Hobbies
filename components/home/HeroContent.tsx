@@ -25,7 +25,7 @@ export default function HeroContent() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "linear-gradient(to bottom, rgba(10,10,15,0.30) 0%, rgba(10,10,15,0.50) 50%, rgba(10,10,15,0.72) 100%)",
+            "linear-gradient(to bottom, rgba(10,10,15,0.55) 0%, rgba(10,10,15,0.70) 50%, rgba(10,10,15,0.82) 100%)",
         }}
       />
 

@@ -1,45 +1,49 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { GraduationCap, Users, BarChart2, Tag, Package, Gift } from "lucide-react";
+
+const ICON = "w-10 h-10 text-brand-purple";
+const SW   = 1.5;
 
 const reasons = [
   {
-    emoji: "🎓",
+    icon: <GraduationCap className={ICON} strokeWidth={SW} />,
     title: "STEM Learning in Disguise",
     description:
       "Every kit teaches real engineering, physics, or science principles, wrapped in pure, irresistible fun that kids love.",
     color: "brand-yellow",
   },
   {
-    emoji: "🤝",
+    icon: <Users className={ICON} strokeWidth={SW} />,
     title: "Parent–Child Time, Redefined",
     description:
       "Step away from screens and into something real. Building together sparks conversations, creates memories, and strengthens the bond that matters most.",
     color: "brand-purple",
   },
   {
-    emoji: "📊",
+    icon: <BarChart2 className={ICON} strokeWidth={SW} />,
     title: "Age-Appropriate Challenges",
     description:
       "Kits rated Beginner to Advanced for ages 5–14. Always just challenging enough to feel like a real achievement.",
     color: "brand-yellow",
   },
   {
-    emoji: "💸",
+    icon: <Tag className={ICON} strokeWidth={SW} />,
     title: "Affordable STEM",
     description:
       "Starting from just KES 400. Quality STEM education shouldn't require a big budget.",
     color: "brand-purple",
   },
   {
-    emoji: "📦",
+    icon: <Package className={ICON} strokeWidth={SW} />,
     title: "Everything Included",
     description:
       "Each kit comes with all parts, instructions, and a guide explaining the science behind what you built.",
     color: "brand-yellow",
   },
   {
-    emoji: "🎁",
+    icon: <Gift className={ICON} strokeWidth={SW} />,
     title: "The Gift They'll Remember",
     description:
       "Forget toys that break in a day. These kits are built, displayed, and played with for months.",
@@ -77,7 +81,7 @@ export default function WhyCreatech() {
               transition={{ duration: 0.5, delay: i * 0.08 }}
               className="section-card rounded-2xl p-5 sm:p-7 border border-white/5 hover:border-brand-purple/20 transition-all duration-300 group card-glow"
             >
-              <div className="text-4xl mb-5">{reason.emoji}</div>
+              <div className="mb-5">{reason.icon}</div>
               <h3 className="font-playfair font-bold text-white text-lg mb-3">
                 {reason.title}
               </h3>

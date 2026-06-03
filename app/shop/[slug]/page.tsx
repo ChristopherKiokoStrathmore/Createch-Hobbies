@@ -26,6 +26,7 @@ const categoryEmoji: Record<string, string> = {
   Architecture: "🏗️",
 };
 
+
 export async function generateStaticParams() {
   return products.map((p) => ({ slug: p.slug }));
 }
@@ -116,7 +117,8 @@ export default async function ProductPage({ params }: Props) {
                   "Quality checked before shipping",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2.5">
-                    <span className="text-brand-purple shrink-0">✓</span> {item}
+                    <CheckCircle2 size={14} className="text-brand-purple shrink-0" strokeWidth={1.5} />
+                    {item}
                   </li>
                 ))}
               </ul>

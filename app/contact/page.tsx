@@ -1,3 +1,4 @@
+import { MessageCircle, MapPin, Clock } from "lucide-react";
 import { whatsappGeneralLink } from "@/lib/whatsapp";
 
 export default function ContactPage() {
@@ -25,7 +26,7 @@ export default function ContactPage() {
             border: "1px solid rgba(37,211,102,0.15)",
           }}
         >
-          <div className="text-5xl mb-5">💬</div>
+          <MessageCircle className="w-14 h-14 text-[#25D366] mx-auto mb-5" strokeWidth={1.5} />
           <h2 className="font-playfair font-bold text-white text-2xl mb-2">
             WhatsApp is the Fastest Way
           </h2>
@@ -47,14 +48,14 @@ export default function ContactPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div className="section-card rounded-2xl p-6 border border-white/5">
-            <div className="text-3xl mb-4">📍</div>
+            <MapPin className="w-8 h-8 text-brand-purple mb-4" strokeWidth={1.5} />
             <h3 className="font-playfair font-bold text-white mb-2">Location</h3>
             <p className="text-white/40 text-sm font-inter leading-relaxed">
               Nairobi, Kenya<br />Delivery across Nairobi
             </p>
           </div>
           <div className="section-card rounded-2xl p-6 border border-white/5">
-            <div className="text-3xl mb-4">⏰</div>
+            <Clock className="w-8 h-8 text-brand-purple mb-4" strokeWidth={1.5} />
             <h3 className="font-playfair font-bold text-white mb-2">Hours</h3>
             <p className="text-white/40 text-sm font-inter leading-relaxed">
               Mon – Sat: 8am – 8pm<br />Sunday: 10am – 5pm

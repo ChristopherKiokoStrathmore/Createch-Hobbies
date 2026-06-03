@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, MessageCircle } from "lucide-react";
 import { whatsappGeneralLink } from "@/lib/whatsapp";
 
 const faqs = [
@@ -110,7 +110,7 @@ export default function FaqPage() {
             border: "1px solid rgba(37,211,102,0.15)",
           }}
         >
-          <div className="text-4xl mb-4">💬</div>
+          <MessageCircle className="w-10 h-10 text-[#25D366] mx-auto mb-4" strokeWidth={1.5} />
           <h2 className="font-playfair font-bold text-white text-xl mb-2">
             Still have a question?
           </h2>
