@@ -1,26 +1,33 @@
 "use client";
 
 import Link from "next/link";
+import {
+  Sprout, Zap, Rocket,
+  Tag, Car, Cog, FlaskConical, Bot, Building2, Gift,
+} from "lucide-react";
 import { products } from "@/data/products";
 import { formatPrice } from "@/lib/utils";
 import { whatsappGeneralLink } from "@/lib/whatsapp";
 
+const SW = 1.5;
+const GRP_ICON = "w-9 h-9 text-brand-purple mb-3";
+
 const ageGroups = [
   {
     label: "Ages 5–7",
-    emoji: "🌱",
+    icon: <Sprout className={GRP_ICON} strokeWidth={SW} />,
     description: "Simple, satisfying builds a young child can mostly do on their own.",
     slugs: ["marble-run", "house", "train", "windmill"],
   },
   {
     label: "Ages 7–10",
-    emoji: "⚡",
+    icon: <Zap className={GRP_ICON} strokeWidth={SW} />,
     description: "More parts, more excitement. The sweet spot for curious builders.",
     slugs: ["glider-plane", "optical-illusion-fan", "table-fan", "ferris-wheel", "cable-car"],
   },
   {
     label: "Ages 10–14",
-    emoji: "🚀",
+    icon: <Rocket className={GRP_ICON} strokeWidth={SW} />,
     description: "Real engineering challenges that feel like a proper achievement.",
     slugs: ["walking-robot", "hydraulic-digger", "solar-fan", "tank", "lunar-rover"],
   },
@@ -29,32 +36,31 @@ const ageGroups = [
 const budgetGroups = [
   {
     label: "Under KES 1,000",
-    emoji: "💚",
+    icon: <Tag className={GRP_ICON} strokeWidth={SW} />,
     maxPrice: 999,
   },
   {
     label: "KES 1,000 – 1,500",
-    emoji: "💛",
+    icon: <Tag className={GRP_ICON} strokeWidth={SW} />,
     minPrice: 1000,
     maxPrice: 1500,
   },
   {
     label: "KES 1,500+",
-    emoji: "💜",
+    icon: <Tag className={GRP_ICON} strokeWidth={SW} />,
     minPrice: 1501,
   },
 ];
 
 const interestGroups = [
-  { label: "Vehicles",     emoji: "🚗", category: "Vehicles" },
-  { label: "Machines",     emoji: "⚙️", category: "Machines" },
-  { label: "Science",      emoji: "🔬", category: "Science" },
-  { label: "Space",        emoji: "🚀", category: "Space" },
-  { label: "Robots",       emoji: "🤖", category: "Robots" },
-  { label: "Architecture", emoji: "🏗️", category: "Architecture" },
+  { label: "Vehicles",     icon: <Car       className={GRP_ICON} strokeWidth={SW} />, category: "Vehicles" },
+  { label: "Machines",     icon: <Cog       className={GRP_ICON} strokeWidth={SW} />, category: "Machines" },
+  { label: "Science",      icon: <FlaskConical className={GRP_ICON} strokeWidth={SW} />, category: "Science" },
+  { label: "Space",        icon: <Rocket    className={GRP_ICON} strokeWidth={SW} />, category: "Space" },
+  { label: "Robots",       icon: <Bot       className={GRP_ICON} strokeWidth={SW} />, category: "Robots" },
+  { label: "Architecture", icon: <Building2 className={GRP_ICON} strokeWidth={SW} />, category: "Architecture" },
 ];
 
-/* Card style shared across all three sections */
 const cardStyle = {
   background: "rgba(255,255,255,0.82)",
   border: "1px solid rgba(10,10,15,0.08)",
@@ -116,7 +122,7 @@ export default function GiftGuidePage() {
                 className="rounded-2xl p-6 transition-colors"
                 style={cardStyle}
               >
-                <div className="text-4xl mb-3">{group.emoji}</div>
+                {group.icon}
                 <h3 className="font-playfair font-bold text-brand-dark text-lg mb-1">{group.label}</h3>
                 <p className="text-brand-dark/45 text-xs font-inter mb-5 leading-relaxed">
                   {group.description}
@@ -153,7 +159,7 @@ export default function GiftGuidePage() {
                   className="rounded-2xl p-6 transition-colors"
                   style={cardStyle}
                 >
-                  <div className="text-4xl mb-3">{group.emoji}</div>
+                  {group.icon}
                   <h3 className="font-playfair font-bold text-brand-dark text-lg mb-4">{group.label}</h3>
                   <div className="space-y-2">
                     {kits.slice(0, 4).map((p) => (
@@ -196,7 +202,7 @@ export default function GiftGuidePage() {
                   className="rounded-2xl p-6"
                   style={cardStyle}
                 >
-                  <div className="text-3xl mb-3">{group.emoji}</div>
+                  {group.icon}
                   <h3 className="font-playfair font-bold text-brand-dark text-lg mb-4">{group.label}</h3>
                   <div className="space-y-2">
                     {kits.slice(0, 4).map((p) => (
@@ -222,21 +228,23 @@ export default function GiftGuidePage() {
             border: "1px solid rgba(245,190,77,0.15)",
           }}
         >
-          <div className="text-4xl mb-4">🎁</div>
-          <h3 className="font-playfair font-bold text-white text-xl mb-2">
+          <Gift className="w-10 h-10 text-brand-yellow mx-auto mb-4" strokeWidth={1.5} />
+          <h3 className="font-playfair font-bold text-white text-xl mb-2 text-center">
             Not sure? Just ask us.
           </h3>
-          <p className="text-white/50 text-sm font-inter mb-5 max-w-lg">
+          <p className="text-white/50 text-sm font-inter mb-5 max-w-lg mx-auto text-center">
             Tell us your child&apos;s age, interests, and budget. We&apos;ll recommend the perfect kit and have it delivered before the big day.
           </p>
-          <a
-            href={whatsappGeneralLink()}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold px-6 py-3 rounded-full text-sm transition-all font-inter"
-          >
-            Get a personalised recommendation →
-          </a>
+          <div className="text-center">
+            <a
+              href={whatsappGeneralLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold px-6 py-3 rounded-full text-sm transition-all font-inter"
+            >
+              Get a personalised recommendation →
+            </a>
+          </div>
         </div>
 
         <div className="text-center">

@@ -1,5 +1,32 @@
 import Link from "next/link";
+import { Target, Globe, BookOpen, Heart } from "lucide-react";
 import { whatsappGeneralLink } from "@/lib/whatsapp";
+
+const ICON = "w-10 h-10 text-brand-purple mb-5";
+const SW   = 1.5;
+
+const values = [
+  {
+    icon: <Target className={ICON} strokeWidth={SW} />,
+    title: "Our Mission",
+    body: "To turn screen time into build time. We want every child to experience the pride of creating something with their own hands, and learning why it works.",
+  },
+  {
+    icon: <Globe className={ICON} strokeWidth={SW} />,
+    title: "Nairobi Roots",
+    body: "We're proudly based in Nairobi, Kenya. Every kit is carefully curated and quality-checked to make sure your child gets the best experience possible.",
+  },
+  {
+    icon: <BookOpen className={ICON} strokeWidth={SW} />,
+    title: "STEM First",
+    body: "Every kit is selected because it teaches real engineering, physics, or science. Fun is the vehicle; learning is the destination.",
+  },
+  {
+    icon: <Heart className={ICON} strokeWidth={SW} />,
+    title: "Affordable Access",
+    body: "Great education shouldn't cost a fortune. We've priced our kits to be accessible to as many families as possible, starting from just KES 400.",
+  },
+];
 
 export default function AboutPage() {
   return (
@@ -21,33 +48,12 @@ export default function AboutPage() {
 
         {/* Values grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-24">
-          {[
-            {
-              emoji: "🎯",
-              title: "Our Mission",
-              body: "To turn screen time into build time. We want every child to experience the pride of creating something with their own hands, and learning why it works.",
-            },
-            {
-              emoji: "🌍",
-              title: "Nairobi Roots",
-              body: "We're proudly based in Nairobi, Kenya. Every kit is carefully curated and quality-checked to make sure your child gets the best experience possible.",
-            },
-            {
-              emoji: "📚",
-              title: "STEM First",
-              body: "Every kit is selected because it teaches real engineering, physics, or science. Fun is the vehicle; learning is the destination.",
-            },
-            {
-              emoji: "💚",
-              title: "Affordable Access",
-              body: "Great education shouldn't cost a fortune. We've priced our kits to be accessible to as many families as possible, starting from just KES 400.",
-            },
-          ].map((item) => (
+          {values.map((item) => (
             <div
               key={item.title}
               className="section-card rounded-2xl p-8 border border-white/5 hover:border-brand-yellow/15 transition-colors"
             >
-              <div className="text-4xl mb-5">{item.emoji}</div>
+              {item.icon}
               <h3 className="font-playfair font-bold text-white text-xl mb-3">{item.title}</h3>
               <p className="text-white/45 leading-relaxed font-inter text-sm">{item.body}</p>
             </div>

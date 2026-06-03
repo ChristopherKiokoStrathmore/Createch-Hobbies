@@ -173,7 +173,7 @@ function ShopContent() {
         {/* Grid */}
         {filtered.length === 0 ? (
           <div className="text-center py-24 text-white/30">
-            <div className="text-5xl mb-4">🔍</div>
+            <Search className="w-14 h-14 text-white/20 mx-auto mb-4" strokeWidth={1.5} />
             <p className="text-lg font-playfair font-bold text-white/50">No kits match your filters.</p>
             <button
               onClick={clearAll}
