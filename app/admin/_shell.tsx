@@ -44,11 +44,8 @@ function Sidebar() {
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-inter text-sm transition-all ${
-                active
-                  ? "bg-brand-yellow/10 text-brand-yellow font-medium"
-                  : "text-white hover:bg-white/5"
-              }`}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg font-inter text-sm transition-all hover:bg-white/5"
+              style={{ color: active ? "#f5be4d" : "#ffffff", fontWeight: active ? 500 : 400, background: active ? "rgba(245,190,77,0.1)" : undefined }}
             >
               <Icon size={16} strokeWidth={active ? 2 : 1.5} />
               {label}
@@ -66,14 +63,16 @@ function Sidebar() {
           href="/"
           target="_blank"
           rel="noreferrer"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white font-inter text-sm transition-colors"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg font-inter text-sm transition-colors"
+          style={{ color: "#ffffff" }}
         >
           <ExternalLink size={14} />
           View store
         </Link>
         <button
           onClick={signOut}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-white hover:text-red-400 font-inter text-sm transition-colors"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:text-red-400 font-inter text-sm transition-colors"
+          style={{ color: "#ffffff" }}
         >
           <LogOut size={14} />
           Sign out
