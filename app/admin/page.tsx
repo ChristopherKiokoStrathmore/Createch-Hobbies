@@ -162,11 +162,11 @@ function Dashboard() {
 
       {/* Failed alert */}
       {!loading && failed.length > 0 && (
-        <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-6">
-          <AlertCircle size={15} className="text-red-400 shrink-0" />
-          <p className="text-red-400 font-inter text-sm">
+        <div className="flex items-center gap-3 rounded-xl px-4 py-3 mb-6" style={{ background: "#1a0505", border: "1px solid rgba(239,68,68,0.5)" }}>
+          <AlertCircle size={15} style={{ color: "#f87171", flexShrink: 0 }} />
+          <p className="font-inter text-sm font-semibold" style={{ color: "#f87171" }}>
             {failed.length} failed / cancelled {failed.length === 1 ? "order" : "orders"}.{" "}
-            <Link href="/admin/orders" className="underline hover:text-red-300 transition-colors">
+            <Link href="/admin/orders" className="underline" style={{ color: "#fca5a5" }}>
               Review →
             </Link>
           </p>
