@@ -14,7 +14,12 @@ export default function PublicShell({ children }: { children: React.ReactNode })
   const pathname = usePathname();
 
   if (pathname?.startsWith("/admin")) {
-    return <>{children}</>;
+    return (
+      <>
+        <VideoBackground />
+        {children}
+      </>
+    );
   }
 
   return (
