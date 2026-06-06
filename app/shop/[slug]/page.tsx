@@ -1,50 +1,80 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
-import { products } from "@/data/products";
+import { products as staticProducts } from "@/data/products";
+import { getProduct, getProducts, wooConfigured } from "@/lib/woo";
+import type { Product } from "@/data/products";
 import { formatPrice } from "@/lib/utils";
 import ProductCard from "@/components/products/ProductCard";
 import ProductImageGallery from "@/components/products/ProductImageGallery";
 import OrderButton from "@/components/products/OrderButton";
+
+export const revalidate = 3600;
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
 const difficultyStyles = {
-  Beginner: "bg-green-100 text-green-800 border-green-300",
+  Beginner:     "bg-green-100 text-green-800 border-green-300",
   Intermediate: "bg-amber-100 text-amber-800 border-amber-300",
-  Advanced: "bg-brand-purple/15 text-brand-purple border-brand-purple/30",
+  Advanced:     "bg-brand-purple/15 text-brand-purple border-brand-purple/30",
 };
 
 const categoryEmoji: Record<string, string> = {
-  Vehicles: "🚗",
-  Machines: "⚙️",
-  Science: "🔬",
-  Space: "🚀",
-  Robots: "🤖",
+  Vehicles:     "🚗",
+  Machines:     "⚙️",
+  Science:      "🔬",
+  Space:        "🚀",
+  Robots:       "🤖",
   Architecture: "🏗️",
 };
 
-
 export async function generateStaticParams() {
-  return products.map((p) => ({ slug: p.slug }));
+  if (wooConfigured) {
+    try {
+      const products = await getProducts();
+      return products.map((p) => ({ slug: p.slug }));
+    } catch {
+      // fall through to static fallback
+    }
+  }
+  return staticProducts.map((p) => ({ slug: p.slug }));
 }
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const product = products.find((p) => p.slug === slug);
+
+  let product: Product | null = null;
+
+  if (wooConfigured) {
+    product = await getProduct(slug).catch(() => null);
+  }
+  if (!product) {
+    product = staticProducts.find((p) => p.slug === slug) ?? null;
+  }
 
   if (!product) notFound();
 
-  const related = products
-    .filter((p) => p.category === product.category && p.id !== product.id)
-    .slice(0, 3);
+  // Related products from the same source
+  let related: Product[] = [];
+  if (wooConfigured) {
+    try {
+      const all = await getProducts();
+      related = all.filter((p) => p.category === product!.category && p.id !== product!.id).slice(0, 3);
+    } catch {
+      related = staticProducts
+        .filter((p) => p.category === product!.category && p.id !== product!.id)
+        .slice(0, 3);
+    }
+  } else {
+    related = staticProducts
+      .filter((p) => p.category === product!.category && p.id !== product!.id)
+      .slice(0, 3);
+  }
 
   return (
-    <div
-      className="min-h-screen pt-20 pb-16 px-4 sm:px-6 bg-brand-dark"
-    >
+    <div className="min-h-screen pt-20 pb-16 px-4 sm:px-6 bg-brand-dark">
       <div className="max-w-7xl mx-auto">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-white/30 text-sm mb-6 font-inter">
@@ -56,7 +86,6 @@ export default async function ProductPage({ params }: Props) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
-          {/* Image gallery — thumbnails are clickable to swap main image */}
           <ProductImageGallery
             images={product.images}
             productName={product.name}
@@ -87,22 +116,24 @@ export default async function ProductPage({ params }: Props) {
             </p>
 
             {/* What you'll learn */}
-            <div className="mb-5">
-              <h3 className="font-inter font-semibold text-white/40 text-xs uppercase tracking-widest mb-3">
-                What Your Child Will Learn
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {product.whatYouLearn.map((skill) => (
-                  <span
-                    key={skill}
-                    className="flex items-center gap-1.5 bg-white/70 border border-brand-dark/15 text-brand-dark text-xs font-medium px-3 py-1.5 rounded-full font-inter"
-                  >
-                    <CheckCircle2 size={11} />
-                    {skill}
-                  </span>
-                ))}
+            {product.whatYouLearn.length > 0 && (
+              <div className="mb-5">
+                <h3 className="font-inter font-semibold text-white/40 text-xs uppercase tracking-widest mb-3">
+                  What Your Child Will Learn
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {product.whatYouLearn.map((skill) => (
+                    <span
+                      key={skill}
+                      className="flex items-center gap-1.5 bg-white/70 border border-brand-dark/15 text-brand-dark text-xs font-medium px-3 py-1.5 rounded-full font-inter"
+                    >
+                      <CheckCircle2 size={11} />
+                      {skill}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Box contents */}
             <div className="section-card rounded-2xl p-4 border border-white/5 mb-5">

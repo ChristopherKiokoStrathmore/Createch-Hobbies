@@ -8,16 +8,20 @@ export interface OrderItemPayload {
   unit_price:   number;
 }
 
+export type PaymentMethod = 'mpesa' | 'airtel' | 'card';
+
 export interface CreateOrderPayload {
   customer_name:    string;
   customer_phone:   string;
   delivery_address: string;
+  payment_method:   PaymentMethod;
   items:            OrderItemPayload[];
 }
 
 export interface CreateOrderResponse {
   order_id:            string;
   checkout_request_id: string;
+  checkout_url?:       string;
   message:             string;
 }
 

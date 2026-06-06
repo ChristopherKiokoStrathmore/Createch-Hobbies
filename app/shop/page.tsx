@@ -3,7 +3,7 @@
 import { Suspense, useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
-import { products, categories, type Category, type Difficulty, type Product } from "@/data/products";
+import { categories, type Category, type Difficulty, type Product } from "@/data/products";
 import ProductCard from "@/components/products/ProductCard";
 
 const difficulties: Difficulty[] = ["Beginner", "Intermediate", "Advanced"];
@@ -29,11 +29,20 @@ function matchesAgeGroup(product: Product, group: AgeGroup): boolean {
 function ShopContent() {
   const searchParams = useSearchParams();
 
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<Category | "All">("All");
   const [activeDifficulty, setActiveDifficulty] = useState<Difficulty | "All">("All");
   const [activeAge, setActiveAge] = useState<AgeGroup | "All">("All");
   const [sort, setSort] = useState<"default" | "price-asc" | "price-desc">("default");
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then((r) => r.json())
+      .then((data: Product[]) => { setAllProducts(data); setLoadingProducts(false); })
+      .catch(() => setLoadingProducts(false));
+  }, []);
 
   /* Sync category filter from URL query param (?category=Science) */
   useEffect(() => {
@@ -46,7 +55,7 @@ function ShopContent() {
   }, [searchParams]);
 
   const filtered = useMemo(() => {
-    let list = products;
+    let list = allProducts;
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -62,7 +71,7 @@ function ShopContent() {
     if (sort === "price-asc") list = [...list].sort((a, b) => a.price - b.price);
     if (sort === "price-desc") list = [...list].sort((a, b) => b.price - a.price);
     return list;
-  }, [search, activeCategory, activeDifficulty, activeAge, sort]);
+  }, [allProducts, search, activeCategory, activeDifficulty, activeAge, sort]);
 
   const clearAll = () => {
     setSearch("");
@@ -83,7 +92,7 @@ function ShopContent() {
             All DIY Kits
           </h1>
           <p className="text-white/40 mt-3 font-inter text-sm">
-            {filtered.length} kit{filtered.length !== 1 ? "s" : ""} found
+            {loadingProducts ? "Loading…" : `${filtered.length} kit${filtered.length !== 1 ? "s" : ""} found`}
           </p>
         </div>
 
@@ -171,7 +180,13 @@ function ShopContent() {
         </div>
 
         {/* Grid */}
-        {filtered.length === 0 ? (
+        {loadingProducts ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="rounded-2xl bg-white/5 aspect-[4/5] animate-pulse" />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-24 text-white/30">
             <Search className="w-14 h-14 text-white/20 mx-auto mb-4" strokeWidth={1.5} />
             <p className="text-lg font-playfair font-bold text-white/50">No kits match your filters.</p>
