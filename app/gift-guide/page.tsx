@@ -1,11 +1,12 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Sprout, Zap, Rocket,
   Tag, Car, Cog, FlaskConical, Bot, Building2, Gift,
 } from "lucide-react";
-import { products } from "@/data/products";
+import type { Product } from "@/data/products";
 import { formatPrice } from "@/lib/utils";
 import { whatsappGeneralLink } from "@/lib/whatsapp";
 
@@ -34,31 +35,18 @@ const ageGroups = [
 ];
 
 const budgetGroups = [
-  {
-    label: "Under KES 1,000",
-    icon: <Tag className={GRP_ICON} strokeWidth={SW} />,
-    maxPrice: 999,
-  },
-  {
-    label: "KES 1,000 – 1,500",
-    icon: <Tag className={GRP_ICON} strokeWidth={SW} />,
-    minPrice: 1000,
-    maxPrice: 1500,
-  },
-  {
-    label: "KES 1,500+",
-    icon: <Tag className={GRP_ICON} strokeWidth={SW} />,
-    minPrice: 1501,
-  },
+  { label: "Under KES 1,000",    icon: <Tag className={GRP_ICON} strokeWidth={SW} />, maxPrice: 999 },
+  { label: "KES 1,000 – 1,500",  icon: <Tag className={GRP_ICON} strokeWidth={SW} />, minPrice: 1000, maxPrice: 1500 },
+  { label: "KES 1,500+",         icon: <Tag className={GRP_ICON} strokeWidth={SW} />, minPrice: 1501 },
 ];
 
 const interestGroups = [
-  { label: "Vehicles",     icon: <Car       className={GRP_ICON} strokeWidth={SW} />, category: "Vehicles" },
-  { label: "Machines",     icon: <Cog       className={GRP_ICON} strokeWidth={SW} />, category: "Machines" },
+  { label: "Vehicles",     icon: <Car          className={GRP_ICON} strokeWidth={SW} />, category: "Vehicles" },
+  { label: "Machines",     icon: <Cog          className={GRP_ICON} strokeWidth={SW} />, category: "Machines" },
   { label: "Science",      icon: <FlaskConical className={GRP_ICON} strokeWidth={SW} />, category: "Science" },
-  { label: "Space",        icon: <Rocket    className={GRP_ICON} strokeWidth={SW} />, category: "Space" },
-  { label: "Robots",       icon: <Bot       className={GRP_ICON} strokeWidth={SW} />, category: "Robots" },
-  { label: "Architecture", icon: <Building2 className={GRP_ICON} strokeWidth={SW} />, category: "Architecture" },
+  { label: "Space",        icon: <Rocket       className={GRP_ICON} strokeWidth={SW} />, category: "Space" },
+  { label: "Robots",       icon: <Bot          className={GRP_ICON} strokeWidth={SW} />, category: "Robots" },
+  { label: "Architecture", icon: <Building2    className={GRP_ICON} strokeWidth={SW} />, category: "Architecture" },
 ];
 
 const cardStyle = {
@@ -66,23 +54,18 @@ const cardStyle = {
   border: "1px solid rgba(10,10,15,0.08)",
 };
 
-function ProductPill({ slug }: { slug: string }) {
+function ProductPill({ slug, products }: { slug: string; products: Product[] }) {
   const product = products.find((p) => p.slug === slug);
   if (!product) return null;
   return (
     <Link
       href={`/shop/${product.slug}`}
       className="flex items-center justify-between gap-4 rounded-xl px-4 py-3 transition-all group"
-      style={{
-        background: "rgba(245,190,77,0.18)",
-        border: "1px solid rgba(10,10,15,0.07)",
-      }}
+      style={{ background: "rgba(245,190,77,0.18)", border: "1px solid rgba(10,10,15,0.07)" }}
       onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(245,190,77,0.38)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(245,190,77,0.18)"; }}
     >
-      <span className="font-inter text-sm text-brand-dark/80 font-medium">
-        {product.name}
-      </span>
+      <span className="font-inter text-sm text-brand-dark/80 font-medium">{product.name}</span>
       <span className="text-brand-purple font-semibold text-sm font-inter shrink-0">
         {formatPrice(product.price)}
       </span>
@@ -91,6 +74,15 @@ function ProductPill({ slug }: { slug: string }) {
 }
 
 export default function GiftGuidePage() {
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then((r) => r.json())
+      .then((data: Product[]) => setProducts(data))
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6 bg-brand-dark">
       <div className="max-w-4xl mx-auto">
@@ -117,11 +109,7 @@ export default function GiftGuidePage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {ageGroups.map((group) => (
-              <div
-                key={group.label}
-                className="rounded-2xl p-6 transition-colors"
-                style={cardStyle}
-              >
+              <div key={group.label} className="rounded-2xl p-6 transition-colors" style={cardStyle}>
                 {group.icon}
                 <h3 className="font-playfair font-bold text-brand-dark text-lg mb-1">{group.label}</h3>
                 <p className="text-brand-dark/45 text-xs font-inter mb-5 leading-relaxed">
@@ -129,7 +117,7 @@ export default function GiftGuidePage() {
                 </p>
                 <div className="space-y-2">
                   {group.slugs.map((slug) => (
-                    <ProductPill key={slug} slug={slug} />
+                    <ProductPill key={slug} slug={slug} products={products} />
                   ))}
                 </div>
                 <Link
@@ -154,16 +142,12 @@ export default function GiftGuidePage() {
               const kits = products.filter((p) => p.category === group.category);
               if (kits.length === 0) return null;
               return (
-                <div
-                  key={group.label}
-                  className="rounded-2xl p-6 transition-colors"
-                  style={cardStyle}
-                >
+                <div key={group.label} className="rounded-2xl p-6 transition-colors" style={cardStyle}>
                   {group.icon}
                   <h3 className="font-playfair font-bold text-brand-dark text-lg mb-4">{group.label}</h3>
                   <div className="space-y-2">
                     {kits.slice(0, 4).map((p) => (
-                      <ProductPill key={p.slug} slug={p.slug} />
+                      <ProductPill key={p.slug} slug={p.slug} products={products} />
                     ))}
                     {kits.length > 4 && (
                       <p className="text-brand-dark/35 text-xs font-inter pt-1 text-center">
@@ -197,16 +181,12 @@ export default function GiftGuidePage() {
                 return true;
               });
               return (
-                <div
-                  key={group.label}
-                  className="rounded-2xl p-6"
-                  style={cardStyle}
-                >
+                <div key={group.label} className="rounded-2xl p-6" style={cardStyle}>
                   {group.icon}
                   <h3 className="font-playfair font-bold text-brand-dark text-lg mb-4">{group.label}</h3>
                   <div className="space-y-2">
                     {kits.slice(0, 4).map((p) => (
-                      <ProductPill key={p.slug} slug={p.slug} />
+                      <ProductPill key={p.slug} slug={p.slug} products={products} />
                     ))}
                     {kits.length > 4 && (
                       <p className="text-brand-dark/35 text-xs font-inter pt-1 text-center">
@@ -249,7 +229,7 @@ export default function GiftGuidePage() {
 
         <div className="text-center">
           <Link href="/shop" className="text-brand-yellow text-sm font-inter hover:underline">
-            Browse all 17 kits →
+            Browse all kits →
           </Link>
         </div>
       </div>

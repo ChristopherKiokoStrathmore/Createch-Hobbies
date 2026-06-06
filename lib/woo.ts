@@ -94,6 +94,59 @@ export function mapWooProduct(p: WooProduct): Product {
   };
 }
 
+// ─── Raw mapping (nullable editorial fields — used by the smart merge) ────────
+//
+// The regular mapWooProduct fills defaults ("Science", "Beginner", "6–12") when
+// attributes are missing. That makes it impossible for the merge to tell whether
+// WooCommerce actually provided a value. This variant returns null for any
+// editorial field the client has not yet filled in, so the merge can fall back
+// to data/products.ts only for those fields.
+
+export interface WooProductRaw extends Omit<Product, 'category' | 'ageRange' | 'difficulty'> {
+  category:   Category   | null;
+  ageRange:   string     | null;
+  difficulty: Difficulty | null;
+}
+
+export function mapWooProductRaw(p: WooProduct): WooProductRaw {
+  let category: Category | null = null;
+  for (const c of p.categories) {
+    const byName = CATEGORY_MAP[c.name.toLowerCase()];
+    if (byName) { category = byName; break; }
+    const bySlug = CATEGORY_MAP[c.slug];
+    if (bySlug) { category = bySlug; break; }
+  }
+
+  const ageRaw  = getAttr(p.attributes, "Age Range")[0];
+  const diffRaw = getAttr(p.attributes, "Difficulty").find(
+    (v) => DIFFICULTIES.includes(v as Difficulty),
+  );
+
+  return {
+    id:           String(p.id),
+    name:         p.name,
+    slug:         p.slug,
+    category,
+    ageRange:     ageRaw  ?? null,
+    difficulty:   (diffRaw as Difficulty) ?? null,
+    price:        parseFloat(p.price) || 0,
+    description:  stripHtml(p.short_description || p.description),
+    whatYouLearn: mapWhatYouLearn(p.attributes),
+    images:       p.images.length ? p.images.map((img) => img.src) : ["/images/placeholder.png"],
+    inStock:      p.stock_status === "instock",
+    featured:     p.featured,
+  };
+}
+
+export async function getRawWooProducts(params?: Record<string, string>): Promise<WooProductRaw[]> {
+  const raw = await wooFetch<WooProduct[]>("/products", {
+    per_page: "100",
+    status:   "publish",
+    ...params,
+  });
+  return raw.map(mapWooProductRaw);
+}
+
 // ─── Fetch ─────────────────────────────────────────────────────────────────
 
 async function wooFetch<T>(path: string, params?: Record<string, string>): Promise<T> {

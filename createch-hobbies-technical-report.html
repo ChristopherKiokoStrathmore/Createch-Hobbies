@@ -1,0 +1,1238 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Createch Hobbies: Technical Report</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    color: #1a1a2e;
+    background: #fff;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .page { page-break-after: always; padding: 48px 56px; min-height: 100vh; }
+  .page:last-child { page-break-after: auto; }
+
+  @media print {
+    /* Force all backgrounds, gradients, and colors to print */
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
+
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    html, body { margin: 0; padding: 0; }
+    body { font-size: 12px; }
+
+    .no-print { display: none !important; }
+
+    /* Each .page div becomes one printed page */
+    .page {
+      padding: 32px 44px;
+      min-height: 100vh;
+      page-break-after: always;
+      break-after: page;
+    }
+    .page:last-child {
+      page-break-after: auto;
+      break-after: auto;
+    }
+
+    /* Keep cards, callouts, and flow diagrams intact, no mid-element splits */
+    .card, .card-yellow, .card-green, .card-red, .card-purple, .card-dark,
+    .note, .warning, .plain, .highlight,
+    .flow, .infra, .dns-record,
+    .qa-item, .toc-item,
+    table, tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* Prevent orphaned headings */
+    h2, h3 { page-break-after: avoid; break-after: avoid; }
+  }
+
+  /* ── Cover ── */
+  .cover {
+    background: linear-gradient(135deg, #0a0a0f 0%, #1a0f2e 60%, #0a0a0f 100%);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .cover-badge {
+    background: rgba(245,190,77,0.15);
+    border: 1px solid rgba(245,190,77,0.4);
+    color: #f5be4d;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border-radius: 100px;
+    margin-bottom: 28px;
+  }
+  .cover h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 48px;
+    line-height: 1.15;
+    margin-bottom: 12px;
+    max-width: 560px;
+  }
+  .cover h1 span { color: #f5be4d; }
+  .cover-sub {
+    color: rgba(255,255,255,0.5);
+    font-size: 15px;
+    margin-bottom: 48px;
+    max-width: 500px;
+  }
+  .cover-meta {
+    display: flex;
+    gap: 40px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 32px;
+    width: 100%;
+  }
+  .cover-meta-item label {
+    display: block;
+    color: rgba(255,255,255,0.3);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .cover-meta-item span { color: #fff; font-weight: 600; font-size: 13px; }
+
+  /* ── TOC ── */
+  .toc-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0eef8;
+  }
+  .toc-item:last-child { border-bottom: none; }
+  .toc-num {
+    background: #7543a8;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+  .toc-title { font-weight: 600; color: #1a1a2e; font-size: 13px; flex: 1; }
+  .toc-desc  { color: #888; font-size: 11px; }
+
+  /* ── Section titles ── */
+  .section-label {
+    color: #7543a8;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    margin-bottom: 6px;
+  }
+  h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    color: #0a0a0f;
+    margin-bottom: 20px;
+    line-height: 1.2;
+  }
+  h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0a0a0f;
+    margin-bottom: 8px;
+    margin-top: 20px;
+  }
+  p { color: #444; margin-bottom: 12px; }
+
+  /* ── Cards ── */
+  .card {
+    background: #f8f7fc;
+    border: 1px solid #e8e4f0;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .card-yellow { background: #fffbf0; border-color: #f5be4d; }
+  .card-green  { background: #f0fff4; border-color: #68d391; }
+  .card-red    { background: #fff5f5; border-color: #fc8181; }
+  .card-purple { background: #f3eeff; border-color: #7543a8; }
+  .card-dark   { background: #1a1a2e; border-color: #1a1a2e; color: #fff; }
+  .card-dark h3 { color: #f5be4d; margin-top: 0; }
+  .card-dark p, .card-dark li { color: rgba(255,255,255,0.75); }
+
+  /* ── Callout boxes ── */
+  .note {
+    background: #ebf8ff;
+    border-left: 3px solid #4299e1;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 12px 0;
+    color: #2c5282;
+    font-size: 12px;
+  }
+  .note strong { color: #1a365d; }
+
+  .warning {
+    background: #fffaf0;
+    border-left: 3px solid #ed8936;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 12px 0;
+    color: #744210;
+    font-size: 12px;
+  }
+  .warning strong { color: #652b19; }
+
+  .plain {
+    background: #f0fff4;
+    border-left: 3px solid #48bb78;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 12px 0;
+    color: #22543d;
+    font-size: 12px;
+  }
+  .plain strong { color: #1c4532; }
+
+  /* ── Flowcharts ── */
+  .flow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0;
+    margin: 16px 0;
+  }
+  .flow-box {
+    background: #fff;
+    border: 2px solid #e2d9f3;
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1a1a2e;
+    text-align: center;
+    min-width: 110px;
+  }
+  .flow-box.yellow { background: #fffbf0; border-color: #f5be4d; color: #7a5a00; }
+  .flow-box.purple { background: #f3eeff; border-color: #7543a8; color: #4a2570; }
+  .flow-box.green  { background: #f0fff4; border-color: #38a169; color: #276749; }
+  .flow-box.dark   { background: #1a1a2e; border-color: #1a1a2e; color: #fff; }
+  .flow-box small  { display: block; font-weight: 400; color: inherit; opacity: 0.7; font-size: 10px; margin-top: 2px; }
+  .flow-arrow { font-size: 18px; color: #b794f4; padding: 0 8px; font-weight: 700; }
+
+  /* ── Infrastructure ── */
+  .infra {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin: 24px 0;
+  }
+  .infra-node { border-radius: 12px; padding: 20px; text-align: center; }
+  .infra-node .icon { font-size: 28px; margin-bottom: 10px; }
+  .infra-node h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .infra-node p  { font-size: 11px; margin: 0; }
+
+  /* ── Table ── */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 12px; }
+  th {
+    background: #1a1a2e;
+    color: #fff;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  td { padding: 10px 14px; border-bottom: 1px solid #eee; color: #333; }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: #faf9ff; }
+
+  /* ── URL pill ── */
+  .url {
+    display: inline-block;
+    background: #1a1a2e;
+    color: #f5be4d;
+    font-family: monospace;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    margin: 2px 0;
+  }
+
+  /* ── Checklist ── */
+  .checklist { list-style: none; margin: 12px 0; }
+  .checklist li {
+    padding: 6px 0 6px 28px;
+    position: relative;
+    color: #333;
+    border-bottom: 1px solid #f0eef8;
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist li::before { content: '✓'; position: absolute; left: 0; color: #38a169; font-weight: 700; }
+
+  /* ── Step list ── */
+  .steps { counter-reset: steps; list-style: none; margin: 16px 0; }
+  .steps li {
+    counter-increment: steps;
+    padding: 12px 16px 12px 52px;
+    position: relative;
+    background: #f8f7fc;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    color: #333;
+  }
+  .steps li::before {
+    content: counter(steps);
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 26px;
+    height: 26px;
+    background: #7543a8;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .steps li strong { color: #1a1a2e; }
+
+  /* ── DNS records ── */
+  .dns-record {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-family: monospace;
+  }
+  .dns-record.active { background: #f0fff4; border: 1px solid #68d391; }
+  .dns-record.info   { background: #ebf4ff; border: 1px solid #90cdf4; }
+  .dns-record .type-badge {
+    background: #1a1a2e; color: #f5be4d;
+    padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; font-weight: 700;
+    min-width: 48px; text-align: center;
+  }
+  .dns-record .name  { color: #1a1a2e; font-weight: 600; min-width: 200px; }
+  .dns-record .value { color: #553c9a; }
+
+  /* ── Misc ── */
+  hr { border: none; border-top: 1px solid #e8e4f0; margin: 24px 0; }
+  .two-col   { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .highlight { background: #fffbf0; border-left: 3px solid #f5be4d; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 12px 0; }
+
+  /* ── Q&A ── */
+  .qa { margin: 12px 0; }
+  .qa-item { margin-bottom: 14px; padding: 14px 18px; background: #f8f7fc; border-radius: 10px; }
+  .qa-item .q { font-weight: 700; color: #1a1a2e; margin-bottom: 4px; font-size: 12px; }
+  .qa-item .a { color: #444; font-size: 12px; margin: 0; }
+
+  /* ── Timeline ── */
+  .timeline { list-style: none; margin: 16px 0; position: relative; padding-left: 28px; }
+  .timeline::before { content: ''; position: absolute; left: 8px; top: 6px; bottom: 6px; width: 2px; background: #e2d9f3; }
+  .timeline li { position: relative; margin-bottom: 16px; }
+  .timeline li::before {
+    content: ''; position: absolute; left: -24px; top: 5px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #7543a8; border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #7543a8;
+  }
+  .timeline li strong { color: #1a1a2e; display: block; font-size: 13px; }
+  .timeline li span { color: #666; font-size: 12px; }
+
+  /* ── Print button ── */
+  .print-btn {
+    position: fixed; bottom: 32px; right: 32px;
+    background: #f5be4d; color: #0a0a0f;
+    border: none; padding: 14px 28px; border-radius: 100px;
+    font-family: 'Inter', sans-serif; font-weight: 700; font-size: 14px;
+    cursor: pointer; box-shadow: 0 4px 20px rgba(245,190,77,0.4); z-index: 1000;
+  }
+  .print-btn:hover { background: #e5aa30; }
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">Save as PDF</button>
+
+<!-- ══════════════════════════════════════════════════════ COVER ══ -->
+<div class="page cover">
+  <div class="cover-badge">Technical Documentation</div>
+  <h1>Createch Hobbies<br /><span>Platform Report</span></h1>
+  <p class="cover-sub">
+    A full build record of the Createch Hobbies e-commerce platform, from initial
+    requirements through technology selection, frontend and backend development,
+    payment integration, and domain migration.
+  </p>
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <label>Live Website</label>
+      <span>createch-hobbies.co.ke</span>
+    </div>
+    <div class="cover-meta-item">
+      <label>Date Completed</label>
+      <span>June 2026</span>
+    </div>
+    <div class="cover-meta-item">
+      <label>Developer</label>
+      <span>Christopher Kioko</span>
+    </div>
+    <div class="cover-meta-item">
+      <label>Status</label>
+      <span>Live in Production</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ TABLE OF CONTENTS ══ -->
+<div class="page">
+  <div class="section-label">Contents</div>
+  <h2>Table of Contents</h2>
+
+  <div class="toc-item">
+    <span class="toc-num">01</span>
+    <span class="toc-title">Project Brief</span>
+    <span class="toc-desc">Client requirements, goals, and constraints</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">02</span>
+    <span class="toc-title">Technology Decisions</span>
+    <span class="toc-desc">Why each tool and platform was chosen</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">03</span>
+    <span class="toc-title">Building the Frontend</span>
+    <span class="toc-desc">Next.js app structure, pages, components, and design</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">04</span>
+    <span class="toc-title">Building the Backend</span>
+    <span class="toc-desc">Django API, order model, database, and admin API</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">05</span>
+    <span class="toc-title">System Architecture</span>
+    <span class="toc-desc">How the three services connect and communicate</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">06</span>
+    <span class="toc-title">WooCommerce Integration</span>
+    <span class="toc-desc">Headless CMS connection, smart merge, product attributes</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">07</span>
+    <span class="toc-title">Payment Integration</span>
+    <span class="toc-desc">IntaSend: M-Pesa, Airtel Money, and card payments</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">08</span>
+    <span class="toc-title">Domain Migration</span>
+    <span class="toc-desc">DNS split: store on Vercel, WordPress on subdomain</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">09</span>
+    <span class="toc-title">Client Management Guide</span>
+    <span class="toc-desc">Day-to-day operations, adding products, viewing orders</span>
+  </div>
+
+  <hr />
+
+  <div class="section-label">Quick Access</div>
+  <table>
+    <thead><tr><th>What</th><th>URL</th><th>Credentials</th></tr></thead>
+    <tbody>
+      <tr><td>Live store</td><td><span class="url">https://createch-hobbies.co.ke</span></td><td>Public</td></tr>
+      <tr><td>Admin dashboard</td><td><span class="url">https://createch-hobbies.co.ke/admin</span></td><td>PIN: createtech2026</td></tr>
+      <tr><td>WordPress / WooCommerce</td><td><span class="url">https://wp.createch-hobbies.co.ke/wp/wp-admin</span></td><td>WP login</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════════ PROJECT BRIEF ══ -->
+<div class="page">
+  <div class="section-label">Section 01</div>
+  <h2>Project Brief</h2>
+  <p>
+    Createch Hobbies is a Kenya-based business that sells DIY educational kits for children.
+    The client needed a complete e-commerce platform that could sell products online, accept
+    mobile money payments, and be managed independently after handover.
+  </p>
+
+  <h3>Client Requirements</h3>
+  <div class="two-col">
+    <div class="card card-yellow">
+      <h3 style="margin-top:0;">Business Requirements</h3>
+      <ul class="checklist">
+        <li>Sell DIY kits online to Kenyan families</li>
+        <li>Accept M-Pesa as the primary payment method</li>
+        <li>Display products with age ranges and difficulty levels</li>
+        <li>Show a gift guide to help parents choose kits</li>
+        <li>Allow customers to contact via WhatsApp</li>
+        <li>View and manage orders from a dashboard</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0;">Operational Requirements</h3>
+      <ul class="checklist">
+        <li>Client must be able to add and update products independently</li>
+        <li>Price changes must go live without developer help</li>
+        <li>No need to understand code to manage the store</li>
+        <li>Orders must be trackable and exportable</li>
+        <li>Website must be fast and mobile-friendly</li>
+        <li>Secure: customer data and API keys protected</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Constraints and Context</h3>
+  <div class="card card-purple">
+    <ul class="checklist" style="margin:0;">
+      <li>Kenya market: M-Pesa is essential, card payments are secondary</li>
+      <li>Client is non-technical; the management interface must be simple and familiar</li>
+      <li>Existing WordPress/WooCommerce hosting on cPanel (Cloudoon) was already in place</li>
+      <li>Budget favoured using managed cloud services over self-hosted infrastructure</li>
+    </ul>
+  </div>
+
+  <hr />
+
+  <h3>What Was Delivered</h3>
+  <div class="two-col">
+    <div class="card card-green">
+      <h3 style="margin-top:0; color:#276749;">Customer-Facing Store</h3>
+      <ul class="checklist">
+        <li>Homepage with video background and featured kits</li>
+        <li>Full product catalogue with category and difficulty filters</li>
+        <li>Individual product pages with image gallery</li>
+        <li>Gift guide filtered by age, interest, and budget</li>
+        <li>Shopping cart with quantity management</li>
+        <li>M-Pesa, Airtel Money, and card checkout</li>
+        <li>Order confirmation page with order reference</li>
+        <li>WhatsApp integration on every page</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0;">Admin Dashboard</h3>
+      <ul class="checklist">
+        <li>PIN-protected login</li>
+        <li>Live order feed (paid / pending / failed)</li>
+        <li>Revenue and order KPI cards</li>
+        <li>Order table with search and status filter</li>
+        <li>Per-order detail view with payment receipt</li>
+        <li>Customer directory with order history</li>
+        <li>CSV export for bookkeeping</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ TECHNOLOGY DECISIONS ══ -->
+<div class="page">
+  <div class="section-label">Section 02</div>
+  <h2>Technology Decisions</h2>
+  <p>
+    Each part of the platform was built with a specific tool chosen for a specific reason.
+    Below is the full stack with the reasoning behind each decision.
+  </p>
+
+  <table>
+    <thead><tr><th>Layer</th><th>Technology</th><th>Why it was chosen</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Frontend</strong></td>
+        <td>Next.js 15 (React)</td>
+        <td>Server-side rendering for SEO, fast page loads via ISR caching, and the App Router for clean code organisation</td>
+      </tr>
+      <tr>
+        <td><strong>Frontend hosting</strong></td>
+        <td>Vercel</td>
+        <td>Designed for Next.js, global CDN, auto-deploys from GitHub on every code push, free tier for this scale</td>
+      </tr>
+      <tr>
+        <td><strong>Product management</strong></td>
+        <td>WordPress + WooCommerce</td>
+        <td>Client already had it on their hosting. Familiar interface, no retraining needed. REST API makes it usable as a headless CMS</td>
+      </tr>
+      <tr>
+        <td><strong>CMS hosting</strong></td>
+        <td>cPanel (Cloudoon)</td>
+        <td>Existing infrastructure. No migration cost. WordPress runs well on standard shared hosting</td>
+      </tr>
+      <tr>
+        <td><strong>Backend / payments API</strong></td>
+        <td>Django (Python)</td>
+        <td>Clean REST framework, excellent for financial data handling, straightforward deployment. Python ecosystem is well-suited to payment integrations</td>
+      </tr>
+      <tr>
+        <td><strong>Backend hosting</strong></td>
+        <td>Railway</td>
+        <td>Managed PostgreSQL included, auto-deploys from GitHub, simple environment variable management, predictable pricing</td>
+      </tr>
+      <tr>
+        <td><strong>Payment gateway</strong></td>
+        <td>IntaSend</td>
+        <td>Kenya-focused, handles M-Pesa + Airtel Money + Visa/Mastercard under a single API. Competitive rates, local support, PCI-compliant hosted card page</td>
+      </tr>
+      <tr>
+        <td><strong>Database</strong></td>
+        <td>PostgreSQL (on Railway)</td>
+        <td>Reliable, ACID-compliant. Important for financial records. Managed by Railway with automatic backups</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="plain">
+    <strong>The core principle behind these choices:</strong> Use managed services for everything. No servers to maintain, no databases to back up manually, no SSL certificates to renew. Every service auto-deploys from GitHub. The client's store can run indefinitely without any infrastructure work from a developer.
+  </div>
+
+  <hr />
+
+  <h3>Hosting Cost Summary</h3>
+  <table>
+    <thead><tr><th>Service</th><th>Provider</th><th>Cost</th></tr></thead>
+    <tbody>
+      <tr><td>Next.js store (Vercel)</td><td>Vercel</td><td>Free (Hobby plan, suitable for this traffic level)</td></tr>
+      <tr><td>WordPress + WooCommerce</td><td>Cloudoon cPanel</td><td>Existing hosting, no added cost</td></tr>
+      <tr><td>Django backend + PostgreSQL</td><td>Railway</td><td>Pay-as-you-go, typically $5–10/month at this scale</td></tr>
+      <tr><td>Payment processing</td><td>IntaSend</td><td>Per-transaction fee (M-Pesa ~1%, Cards ~2.9%)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════ BUILDING THE FRONTEND ══ -->
+<div class="page">
+  <div class="section-label">Section 03</div>
+  <h2>Building the Frontend</h2>
+  <p>
+    The frontend is a <strong>Next.js 15</strong> application using the App Router. It is deployed
+    on Vercel and serves the customer-facing store at <span class="url">createch-hobbies.co.ke</span>
+    as well as the admin dashboard.
+  </p>
+
+  <h3>Application Structure</h3>
+  <div class="two-col">
+    <div class="card">
+      <h3 style="margin-top:0;">Customer Pages</h3>
+      <ul class="checklist">
+        <li><code>/</code>: Homepage (hero, featured kits, categories)</li>
+        <li><code>/shop</code>: Full product catalogue with filters</li>
+        <li><code>/shop/[slug]</code>: Individual product page</li>
+        <li><code>/gift-guide</code>: Filtered gift recommendations</li>
+        <li><code>/cart</code>: Shopping cart</li>
+        <li><code>/checkout</code>: Payment selection and order form</li>
+        <li><code>/order-confirmation</code>: Post-payment confirmation</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0;">Admin Pages + API Routes</h3>
+      <ul class="checklist">
+        <li><code>/admin</code>: PIN-protected dashboard</li>
+        <li><code>/admin/orders</code>: Orders table with search</li>
+        <li><code>/admin/customers</code>: Customer directory</li>
+        <li><code>/api/products</code>: Products proxy (WooCommerce)</li>
+        <li><code>/api/products/[slug]</code>: Single product proxy</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Key Technical Decisions in the Frontend</h3>
+
+  <div class="plain">
+    <strong>Why a custom store instead of WooCommerce's built-in storefront?</strong> WooCommerce has its own shopping pages, but they are generic and difficult to customise deeply without PHP knowledge. Building the storefront in Next.js gave complete design freedom. The yellow brand colour, the custom product cards, the gift guide, the animated category filters: none of this would have been practical in standard WooCommerce themes. WooCommerce is used only as a data source via its REST API.
+  </div>
+
+  <div class="note">
+    <strong>ISR (Incremental Static Regeneration):</strong> Product pages are pre-rendered at build time and cached on Vercel's global CDN. Every 60 seconds, Vercel silently regenerates the cache in the background. This means the store is as fast as a static website while still showing live prices and stock from WooCommerce. A customer in Mombasa and a customer in Nairobi both get served from the nearest Vercel edge node.
+  </div>
+
+  <h3>Design System</h3>
+  <div class="three-col">
+    <div class="card card-yellow" style="margin-bottom:0; text-align:center;">
+      <div style="font-size:28px; margin-bottom:8px;">■</div>
+      <strong style="color:#7a5a00;">Brand Yellow</strong>
+      <p style="margin:4px 0 0; font-size:11px; color:#7a5a00;">#f5be4d: primary colour, buttons, accents</p>
+    </div>
+    <div class="card" style="margin-bottom:0; text-align:center; background:#1a1a2e; border-color:#1a1a2e;">
+      <div style="font-size:28px; margin-bottom:8px; color:#fff;">■</div>
+      <strong style="color:#fff;">Deep Navy</strong>
+      <p style="margin:4px 0 0; font-size:11px; color:rgba(255,255,255,0.6);">#1a1a2e: headings, dark sections</p>
+    </div>
+    <div class="card" style="margin-bottom:0; text-align:center;">
+      <div style="font-size:28px; margin-bottom:8px; color:#7543a8;">■</div>
+      <strong>Brand Purple</strong>
+      <p style="margin:4px 0 0; font-size:11px; color:#666;">#7543a8: secondary accents, labels</p>
+    </div>
+  </div>
+
+  <p style="margin-top:16px;">The design is intentionally vibrant and playful for children while maintaining enough structure and professionalism to build trust with parents who are making the purchasing decision.</p>
+
+  <h3>Product Data Strategy</h3>
+  <p>
+    The store uses a <strong>smart merge</strong> between live WooCommerce data and built-in default data.
+    For every product field, it checks WooCommerce first. If the client has filled in the field, it uses
+    that value. If the field is blank in WooCommerce, the built-in default is used as a fallback. This
+    lets the client fill in product details gradually over time without anything breaking.
+  </p>
+
+  <table>
+    <thead><tr><th>Field</th><th>Source when filled in WooCommerce</th><th>Fallback if left blank</th></tr></thead>
+    <tbody>
+      <tr><td>Price</td><td>WooCommerce (always)</td><td>N/A (required)</td></tr>
+      <tr><td>Stock status</td><td>WooCommerce (always)</td><td>N/A (required)</td></tr>
+      <tr><td>Images</td><td>WooCommerce (always)</td><td>Placeholder image</td></tr>
+      <tr><td>Featured flag</td><td>WooCommerce (always)</td><td>Not featured</td></tr>
+      <tr><td>Category</td><td>WooCommerce category name</td><td>Built-in default data</td></tr>
+      <tr><td>Age range</td><td>WooCommerce "Age Range" attribute</td><td>Built-in default data</td></tr>
+      <tr><td>Difficulty</td><td>WooCommerce "Difficulty" attribute</td><td>Built-in default data</td></tr>
+      <tr><td>Description</td><td>WooCommerce Short Description</td><td>Built-in default data</td></tr>
+      <tr><td>What You Learn</td><td>WooCommerce "What You Learn" attribute</td><td>Built-in default data</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ════════════════════════════════════ BUILDING THE BACKEND ══ -->
+<div class="page">
+  <div class="section-label">Section 04</div>
+  <h2>Building the Backend</h2>
+  <p>
+    The backend is a <strong>Django 5</strong> application deployed on Railway. It handles all
+    payment processing, order storage, and provides the REST API consumed by the admin dashboard.
+    It does not serve the storefront. That is Vercel's job.
+  </p>
+
+  <h3>Application Structure</h3>
+  <div class="two-col">
+    <div class="card">
+      <h3 style="margin-top:0;">Django Apps</h3>
+      <ul class="checklist">
+        <li><code>orders/</code>: Order and OrderItem models, create and retrieve API</li>
+        <li><code>mpesa/</code>: Legacy Safaricom Daraja integration (kept as fallback)</li>
+        <li><code>intasend/</code>: IntaSend payment client and webhook receiver</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0;">API Endpoints</h3>
+      <ul class="checklist">
+        <li><code>POST /api/orders/</code>: Create order, trigger payment</li>
+        <li><code>GET /api/orders/</code>: List all orders (admin only)</li>
+        <li><code>GET /api/orders/&lt;id&gt;/</code>: Single order detail</li>
+        <li><code>POST /api/intasend/webhook/</code>: IntaSend payment callback</li>
+        <li><code>POST /api/mpesa/callback/</code>: Legacy M-Pesa callback</li>
+        <li><code>GET /api/mpesa/status/&lt;id&gt;/</code>: Payment status poll</li>
+        <li><code>GET /api/health/</code>: Service health check</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Order Lifecycle</h3>
+  <div class="flow">
+    <div class="flow-box dark">Order created<br/><small>pending</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box yellow">Payment sent<br/><small>STK push / redirect</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box green">Webhook received<br/><small>paid</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box purple">Admin updates<br/><small>processing / shipped</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box green">Complete<br/><small>delivered</small></div>
+  </div>
+
+  <div class="note">
+    <strong>Why Django and not Node.js?</strong> The backend handles financial transactions and order records. Correctness and reliability matter more than raw speed. Django's ORM gives strict data validation, its migrations system ensures the database schema is always in a known state, and Python's ecosystem has mature libraries for every payment provider available in Kenya.
+  </div>
+
+  <h3>Order Data Model</h3>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>id</td><td>UUID</td><td>Unique order identifier (unpredictable, not sequential)</td></tr>
+      <tr><td>customer_name</td><td>Text</td><td>Name entered at checkout</td></tr>
+      <tr><td>customer_phone</td><td>Text</td><td>Phone number used for STK push</td></tr>
+      <tr><td>delivery_address</td><td>Text</td><td>Delivery location</td></tr>
+      <tr><td>total_amount</td><td>Decimal</td><td>Order total in KES</td></tr>
+      <tr><td>payment_method</td><td>Choice</td><td>mpesa / airtel / card</td></tr>
+      <tr><td>status</td><td>Choice</td><td>pending / paid / failed / processing / shipped / delivered</td></tr>
+      <tr><td>intasend_invoice_id</td><td>Text</td><td>IntaSend reference for M-Pesa, Airtel, and card payments</td></tr>
+      <tr><td>card_checkout_url</td><td>URL</td><td>IntaSend hosted card page URL for card payments</td></tr>
+    </tbody>
+  </table>
+
+  <div class="highlight">
+    <strong>Security:</strong> The admin API requires an <code>X-Admin-Key</code> header on every request. This key is stored in Vercel's environment variables and is never exposed to the browser. Orders can only be listed or updated by a caller who holds this key.
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ ARCHITECTURE ══ -->
+<div class="page">
+  <div class="section-label">Section 05</div>
+  <h2>System Architecture</h2>
+  <p>The three services (Vercel, WooCommerce, and Railway) each handle a distinct responsibility and communicate through well-defined APIs.</p>
+
+  <div class="infra">
+    <div class="infra-node card card-yellow">
+      <div class="icon">▲</div>
+      <h4>Vercel</h4>
+      <p style="color:#7a5a00;">Next.js Frontend</p>
+      <hr style="margin:10px 0; border-color:#f5be4d;" />
+      <p style="font-size:11px;">createch-hobbies.co.ke<br/>Serves the store to customers.<br/>Auto-deploys from GitHub.</p>
+    </div>
+    <div class="infra-node card card-purple">
+      <div class="icon">🛒</div>
+      <h4>cPanel (Cloudoon)</h4>
+      <p style="color:#4a2570;">WordPress + WooCommerce</p>
+      <hr style="margin:10px 0; border-color:#7543a8;" />
+      <p style="font-size:11px;">wp.createch-hobbies.co.ke<br/>Client manages products,<br/>pricing and inventory here.</p>
+    </div>
+    <div class="infra-node card card-green">
+      <div class="icon">🚂</div>
+      <h4>Railway</h4>
+      <p style="color:#276749;">Django Backend</p>
+      <hr style="margin:10px 0; border-color:#68d391;" />
+      <p style="font-size:11px;">web-production-391a4.up.railway.app<br/>Processes all payments via IntaSend<br/>and stores every order.</p>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Why split across three services?</strong> Each provider is the best in the world at one specific thing. Vercel delivers the fastest possible website globally. WooCommerce is the most widely used and well-supported product management tool for small businesses. Railway runs backend application code reliably without needing a dedicated server to manage. Combining them produces a platform that is faster, cheaper, and more reliable than any single all-in-one solution.
+  </div>
+
+  <hr />
+
+  <div class="section-label">Full Data Flow</div>
+
+  <p style="font-weight:600; font-size:11px; color:#276749; margin: 16px 0 6px;">PRODUCT DATA: from WooCommerce to the store</p>
+  <div class="flow" style="margin-bottom:20px;">
+    <div class="flow-box purple">Client saves product<br/><small>WooCommerce admin</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box yellow">Vercel proxy<br/><small>/api/products</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box yellow">Smart merge<br/><small>WooCommerce + defaults</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box yellow">Cache refreshes<br/><small>every 60 seconds</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box dark">Live on store<br/><small>all visitors</small></div>
+  </div>
+
+  <p style="font-weight:600; font-size:11px; color:#7543a8; margin-bottom:6px;">CUSTOMER PURCHASE: checkout to confirmation</p>
+  <div class="flow" style="margin-bottom:20px;">
+    <div class="flow-box dark">Add to cart<br/><small>Vercel</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box yellow">Choose payment<br/><small>M-Pesa/Airtel/Card</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box green">POST /api/orders<br/><small>Railway (Django)</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box green">IntaSend<br/><small>payment triggered</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box green">Webhook confirms<br/><small>order marked paid</small></div>
+  </div>
+
+  <p style="font-weight:600; font-size:11px; color:#1a365d; margin-bottom:6px;">ADMIN: viewing orders</p>
+  <div class="flow">
+    <div class="flow-box dark">Admin logs in<br/><small>createch-hobbies.co.ke/admin</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box yellow">Vercel dashboard<br/><small>reads from Railway</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box green">GET /api/orders<br/><small>X-Admin-Key auth</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box green">Orders displayed<br/><small>live data</small></div>
+  </div>
+
+  <div class="highlight" style="margin-top:20px;">
+    <strong>Security model:</strong> WooCommerce API credentials live only on Vercel's servers, never in the browser. The Django admin key lives only in Vercel's environment variables. IntaSend API keys live only in Railway's environment variables. No sensitive credential is ever accessible to a browser or included in the client-side JavaScript bundle.
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════ WOOCOMMERCE SETUP ══ -->
+<div class="page">
+  <div class="section-label">Section 06</div>
+  <h2>WooCommerce Integration</h2>
+  <p>
+    WooCommerce is connected as a <strong>headless CMS</strong>. It acts purely as a product
+    database. Customers never see the WooCommerce interface. The Next.js store reads product
+    data from WooCommerce's REST API every 60 seconds and displays it in the custom design.
+    All product fields, including categories, descriptions, age ranges, and difficulty levels,
+    are managed directly from WooCommerce.
+  </p>
+
+  <div class="plain">
+    <strong>What "headless" means in practice:</strong> Standard WooCommerce ships with its own shopping pages that you customise. In this setup those pages are completely unused. WooCommerce is connected via its REST API, the same way a mobile app would connect to a backend. The client manages products in a familiar WordPress interface; the data flows automatically into the custom Next.js store within 60 seconds of saving.
+  </div>
+
+  <h3>What WooCommerce Controls</h3>
+  <div class="card card-green">
+    <h3 style="margin-top:0; color:#276749;">WooCommerce is the single source of truth for all product data:</h3>
+    <div class="two-col" style="margin-top:8px;">
+      <ul class="checklist">
+        <li>Product prices (in KES)</li>
+        <li>In stock / out of stock status</li>
+        <li>Product images</li>
+        <li>Featured product flag (homepage)</li>
+      </ul>
+      <ul class="checklist">
+        <li>Product category (Vehicles, Robots, etc.)</li>
+        <li>Age range (e.g. 8–12)</li>
+        <li>Difficulty level (Beginner / Intermediate / Advanced)</li>
+        <li>Description and learning outcomes</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Step 1: Set Up Product Categories</h3>
+  <p style="color:#444; margin-bottom:8px;">Do this once. The store recognises these six category names exactly.</p>
+  <ol class="steps">
+    <li>In WooCommerce, go to <strong>Products → Categories</strong></li>
+    <li>Create the following categories (spelling must match exactly): <strong>Vehicles, Machines, Science, Space, Robots, Architecture</strong></li>
+    <li>Edit each product and assign it to its correct category using the <strong>Product Categories</strong> panel in the right sidebar</li>
+    <li>Click <strong>Update</strong>. The product shows under the correct category within 1 minute</li>
+  </ol>
+
+  <div class="note">
+    <strong>Adding a brand new category</strong> (e.g. "Arts and Crafts") requires a developer. The new name must first be registered in the code. Assigning products to the six existing categories above is entirely self-service.
+  </div>
+
+  <h3>Step 2: Add Product Attributes</h3>
+  <ol class="steps">
+    <li>Open a product and go to <strong>Product Data → Attributes</strong></li>
+    <li>Add attribute <code>Age Range</code>, value e.g. <code>8–12</code></li>
+    <li>Add attribute <code>Difficulty</code>; value must be exactly: <code>Beginner</code>, <code>Intermediate</code>, or <code>Advanced</code></li>
+    <li>Add attribute <code>What You Learn</code>; multiple values separated by <code>|</code> e.g. <code>Mechanics | Engineering | Physics</code></li>
+    <li>Click <strong>Save attributes</strong> then <strong>Update</strong> the product</li>
+  </ol>
+
+  <div class="warning">
+    <strong>Attribute names are case-sensitive.</strong> The store looks for <code>Age Range</code>, <code>Difficulty</code>, and <code>What You Learn</code> exactly as written. A typo will cause the field to fall back to the default value.
+  </div>
+
+  <h3>Step 3: Add a Product Description</h3>
+  <ol class="steps">
+    <li>On the product edit page, fill in the <strong>Short Description</strong> text box (below the main editor)</li>
+    <li>Write 1–3 sentences describing what the child will build and learn</li>
+    <li>Click <strong>Update</strong>. The description appears on the store within 1 minute</li>
+  </ol>
+
+  <div class="note">
+    <strong>Use Short Description, not the main Description.</strong> The store reads the Short Description field. The main large description box is not displayed on the store front-end.
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ PAYMENT INTEGRATION ══ -->
+<div class="page">
+  <div class="section-label">Section 07</div>
+  <h2>Payment Integration</h2>
+  <p>
+    All payments are processed through <strong>IntaSend</strong>, a Kenyan payment gateway that
+    handles M-Pesa, Airtel Money, and Visa/Mastercard under one API. This replaced the original
+    direct Safaricom Daraja integration and added Airtel Money and card support in a single change.
+  </p>
+
+  <div class="plain">
+    <strong>Why IntaSend instead of integrating each provider separately?</strong> Integrating Safaricom Daraja, a separate Airtel API, and Stripe or Flutterwave for cards would mean three separate integrations to maintain, each with its own API keys, webhook endpoint, and failure modes. IntaSend handles all three through one integration with one dashboard, one webhook, and competitive Kenya-market rates.
+  </div>
+
+  <div class="three-col" style="margin:20px 0;">
+    <div class="card card-green" style="margin-bottom:0;">
+      <h3 style="margin-top:0; color:#276749;">M-Pesa</h3>
+      <p style="margin:0; font-size:12px;">STK Push to customer's Safaricom number. Customer enters PIN to approve. Confirmation is automatic.</p>
+    </div>
+    <div class="card card-yellow" style="margin-bottom:0;">
+      <h3 style="margin-top:0; color:#7a5a00;">Airtel Money</h3>
+      <p style="margin:0; font-size:12px;">STK Push to customer's Airtel number. Customer enters PIN to approve. Confirmation is automatic.</p>
+    </div>
+    <div class="card card-purple" style="margin-bottom:0;">
+      <h3 style="margin-top:0; color:#4a2570;">Visa / Mastercard</h3>
+      <p style="margin:0; font-size:12px;">Customer redirected to IntaSend's hosted card page. PCI-compliant. No card data touches our servers.</p>
+    </div>
+  </div>
+
+  <div class="plain" style="margin-top:16px;">
+    <strong>What is an STK Push?</strong> It is the pop-up that appears on a Safaricom or Airtel phone asking you to enter your M-Pesa or Airtel Money PIN to authorise a payment. When a customer checks out, our Django server calls IntaSend's API, which sends that pop-up to the customer's phone. The customer approves it, and IntaSend sends a webhook notification to our server within seconds confirming the payment.
+  </div>
+
+  <div class="section-label" style="margin-top:20px;">Payment Flows</div>
+
+  <p style="font-weight:600; font-size:11px; color:#276749; margin: 16px 0 6px;">M-PESA OR AIRTEL MONEY</p>
+  <div class="flow" style="margin-bottom:16px;">
+    <div class="flow-box dark">Select M-Pesa<br/><small>or Airtel at checkout</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box green">Django creates order<br/><small>status: pending</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box green">IntaSend STK push<br/><small>sent to phone</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box dark">Customer approves<br/><small>enters PIN</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box green">Webhook received<br/><small>status: paid</small></div>
+  </div>
+
+  <p style="font-weight:600; font-size:11px; color:#4a2570; margin-bottom:6px;">VISA / MASTERCARD</p>
+  <div class="flow" style="margin-bottom:20px;">
+    <div class="flow-box dark">Select Card<br/><small>at checkout</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box green">Django creates order<br/><small>gets checkout URL</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box yellow">IntaSend hosted page<br/><small>card details entered</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box green">Webhook received<br/><small>status: paid</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box dark">Redirected back<br/><small>to confirmation page</small></div>
+  </div>
+
+  <div class="note">
+    <strong>What is a webhook?</strong> A webhook is an automatic notification that IntaSend sends to our server the moment a payment succeeds or fails, like a text message from IntaSend to Django saying "order ABC123 is paid." The server receives it and immediately updates the order status in the database. This is why the confirmation page reflects the correct status in real time.
+  </div>
+
+  <div class="warning">
+    <strong>What if an order stays "pending" for a long time?</strong> The customer likely did not approve the STK push, or timed out. The order updates automatically when the webhook arrives. If still pending after 10 minutes, the customer cancelled or had insufficient funds and can try again. Contact IntaSend support with the customer's phone number and transaction time if a payment was deducted but the order did not update.
+  </div>
+
+  <hr />
+
+  <div class="two-col">
+    <div class="card">
+      <h3 style="margin-top:0;">Backend Changes Made</h3>
+      <ul class="checklist">
+        <li>New <code>intasend/</code> Django app: payment client + webhook view</li>
+        <li>Order model: added <code>payment_method</code>, <code>intasend_invoice_id</code>, <code>card_checkout_url</code></li>
+        <li>POST /api/orders now routes to IntaSend based on <code>payment_method</code></li>
+        <li>Webhook endpoint at <code>/api/intasend/webhook/</code></li>
+        <li><code>intasend-python</code> SDK added to requirements.txt</li>
+        <li>Old Daraja M-Pesa code retained as a fallback</li>
+      </ul>
+    </div>
+    <div class="card card-yellow">
+      <h3 style="margin-top:0;">Going Live Checklist</h3>
+      <ul class="checklist">
+        <li>Create production account at intasend.com</li>
+        <li>Get live API keys from Settings → API Keys</li>
+        <li>Set <code>INTASEND_TEST_MODE=False</code> in Railway</li>
+        <li>Replace sandbox keys with production keys in Railway</li>
+        <li>Register webhook URL in IntaSend production dashboard</li>
+        <li>Run one live M-Pesa test transaction end-to-end</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="highlight">
+    <strong>Webhook URL to register in IntaSend dashboard:</strong><br/>
+    <span class="url">https://web-production-391a4.up.railway.app/api/intasend/webhook/</span><br/>
+    <span style="font-size:11px; color:#555; margin-top:6px; display:block;">Go to IntaSend dashboard → Settings → Webhooks → Add URL. IntaSend sends a verification challenge when you save. The system handles this automatically.</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ DNS MIGRATION ══ -->
+<div class="page">
+  <div class="section-label">Section 08</div>
+  <h2>Domain Migration</h2>
+  <p>
+    The domain <strong>createch-hobbies.co.ke</strong> was originally pointing entirely at cPanel
+    (WordPress). It was migrated to a split configuration: the main domain now serves the Next.js
+    store via Vercel, while WordPress was moved to a dedicated subdomain at
+    <strong>wp.createch-hobbies.co.ke</strong>.
+  </p>
+
+  <div class="plain">
+    <strong>What is DNS?</strong> DNS (Domain Name System) works like a phone book for the internet. When someone types <code>createch-hobbies.co.ke</code> into their browser, DNS looks up which server that domain points to and connects them. Before the migration it pointed to the cPanel server (WordPress). After migration it points to Vercel (the Next.js store). WordPress is still on cPanel but is now reached through a subdomain with its own separate DNS entry.
+  </div>
+
+  <div class="two-col" style="margin-top:20px;">
+    <div>
+      <div class="section-label">Before Migration</div>
+      <div class="flow" style="margin:12px 0;">
+        <div class="flow-box dark">createch-hobbies.co.ke</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box purple">cPanel<br/><small>WordPress only</small></div>
+      </div>
+    </div>
+    <div>
+      <div class="section-label">After Migration</div>
+      <div class="flow" style="margin:12px 0 8px;">
+        <div class="flow-box dark">createch-hobbies.co.ke</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box yellow">Vercel<br/><small>Next.js Store</small></div>
+      </div>
+      <div class="flow" style="margin:0;">
+        <div class="flow-box dark">wp.createch&#8209;hobbies.co.ke</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box purple">cPanel<br/><small>WordPress</small></div>
+      </div>
+    </div>
+  </div>
+
+  <hr />
+
+  <div class="section-label">Steps Completed</div>
+  <ol class="steps">
+    <li><strong>Created subdomain</strong> <span class="url">wp.createch-hobbies.co.ke</span> in cPanel → Domains</li>
+    <li><strong>Copied all WordPress files</strong> from <code>/createch-hobbies.co.ke/</code> to <code>/wp.createch-hobbies.co.ke/</code> via File Manager</li>
+    <li><strong>Updated wp-config.php</strong>: added WP_HOME and WP_SITEURL constants pointing to the new subdomain. This overrides the database values so WordPress knows its new location instantly, with no database edit required</li>
+    <li><strong>Verified WordPress</strong> loaded correctly at the new subdomain before touching any DNS. This is the critical safety check that ensures zero downtime</li>
+    <li><strong>Updated DNS Zone</strong>: changed the root A record from cPanel IP to Vercel IP (76.76.21.21)</li>
+    <li><strong>Added www CNAME</strong> pointing to Vercel's DNS endpoint</li>
+    <li><strong>Added custom domain</strong> in Vercel project settings</li>
+    <li><strong>Updated WOO_URL</strong> environment variable on Vercel to point to the new wp subdomain</li>
+    <li><strong>Redeployed</strong> on Vercel, confirmed live at createch-hobbies.co.ke</li>
+  </ol>
+
+  <div class="note">
+    <strong>The SSL certificate:</strong> cPanel was already running a wildcard certificate (<code>*.createch-hobbies.co.ke</code>). A wildcard covers all subdomains automatically, so <code>wp.createch-hobbies.co.ke</code> was already protected by HTTPS the moment it was created, so no additional certificate setup was needed.
+  </div>
+
+  <hr />
+
+  <div class="section-label">Final DNS Configuration</div>
+  <div style="margin-top:12px;">
+    <div class="dns-record active">
+      <span class="type-badge">A</span>
+      <span class="name">createch-hobbies.co.ke</span>
+      <span class="value">76.76.21.21 (Vercel)</span>
+    </div>
+    <div class="dns-record active">
+      <span class="type-badge">CNAME</span>
+      <span class="name">www.createch-hobbies.co.ke</span>
+      <span class="value">520e2e87b2fb889c.vercel-dns-017.com</span>
+    </div>
+    <div class="dns-record info">
+      <span class="type-badge">A</span>
+      <span class="name">wp.createch-hobbies.co.ke</span>
+      <span class="value">102.212.246.90 (cPanel, unchanged)</span>
+    </div>
+  </div>
+
+  <div class="warning" style="margin-top:16px;">
+    <strong>Do not edit DNS records without developer guidance.</strong> Changing the wrong record can take the website offline for up to 48 hours while DNS propagates globally. Nameservers are managed through Cloudoon (ns1.cloudoon.com). Only the three records shown above should ever need to change.
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ CLIENT GUIDE ══ -->
+<div class="page">
+  <div class="section-label">Section 09</div>
+  <h2>Client Management Guide</h2>
+  <p>Everything needed to manage the store day-to-day without developer involvement.</p>
+
+  <h3>Viewing Orders</h3>
+  <ol class="steps">
+    <li>Go to <span class="url">createch-hobbies.co.ke/admin</span> and enter PIN: <strong>createtech2026</strong></li>
+    <li>The dashboard shows today's revenue, order count, and recent failed payments</li>
+    <li>Click <strong>Orders</strong> in the sidebar for the full order history with search and filter</li>
+    <li>Click any row to see full order details including the payment reference</li>
+    <li>Use <strong>Export CSV</strong> to download all orders to Excel for bookkeeping</li>
+  </ol>
+
+  <div class="note">
+    <strong>Order statuses:</strong>
+    <ul style="margin: 8px 0 0 16px; color:#2c5282;">
+      <li style="margin-bottom:3px;"><strong>Pending</strong>: order placed, waiting for customer to approve STK push</li>
+      <li style="margin-bottom:3px;"><strong>Paid</strong>: payment confirmed, ready to pack and ship</li>
+      <li style="margin-bottom:3px;"><strong>Failed</strong>: customer cancelled, timed out, or had insufficient funds</li>
+      <li style="margin-bottom:3px;"><strong>Processing</strong>: order is being prepared</li>
+      <li><strong>Shipped / Delivered</strong>: updated manually by admin</li>
+    </ul>
+  </div>
+
+  <h3>Adding a New Product</h3>
+  <ol class="steps">
+    <li>Log in at <span class="url">wp.createch-hobbies.co.ke/wp/wp-admin</span></li>
+    <li>Go to <strong>Products → Add New</strong> and enter the product name</li>
+    <li>Write 1–3 sentences in the <strong>Short Description</strong> box (not the main description)</li>
+    <li>Under <strong>Product Data → General</strong>, set <strong>Regular Price</strong> in KES (numbers only)</li>
+    <li>Under <strong>Product Data → Inventory</strong>, set Stock Status to <strong>In Stock</strong></li>
+    <li>Under <strong>Product Data → Attributes</strong>, add <code>Age Range</code>, <code>Difficulty</code>, and <code>What You Learn</code></li>
+    <li>In the right sidebar under <strong>Product Categories</strong>, assign the correct category</li>
+    <li>Upload images under <strong>Product Gallery</strong> in the right sidebar (square, 800×800px+)</li>
+    <li>Tick <strong>Featured</strong> if it should appear on the homepage</li>
+    <li>Click <strong>Publish</strong>. Product appears on the store within 1 minute</li>
+  </ol>
+
+  <h3>Updating a Price or Stock Status</h3>
+  <ol class="steps">
+    <li>Go to <strong>WooCommerce → Products</strong> and click the product</li>
+    <li>To change price: go to <strong>Product Data → General</strong>, update <strong>Regular Price</strong> (numbers only, e.g. <code>2500</code>)</li>
+    <li>To change stock: go to <strong>Product Data → Inventory</strong>, set Stock Status</li>
+    <li>Click <strong>Update</strong>. Changes are live on the store within 1 minute</li>
+  </ol>
+
+  <hr />
+
+  <div class="section-label">Common Questions</div>
+  <div class="qa">
+    <div class="qa-item">
+      <div class="q">A customer was charged but their order does not appear in the dashboard.</div>
+      <div class="a">Filter orders by "Pending". The order is there but the webhook has not arrived yet. Wait 5–10 minutes. If it stays pending, contact IntaSend support with the customer's phone number and transaction time. They can confirm whether the payment went through on their end.</div>
+    </div>
+    <div class="qa-item">
+      <div class="q">A price I updated in WooCommerce is not showing on the store yet.</div>
+      <div class="a">Wait up to 1 minute and hard-refresh the page (Ctrl+Shift+R on Windows, Cmd+Shift+R on Mac). If it still does not update after 3 minutes, confirm the price was actually saved in WooCommerce. Check that you clicked Update and the value shows correctly when you re-open the product.</div>
+    </div>
+    <div class="qa-item">
+      <div class="q">Can I assign products to categories like Vehicles or Robots from WooCommerce?</div>
+      <div class="a">Yes, fully supported. Create the six categories (Vehicles, Machines, Science, Space, Robots, Architecture) under Products → Categories if they do not exist, then assign each product. See Section 06 for the full setup steps.</div>
+    </div>
+    <div class="qa-item">
+      <div class="q">Can I add a completely new category that does not currently exist?</div>
+      <div class="a">Not without a developer. Adding a brand new category requires a small code change to register the new name. It takes less than 30 minutes. Assigning products to the six existing categories is fully self-service.</div>
+    </div>
+    <div class="qa-item">
+      <div class="q">The website is down. What do I check first?</div>
+      <div class="a">Visit status.vercel.com to check for a Vercel outage. If Vercel is fine, check the Vercel dashboard for a failed build from a recent code deployment. The WooCommerce admin at wp.createch-hobbies.co.ke is on a separate server and should remain accessible even when the main store is down.</div>
+    </div>
+  </div>
+
+  <hr />
+
+  <div class="section-label">All Environment Variables</div>
+  <table>
+    <thead><tr><th>Variable</th><th>Platform</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>ADMIN_PIN</td><td>Vercel</td><td>Admin dashboard login PIN (createtech2026)</td></tr>
+      <tr><td>ADMIN_SECRET_KEY</td><td>Vercel</td><td>Server-to-server auth key. Vercel calls Django with this key</td></tr>
+      <tr><td>WOO_URL</td><td>Vercel</td><td>WooCommerce base URL: https://wp.createch-hobbies.co.ke</td></tr>
+      <tr><td>WOO_KEY</td><td>Vercel</td><td>WooCommerce REST API consumer key</td></tr>
+      <tr><td>WOO_SECRET</td><td>Vercel</td><td>WooCommerce REST API consumer secret</td></tr>
+      <tr><td>NEXT_PUBLIC_API_URL</td><td>Vercel</td><td>Django backend URL on Railway</td></tr>
+      <tr><td>INTASEND_PUBLISHABLE_KEY</td><td>Railway</td><td>IntaSend publishable key (test or live)</td></tr>
+      <tr><td>INTASEND_SECRET_KEY</td><td>Railway</td><td>IntaSend secret key; never share this</td></tr>
+      <tr><td>INTASEND_TEST_MODE</td><td>Railway</td><td>True = sandbox testing, False = live real payments</td></tr>
+      <tr><td>FRONTEND_URL</td><td>Railway</td><td>https://createch-hobbies.co.ke, used for card redirect</td></tr>
+    </tbody>
+  </table>
+
+  <div class="card card-yellow" style="margin-top:16px;">
+    <h3 style="margin-top:0;">Important Reminders</h3>
+    <ul class="checklist">
+      <li>Never share the ADMIN_PIN or any API keys publicly or over WhatsApp</li>
+      <li>Always enter prices as plain numbers; no KES symbol or commas</li>
+      <li>Attribute names in WooCommerce are case-sensitive (Age Range, Difficulty, What You Learn)</li>
+      <li>Payment methods at checkout: M-Pesa, Airtel Money, Visa/Mastercard</li>
+      <li>M-Pesa till number: 3434039 (Business Short Code: 4575237)</li>
+      <li>A backup of the original WordPress files is at <code>/createch-hobbies.co.ke/</code> on cPanel</li>
+    </ul>
+  </div>
+</div>
+
+</body>
+</html>

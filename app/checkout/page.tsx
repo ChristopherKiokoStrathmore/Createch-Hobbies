@@ -3,12 +3,22 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ShoppingBag, Smartphone, Loader2, AlertCircle, ChevronLeft } from "lucide-react";
+import {
+  ShoppingBag, Smartphone, Loader2, AlertCircle,
+  ChevronLeft, CreditCard, Radio,
+} from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/utils";
 import { api } from "@/lib/api";
+import type { PaymentMethod } from "@/lib/api";
 
 type Step = "form" | "waiting" | "failed";
+
+const METHOD_OPTIONS: { id: PaymentMethod; label: string; sub: string; icon: React.ReactNode }[] = [
+  { id: "mpesa",  label: "M-Pesa",       sub: "Safaricom STK push",  icon: <Smartphone size={18} /> },
+  { id: "airtel", label: "Airtel Money", sub: "Airtel STK push",     icon: <Radio size={18} /> },
+  { id: "card",   label: "Card",         sub: "Visa / Mastercard",   icon: <CreditCard size={18} /> },
+];
 
 export default function CheckoutPage() {
   const router              = useRouter();
@@ -17,13 +27,17 @@ export default function CheckoutPage() {
   const [error, setError]   = useState("");
   const [orderId, setOrderId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittedMethod, setSubmittedMethod] = useState<PaymentMethod>("mpesa");
   const pollRef             = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [form, setForm] = useState({
-    name:    "",
-    phone:   "",
-    address: "",
+    name:           "",
+    phone:          "",
+    address:        "",
+    payment_method: "mpesa" as PaymentMethod,
   });
+
+  const isMobile = form.payment_method === "mpesa" || form.payment_method === "airtel";
 
   /* ── Redirect to shop if cart is empty ── */
   useEffect(() => {
@@ -32,7 +46,7 @@ export default function CheckoutPage() {
     }
   }, [state.items.length, step, router]);
 
-  /* ── Poll for payment status ── */
+  /* ── Poll for payment status (mobile methods only) ── */
   useEffect(() => {
     if (step !== "waiting" || !orderId) return;
 
@@ -54,20 +68,21 @@ export default function CheckoutPage() {
           setStep("failed");
         } else if (attempts >= MAX) {
           clearInterval(pollRef.current!);
-          setError("Payment timed out. The M-Pesa prompt may have expired. Please try again.");
+          const provider = submittedMethod === "airtel" ? "Airtel Money" : "M-Pesa";
+          setError(`Payment timed out. The ${provider} prompt may have expired. Please try again.`);
           setStep("failed");
         }
       } catch {
         if (attempts >= MAX) {
           clearInterval(pollRef.current!);
-          setError("Could not confirm payment. Please check your M-Pesa messages.");
+          setError("Could not confirm payment. Please check your mobile money messages.");
           setStep("failed");
         }
       }
     }, 4000);
 
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [step, orderId, router, dispatch]);
+  }, [step, orderId, router, dispatch, submittedMethod]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -80,6 +95,7 @@ export default function CheckoutPage() {
         customer_name:    form.name.trim(),
         customer_phone:   form.phone.trim(),
         delivery_address: form.address.trim(),
+        payment_method:   form.payment_method,
         items: state.items.map((i) => ({
           product_id:   i.id,
           product_name: i.name,
@@ -88,6 +104,13 @@ export default function CheckoutPage() {
           unit_price:   i.price,
         })),
       });
+
+      setSubmittedMethod(form.payment_method);
+
+      if (form.payment_method === "card" && result.checkout_url) {
+        window.location.href = result.checkout_url;
+        return;
+      }
 
       setOrderId(result.order_id);
       setStep("waiting");
@@ -99,6 +122,7 @@ export default function CheckoutPage() {
 
   /* ─────────────────── WAITING SCREEN ─────────────────── */
   if (step === "waiting") {
+    const provider = submittedMethod === "airtel" ? "Airtel Money" : "M-Pesa";
     return (
       <main className="min-h-screen bg-brand-dark flex items-center justify-center px-4 pt-24 pb-16">
         <div className="max-w-md w-full text-center space-y-6">
@@ -112,7 +136,8 @@ export default function CheckoutPage() {
             Check Your Phone
           </h2>
           <p className="text-white/60 font-inter text-sm leading-relaxed max-w-xs mx-auto">
-            An M-Pesa payment prompt has been sent to <strong className="text-white">{form.phone}</strong>.
+            A {provider} payment prompt has been sent to{" "}
+            <strong className="text-white">{form.phone}</strong>.
             Enter your PIN to complete the purchase.
           </p>
           <div className="flex items-center justify-center gap-2 text-white/40 font-inter text-xs">
@@ -149,6 +174,8 @@ export default function CheckoutPage() {
   }
 
   /* ─────────────────── CHECKOUT FORM ─────────────────── */
+  const selected = METHOD_OPTIONS.find((m) => m.id === form.payment_method)!;
+
   return (
     <main className="min-h-screen bg-brand-dark pt-24 pb-16 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
@@ -169,6 +196,36 @@ export default function CheckoutPage() {
 
           {/* ── Form ── */}
           <form onSubmit={handleSubmit} className="space-y-5">
+
+            {/* Payment Method */}
+            <div className="section-card rounded-2xl p-6 border border-white/5">
+              <h2 className="font-inter font-semibold text-white mb-4 text-sm uppercase tracking-widest">
+                Payment Method
+              </h2>
+              <div className="grid grid-cols-3 gap-3">
+                {METHOD_OPTIONS.map((opt) => {
+                  const active = form.payment_method === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setForm({ ...form, payment_method: opt.id })}
+                      className={`flex flex-col items-center gap-1.5 rounded-xl px-3 py-4 border transition-colors text-center ${
+                        active
+                          ? "border-brand-yellow bg-brand-yellow/10 text-brand-yellow"
+                          : "border-white/10 text-white/50 hover:border-white/30 hover:text-white/80"
+                      }`}
+                    >
+                      {opt.icon}
+                      <span className="font-inter font-semibold text-xs">{opt.label}</span>
+                      <span className="font-inter text-[10px] opacity-60 leading-tight">{opt.sub}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Delivery Details */}
             <div className="section-card rounded-2xl p-6 border border-white/5">
               <h2 className="font-inter font-semibold text-white mb-5 text-sm uppercase tracking-widest">
                 Delivery Details
@@ -187,23 +244,25 @@ export default function CheckoutPage() {
                   />
                 </div>
 
-                {/* Phone */}
-                <div>
-                  <label className="block text-white/50 text-xs font-inter mb-1.5">
-                    M-Pesa Phone Number
-                  </label>
-                  <input
-                    required
-                    type="tel"
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    placeholder="0712 345 678"
-                    className="w-full bg-brand-dark/[0.07] border border-brand-dark/20 rounded-xl px-4 py-3 text-brand-dark font-inter text-sm placeholder:text-brand-dark/40 focus:outline-none focus:border-brand-purple/60 transition-colors"
-                  />
-                  <p className="text-white/25 text-xs font-inter mt-1.5">
-                    The M-Pesa prompt will be sent to this number.
-                  </p>
-                </div>
+                {/* Phone — only for mobile payment methods */}
+                {isMobile && (
+                  <div>
+                    <label className="block text-white/50 text-xs font-inter mb-1.5">
+                      {form.payment_method === "airtel" ? "Airtel Money" : "M-Pesa"} Phone Number
+                    </label>
+                    <input
+                      required={isMobile}
+                      type="tel"
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      placeholder="0712 345 678"
+                      className="w-full bg-brand-dark/[0.07] border border-brand-dark/20 rounded-xl px-4 py-3 text-brand-dark font-inter text-sm placeholder:text-brand-dark/40 focus:outline-none focus:border-brand-purple/60 transition-colors"
+                    />
+                    <p className="text-white/25 text-xs font-inter mt-1.5">
+                      The payment prompt will be sent to this number.
+                    </p>
+                  </div>
+                )}
 
                 {/* Address */}
                 <div>
@@ -237,18 +296,20 @@ export default function CheckoutPage() {
               {isSubmitting ? (
                 <>
                   <Loader2 size={18} className="animate-spin" />
-                  Sending prompt…
+                  {form.payment_method === "card" ? "Redirecting…" : "Sending prompt…"}
                 </>
               ) : (
                 <>
-                  <Smartphone size={18} />
-                  Pay {formatPrice(totalPrice)} via M-Pesa
+                  {selected.icon}
+                  Pay {formatPrice(totalPrice)} via {selected.label}
                 </>
               )}
             </button>
 
             <p className="text-white/25 text-xs text-center font-inter">
-              You will receive an M-Pesa STK push. Enter your PIN to confirm.
+              {form.payment_method === "card"
+                ? "You will be redirected to a secure card payment page."
+                : `You will receive a ${selected.label} prompt. Enter your PIN to confirm.`}
             </p>
 
             <Link
