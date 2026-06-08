@@ -7,13 +7,9 @@ const LANDSCAPE_SRC = "/video/hero-landscape.mp4";
 const PORTRAIT_SRC  = "/video/hero-portrait.mp4";
 
 export default function VideoBackground() {
-  /*
-   * Start null — no video element until we detect orientation on the client.
-   * This ensures only ONE video element is ever created per load (the right one),
-   * preventing any race where a briefly-created landscape element blocks
-   * the portrait autoplay slot on iOS Safari.
-   */
-  const [src, setSrc]               = useState<string | null>(null);
+  // Start with landscape so the browser begins fetching immediately on first render.
+  // The orientation effect below swaps to portrait if needed after mount.
+  const [src, setSrc]               = useState<string>(LANDSCAPE_SRC);
   const [userMuted, setUserMuted]   = useState(true);
   const [interacted, setInteracted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -86,25 +82,18 @@ export default function VideoBackground() {
         style={{ zIndex: -1 }}
         aria-hidden="true"
       >
-          {/*
-         * Only render once src is known (after orientation detected on client).
-         * key={src} forces full remount on orientation change so autoPlay + muted
-         * + src are all present at insertion time — required by iOS Safari.
-         */}
-        {src && (
-          <video
-            key={src}
-            ref={videoRef}
-            src={src}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            poster="/images/hero-poster.jpg"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-        )}
+        <video
+          key={src}
+          ref={videoRef}
+          src={src}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ backgroundColor: '#0a0a0f' }}
+        />
       </div>
 
       <button
