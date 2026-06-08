@@ -18,6 +18,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        {/* Tell the browser to fetch hero videos early, before JS boots */}
+        <link rel="preload" as="video" href="/video/hero-landscape.mp4" media="(orientation: landscape)" />
+        <link rel="preload" as="video" href="/video/hero-portrait.mp4" media="(orientation: portrait)" />
+      </head>
       <body>
         <PublicShell>{children}</PublicShell>
       </body>
