@@ -9,9 +9,10 @@ interface Props {
   id: string;
   activeId: string | null;
   onActivate: (id: string | null) => void;
+  onExpand?: (id: string) => void;
 }
 
-export default function VideoCard({ src, poster, id, activeId, onActivate }: Props) {
+export default function VideoCard({ src, poster, id, activeId, onActivate, onExpand }: Props) {
   const videoRef  = useRef<HTMLVideoElement>(null);
   const wrapRef   = useRef<HTMLDivElement>(null);
   const [inView, setInView]     = useState(false);
@@ -53,8 +54,12 @@ export default function VideoCard({ src, poster, id, activeId, onActivate }: Pro
   }, [isActive, inView]);
 
   const handleClick = useCallback(() => {
-    onActivate(isActive ? null : id);
-  }, [isActive, id, onActivate]);
+    if (onExpand) {
+      onExpand(id);
+    } else {
+      onActivate(isActive ? null : id);
+    }
+  }, [isActive, id, onActivate, onExpand]);
 
   return (
     <div

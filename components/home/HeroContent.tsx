@@ -24,7 +24,7 @@ function easeOutCubic(t: number) {
 }
 
 function animateStat(raw: string, setter: (v: string) => void) {
-  const DURATION = 1800;
+  const DURATION = 3500;
   const start    = performance.now();
 
   if (raw.includes("–")) {
