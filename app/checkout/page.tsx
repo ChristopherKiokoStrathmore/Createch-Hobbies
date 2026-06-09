@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -9,80 +9,36 @@ import {
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/utils";
-import { api } from "@/lib/api";
-import type { PaymentMethod } from "@/lib/api";
 
-type Step = "form" | "waiting" | "failed";
+type PaymentMethod = "mpesa" | "airtel" | "card";
+type Step = "form" | "failed";
 
 const METHOD_OPTIONS: { id: PaymentMethod; label: string; sub: string; icon: React.ReactNode }[] = [
-  { id: "mpesa",  label: "M-Pesa",       sub: "Safaricom STK push",  icon: <Smartphone size={18} /> },
-  { id: "airtel", label: "Airtel Money", sub: "Airtel STK push",     icon: <Radio size={18} /> },
-  { id: "card",   label: "Card",         sub: "Visa / Mastercard",   icon: <CreditCard size={18} /> },
+  { id: "mpesa",  label: "M-Pesa",       sub: "Safaricom M-Pesa",   icon: <Smartphone size={18} /> },
+  { id: "airtel", label: "Airtel Money", sub: "Airtel Money Kenya",  icon: <Radio size={18} /> },
+  { id: "card",   label: "Card",         sub: "Visa / Mastercard",  icon: <CreditCard size={18} /> },
 ];
 
 export default function CheckoutPage() {
   const router              = useRouter();
-  const { state, dispatch, totalPrice } = useCart();
+  const { state, totalPrice } = useCart();
   const [step, setStep]     = useState<Step>("form");
   const [error, setError]   = useState("");
-  const [orderId, setOrderId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submittedMethod, setSubmittedMethod] = useState<PaymentMethod>("mpesa");
-  const pollRef             = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [form, setForm] = useState({
     name:           "",
     phone:          "",
+    email:          "",
     address:        "",
     payment_method: "mpesa" as PaymentMethod,
   });
 
-  const isMobile = form.payment_method === "mpesa" || form.payment_method === "airtel";
-
-  /* ── Redirect to shop if cart is empty ── */
   useEffect(() => {
     if (state.items.length === 0 && step === "form") {
       router.replace("/shop");
     }
   }, [state.items.length, step, router]);
-
-  /* ── Poll for payment status (mobile methods only) ── */
-  useEffect(() => {
-    if (step !== "waiting" || !orderId) return;
-
-    let attempts = 0;
-    const MAX    = 20; // 20 × 4s = 80s
-
-    pollRef.current = setInterval(async () => {
-      attempts++;
-      try {
-        const result = await api.getMpesaStatus(orderId);
-
-        if (result.status === "paid") {
-          clearInterval(pollRef.current!);
-          dispatch({ type: "CLEAR_CART" });
-          router.push(`/checkout/confirmation/${orderId}`);
-        } else if (result.status === "failed" || result.status === "cancelled") {
-          clearInterval(pollRef.current!);
-          setError(result.failure_reason || "Payment was declined or cancelled.");
-          setStep("failed");
-        } else if (attempts >= MAX) {
-          clearInterval(pollRef.current!);
-          const provider = submittedMethod === "airtel" ? "Airtel Money" : "M-Pesa";
-          setError(`Payment timed out. The ${provider} prompt may have expired. Please try again.`);
-          setStep("failed");
-        }
-      } catch {
-        if (attempts >= MAX) {
-          clearInterval(pollRef.current!);
-          setError("Could not confirm payment. Please check your mobile money messages.");
-          setStep("failed");
-        }
-      }
-    }, 4000);
-
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [step, orderId, router, dispatch, submittedMethod]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -91,65 +47,47 @@ export default function CheckoutPage() {
     setIsSubmitting(true);
 
     try {
-      const result = await api.createOrder({
-        customer_name:    form.name.trim(),
-        customer_phone:   form.phone.trim(),
-        delivery_address: form.address.trim(),
-        payment_method:   form.payment_method,
-        items: state.items.map((i) => ({
-          product_id:   i.id,
-          product_name: i.name,
-          product_slug: i.slug,
-          quantity:     i.quantity,
-          unit_price:   i.price,
-        })),
+      const res = await fetch("/api/ipay/initiate", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer_name:    form.name.trim(),
+          customer_phone:   form.phone.trim(),
+          customer_email:   form.email.trim(),
+          delivery_address: form.address.trim(),
+          payment_method:   form.payment_method,
+          total:            totalPrice,
+          items: state.items.map((i) => ({
+            product_id:   i.id,
+            product_name: i.name,
+            product_slug: i.slug,
+            quantity:     i.quantity,
+            unit_price:   i.price,
+          })),
+        }),
       });
 
-      setSubmittedMethod(form.payment_method);
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error ?? "Failed to initiate payment");
 
-      if (form.payment_method === "card" && result.checkout_url) {
-        window.location.href = result.checkout_url;
-        return;
-      }
+      const { fields, ipayUrl } = result;
 
-      setOrderId(result.order_id);
-      setStep("waiting");
+      const formEl = document.createElement("form");
+      formEl.method = "POST";
+      formEl.action = ipayUrl;
+      Object.entries(fields as Record<string, string>).forEach(([key, value]) => {
+        const input = document.createElement("input");
+        input.type  = "hidden";
+        input.name  = key;
+        input.value = value;
+        formEl.appendChild(input);
+      });
+      document.body.appendChild(formEl);
+      formEl.submit();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
       setIsSubmitting(false);
     }
-  }
-
-  /* ─────────────────── WAITING SCREEN ─────────────────── */
-  if (step === "waiting") {
-    const provider = submittedMethod === "airtel" ? "Airtel Money" : "M-Pesa";
-    return (
-      <main className="min-h-screen bg-brand-dark flex items-center justify-center px-4 pt-24 pb-16">
-        <div className="max-w-md w-full text-center space-y-6">
-          <div className="relative mx-auto w-24 h-24">
-            <div className="absolute inset-0 rounded-full border-4 border-brand-purple/30 animate-ping" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Smartphone size={36} className="text-brand-purple" />
-            </div>
-          </div>
-          <h2 className="font-playfair font-bold text-3xl text-white">
-            Check Your Phone
-          </h2>
-          <p className="text-white/60 font-inter text-sm leading-relaxed max-w-xs mx-auto">
-            A {provider} payment prompt has been sent to{" "}
-            <strong className="text-white">{form.phone}</strong>.
-            Enter your PIN to complete the purchase.
-          </p>
-          <div className="flex items-center justify-center gap-2 text-white/40 font-inter text-xs">
-            <Loader2 size={14} className="animate-spin" />
-            Waiting for confirmation…
-          </div>
-          <p className="text-white/25 font-inter text-xs">
-            The prompt expires in ~60 seconds.
-          </p>
-        </div>
-      </main>
-    );
   }
 
   /* ─────────────────── FAILED SCREEN ─────────────────── */
@@ -163,7 +101,7 @@ export default function CheckoutPage() {
           <h2 className="font-playfair font-bold text-3xl text-white">Payment Failed</h2>
           <p className="text-white/60 font-inter text-sm">{error}</p>
           <button
-            onClick={() => { setStep("form"); setError(""); setOrderId(""); }}
+            onClick={() => { setStep("form"); setError(""); }}
             className="btn-yellow px-8 py-3 rounded-full font-inter font-bold text-sm"
           >
             Try Again
@@ -180,7 +118,6 @@ export default function CheckoutPage() {
     <main className="min-h-screen bg-brand-dark pt-24 pb-16 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
 
-        {/* Back link */}
         <Link
           href="/shop"
           className="inline-flex items-center gap-1.5 text-white/40 hover:text-white font-inter text-sm mb-8 transition-colors"
@@ -232,7 +169,6 @@ export default function CheckoutPage() {
               </h2>
 
               <div className="space-y-4">
-                {/* Name */}
                 <div>
                   <label className="block text-white/50 text-xs font-inter mb-1.5">Full Name</label>
                   <input
@@ -240,42 +176,47 @@ export default function CheckoutPage() {
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     placeholder="e.g. John Kamau"
-                    className="w-full bg-brand-dark/[0.07] border border-brand-dark/20 rounded-xl px-4 py-3 text-brand-dark font-inter text-sm placeholder:text-brand-dark/40 focus:outline-none focus:border-brand-purple/60 transition-colors"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-inter text-sm placeholder:text-white/20 focus:outline-none focus:border-brand-yellow/60 transition-colors"
                   />
                 </div>
 
-                {/* Phone — only for mobile payment methods */}
-                {isMobile && (
-                  <div>
-                    <label className="block text-white/50 text-xs font-inter mb-1.5">
-                      {form.payment_method === "airtel" ? "Airtel Money" : "M-Pesa"} Phone Number
-                    </label>
-                    <input
-                      required={isMobile}
-                      type="tel"
-                      value={form.phone}
-                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      placeholder="0712 345 678"
-                      className="w-full bg-brand-dark/[0.07] border border-brand-dark/20 rounded-xl px-4 py-3 text-brand-dark font-inter text-sm placeholder:text-brand-dark/40 focus:outline-none focus:border-brand-purple/60 transition-colors"
-                    />
-                    <p className="text-white/25 text-xs font-inter mt-1.5">
-                      The payment prompt will be sent to this number.
-                    </p>
-                  </div>
-                )}
-
-                {/* Address */}
                 <div>
-                  <label className="block text-white/50 text-xs font-inter mb-1.5">
-                    Delivery Address
-                  </label>
+                  <label className="block text-white/50 text-xs font-inter mb-1.5">Phone Number</label>
+                  <input
+                    required
+                    type="tel"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    placeholder="0712 345 678"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-inter text-sm placeholder:text-white/20 focus:outline-none focus:border-brand-yellow/60 transition-colors"
+                  />
+                  {(form.payment_method === "mpesa" || form.payment_method === "airtel") && (
+                    <p className="text-white/25 text-xs font-inter mt-1.5">
+                      iPay will send a {form.payment_method === "airtel" ? "Airtel Money" : "M-Pesa"} prompt to this number.
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-white/50 text-xs font-inter mb-1.5">Email Address</label>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    placeholder="e.g. john@gmail.com"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-inter text-sm placeholder:text-white/20 focus:outline-none focus:border-brand-yellow/60 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white/50 text-xs font-inter mb-1.5">Delivery Address</label>
                   <textarea
                     required
                     rows={3}
                     value={form.address}
                     onChange={(e) => setForm({ ...form, address: e.target.value })}
                     placeholder="Estate / street, Nairobi. Any landmark or notes for our rider"
-                    className="w-full bg-brand-dark/[0.07] border border-brand-dark/20 rounded-xl px-4 py-3 text-brand-dark font-inter text-sm placeholder:text-brand-dark/40 focus:outline-none focus:border-brand-purple/60 transition-colors resize-none"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-inter text-sm placeholder:text-white/20 focus:outline-none focus:border-brand-yellow/60 transition-colors resize-none"
                   />
                 </div>
               </div>
@@ -296,7 +237,7 @@ export default function CheckoutPage() {
               {isSubmitting ? (
                 <>
                   <Loader2 size={18} className="animate-spin" />
-                  {form.payment_method === "card" ? "Redirecting…" : "Sending prompt…"}
+                  Redirecting to iPay…
                 </>
               ) : (
                 <>
@@ -307,14 +248,12 @@ export default function CheckoutPage() {
             </button>
 
             <p className="text-white/25 text-xs text-center font-inter">
-              {form.payment_method === "card"
-                ? "You will be redirected to a secure card payment page."
-                : `You will receive a ${selected.label} prompt. Enter your PIN to confirm.`}
+              You will be redirected to iPay&apos;s secure payment page to complete your purchase.
             </p>
 
             <Link
               href="/shop"
-              className="block text-center text-brand-dark/50 hover:text-brand-dark font-inter text-sm underline underline-offset-4 transition-colors"
+              className="block text-center text-white/30 hover:text-white font-inter text-sm underline underline-offset-4 transition-colors"
             >
               ← Continue Shopping
             </Link>
