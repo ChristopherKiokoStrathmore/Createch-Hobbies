@@ -14,6 +14,16 @@ const nextConfig: NextConfig = {
         hostname: "*.createch-hobbies.co.ke",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "secure.gravatar.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "gravatar.com",
+        pathname: "/**",
+      },
     ],
   },
 };
