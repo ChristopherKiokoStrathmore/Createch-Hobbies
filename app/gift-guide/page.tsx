@@ -92,11 +92,11 @@ export default function GiftGuidePage() {
           <span className="text-brand-purple-light font-inter font-semibold text-xs uppercase tracking-[0.2em]">
             Gift Guide
           </span>
-          <h1 className="font-playfair font-bold text-5xl md:text-6xl text-white mt-5 mb-5 leading-tight">
+          <h1 className="font-playfair font-bold text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white mt-5 mb-5 leading-tight">
             The Perfect Kit for{" "}
             <em className="text-gradient not-italic">Every Child</em>
           </h1>
-          <p className="text-white/50 text-lg font-inter max-w-xl mx-auto">
+          <p className="text-white/50 text-base sm:text-lg font-inter max-w-xl mx-auto">
             Not sure which kit to choose? Browse by age, interest, or budget. We&apos;ll help you pick the one they&apos;ll remember.
           </p>
         </div>

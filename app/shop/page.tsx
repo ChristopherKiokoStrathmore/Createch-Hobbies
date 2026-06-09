@@ -91,7 +91,7 @@ function ShopContent() {
           <span className="text-brand-purple-light font-inter font-semibold text-xs uppercase tracking-[0.2em]">
             Our Collection
           </span>
-          <h1 className="font-playfair font-bold text-4xl md:text-5xl text-white mt-4">
+          <h1 className="font-playfair font-bold text-3xl sm:text-4xl md:text-5xl text-white mt-4">
             All DIY Kits
           </h1>
           <p className="text-white/40 mt-3 font-inter text-sm">
@@ -147,7 +147,7 @@ function ShopContent() {
                   <button
                     key={age}
                     onClick={() => setActiveAge(age as AgeGroup | "All")}
-                    className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all font-inter ${
+                    className={`px-4 py-3 rounded-full text-xs font-semibold border transition-all font-inter ${
                       activeAge === age
                         ? "border-brand-yellow text-brand-dark bg-brand-yellow"
                         : "border-white/15 text-white/50 hover:border-white/35 hover:text-white"
@@ -182,7 +182,7 @@ function ShopContent() {
                   <button
                     key={cat}
                     onClick={() => setActiveCategory(cat)}
-                    className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all font-inter ${
+                    className={`px-4 py-3 rounded-full text-xs font-semibold border transition-all font-inter ${
                       activeCategory === cat
                         ? "border-brand-yellow text-brand-dark bg-brand-yellow"
                         : "border-white/15 text-white/50 hover:border-white/35 hover:text-white"
@@ -217,7 +217,7 @@ function ShopContent() {
                   <button
                     key={d}
                     onClick={() => setActiveDifficulty(d)}
-                    className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all font-inter ${
+                    className={`px-4 py-3 rounded-full text-xs font-semibold border transition-all font-inter ${
                       activeDifficulty === d
                         ? "border-brand-purple text-white bg-brand-purple"
                         : "border-white/10 text-white/35 hover:border-white/30 hover:text-white"

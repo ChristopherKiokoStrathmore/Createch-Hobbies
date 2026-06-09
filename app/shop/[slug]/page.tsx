@@ -156,7 +156,7 @@ export default async function ProductPage({ params }: Props) {
             </div>
 
             {/* Price + CTA */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
               <div>
                 <div className="text-white/35 text-xs font-inter uppercase tracking-widest mb-0.5">Price</div>
                 <div className="font-playfair font-bold text-3xl text-white">
