@@ -35,8 +35,9 @@ function Logo({ scrolled }: { scrolled: boolean }) {
 }
 
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled]     = useState(false);
+  const [menuOpen, setMenuOpen]     = useState(false);
+  const [isPortrait, setIsPortrait] = useState(false);
   const { totalItems, dispatch } = useCart();
   const { nav } = useSiteConfig();
 
@@ -44,6 +45,14 @@ export default function Navbar() {
     const onScroll = () => setScrolled(window.scrollY > 60);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(orientation: portrait) and (max-width: 767px)");
+    const update = () => setIsPortrait(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
   }, []);
 
   return (
@@ -131,6 +140,24 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+
+      {/* Portrait-only nav strip — transparent, inherits header background */}
+      {isPortrait && (
+        <div className="overflow-x-auto scrollbar-none border-t border-black/10">
+          <div className="flex items-center gap-0.5 px-3 py-1.5 whitespace-nowrap">
+            {nav.links.map((link) => (
+              <Link
+                key={link.id}
+                href={link.href}
+                onClick={() => setMenuOpen(false)}
+                className="px-3 py-1.5 rounded-full text-xs font-medium font-inter transition-colors text-brand-dark/75 hover:text-brand-dark hover:bg-black/10"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Mobile drawer */}
       <div

@@ -8,6 +8,7 @@ const AVATAR_STYLES = [
   { bg: "rgba(245,190,77,0.90)",  border: "rgba(245,190,77,0.40)"  },
   { bg: "rgba(117,67,152,0.20)",  border: "rgba(117,67,152,0.30)"  },
   { bg: "rgba(245,190,77,0.90)",  border: "rgba(245,190,77,0.40)"  },
+  { bg: "rgba(117,67,152,0.20)",  border: "rgba(117,67,152,0.30)"  },
 ];
 
 export default function Testimonials() {
@@ -17,7 +18,7 @@ export default function Testimonials() {
   const titleEnd   = words.slice(-2).join(" ");
 
   return (
-    <section className="section-alt py-14 sm:py-28 px-4 sm:px-6" data-editor-key="testimonials">
+    <section className="section-alt py-8 sm:py-28 px-4 sm:px-6" data-editor-key="testimonials">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -29,7 +30,7 @@ export default function Testimonials() {
           <span className="text-brand-purple-light font-inter font-semibold text-xs uppercase tracking-[0.2em]">
             {testimonials.sectionLabel}
           </span>
-          <h2 className="font-playfair font-bold text-3xl sm:text-4xl md:text-5xl text-white mt-4">
+          <h2 className="font-playfair font-bold text-xl sm:text-4xl md:text-5xl text-white mt-3 sm:mt-4">
             {titleStart}{" "}
             <em className="text-gradient not-italic">{titleEnd}</em>
           </h2>
@@ -38,7 +39,7 @@ export default function Testimonials() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8 items-stretch">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-5 mb-8 items-stretch">
           {testimonials.items.map((r, i) => {
             const style = AVATAR_STYLES[i] ?? AVATAR_STYLES[0];
             return (
@@ -48,25 +49,25 @@ export default function Testimonials() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="rounded-2xl p-5 sm:p-7 flex flex-col h-full"
+                className="rounded-2xl p-3 sm:p-7 flex flex-col h-full"
                 style={{
                   background:  "rgba(255,246,220,0.70)",
                   border:      `1px solid ${style.border}`,
                   boxShadow:   "0 2px 24px rgba(10,10,15,0.06)",
                 }}
               >
-                <div className="text-brand-purple font-playfair text-5xl leading-none mb-3 select-none">&ldquo;</div>
-                <p className="text-brand-dark/70 leading-relaxed text-base font-inter mb-6 flex-1">{r.text}</p>
-                <div className="flex items-center gap-3">
+                <div className="text-brand-purple font-playfair text-2xl sm:text-5xl leading-none mb-1 sm:mb-3 select-none">&ldquo;</div>
+                <p className="text-brand-dark/70 leading-relaxed text-[10px] sm:text-base font-inter mb-3 sm:mb-6 flex-1">{r.text}</p>
+                <div className="flex items-center gap-2 sm:gap-3">
                   <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-brand-dark shrink-0"
+                    className="w-5 h-5 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[9px] sm:text-xs font-bold text-brand-dark shrink-0"
                     style={{ background: style.bg }}
                   >
                     {r.name[0]}
                   </div>
                   <div>
-                    <div className="font-inter font-semibold text-brand-dark text-base">{r.name}</div>
-                    <div className="text-brand-dark/45 text-sm font-inter">{r.detail}</div>
+                    <div className="font-inter font-semibold text-brand-dark text-[10px] sm:text-base">{r.name}</div>
+                    <div className="text-brand-dark/45 text-[9px] sm:text-sm font-inter">{r.detail}</div>
                   </div>
                 </div>
               </motion.div>

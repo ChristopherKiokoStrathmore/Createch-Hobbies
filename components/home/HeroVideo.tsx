@@ -32,7 +32,7 @@ export default function HeroVideo() {
 
       {/* CTA buttons — split left and right, fade out on scroll */}
       <div
-        className="absolute inset-0 z-10 flex items-center justify-between px-6 sm:px-10 lg:px-16 pointer-events-none transition-opacity duration-500"
+        className="absolute inset-0 z-10 flex items-center justify-between px-6 sm:px-10 lg:px-16 pointer-events-none transition-opacity duration-500 [@media(orientation:portrait)]:hidden"
         style={{ opacity: scrolled ? 0 : 1, pointerEvents: scrolled ? "none" : undefined }}
         data-editor-key="hero.cta"
       >
@@ -64,6 +64,28 @@ export default function HeroVideo() {
           </Link>
         </motion.div>
       </div>
+
+      {/* Portrait-only CTA row — pinned near the bottom of the hero, visible on page open */}
+      <motion.div
+        className="hidden [@media(orientation:portrait)]:flex absolute bottom-20 left-0 right-0 z-10 items-center justify-center gap-4 px-8"
+        style={{ opacity: scrolled ? 0 : 1, pointerEvents: scrolled ? "none" : "auto" }}
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <Link
+          href={hero.ctaPrimaryHref}
+          className="btn-yellow px-6 py-3 rounded-full text-sm font-semibold active:scale-95 shadow-lg shadow-black/30 flex-1 text-center"
+        >
+          {hero.ctaPrimaryLabel}
+        </Link>
+        <Link
+          href={hero.ctaSecondaryHref}
+          className="inline-flex items-center justify-center px-6 py-3 rounded-full border border-black/30 text-brand-dark text-sm font-semibold bg-black/10 hover:bg-black/20 transition-all active:scale-95 flex-1"
+        >
+          {hero.ctaSecondaryLabel}
+        </Link>
+      </motion.div>
 
       {/* Scroll prompt */}
       <motion.div

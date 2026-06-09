@@ -55,7 +55,7 @@ export default function ProductCard({ product }: Props) {
       >
         {/* Fallback emoji shown behind image */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-7xl select-none opacity-30">
+          <span className="text-4xl sm:text-7xl select-none opacity-30">
             {categoryEmoji[product.category]}
           </span>
         </div>
@@ -73,7 +73,7 @@ export default function ProductCard({ product }: Props) {
         )}
         {/* Badges */}
         <div className="absolute top-3 left-3">
-          <span className="bg-black/60 backdrop-blur-sm text-white text-xs font-medium px-2.5 py-1 rounded-full border border-white/10 font-inter">
+          <span className="bg-black/60 backdrop-blur-sm text-white text-[9px] sm:text-xs font-medium px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full border border-white/10 font-inter">
             {product.ageRange} yrs
           </span>
         </div>
@@ -93,35 +93,37 @@ export default function ProductCard({ product }: Props) {
       </Link>
 
       {/* Content */}
-      <div className="p-5 flex flex-col flex-1">
-        <div className="flex items-start justify-between gap-2 mb-2">
+      <div className="p-2 sm:p-5 flex flex-col flex-1">
+        <div className="flex items-start justify-between gap-1 sm:gap-2 mb-1 sm:mb-2">
           <Link
             href={`/shop/${product.slug}`}
-            className="font-playfair font-bold text-white text-lg leading-tight hover:text-brand-purple transition-colors"
+            className="font-playfair font-bold text-white text-xs sm:text-lg leading-tight hover:text-brand-purple transition-colors"
           >
             {product.name}
           </Link>
           <span
-            className={`shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full border font-inter ${difficultyStyles[product.difficulty]}`}
+            className={`shrink-0 text-[9px] sm:text-xs font-semibold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full border font-inter ${difficultyStyles[product.difficulty]}`}
           >
             {product.difficulty}
           </span>
         </div>
 
-        <p className="text-white/40 text-sm leading-relaxed mb-4 flex-1 font-inter">
+        <p className="hidden sm:block text-white/40 text-sm leading-relaxed mb-4 flex-1 font-inter">
           {product.description.slice(0, 85)}...
         </p>
 
-        <div className="flex items-center justify-between gap-3">
-          <span className="font-playfair font-bold text-2xl text-white">
+        <div className="flex items-center justify-between gap-1 sm:gap-3 mt-auto pt-1 sm:pt-0">
+          <span className="font-playfair font-bold text-sm sm:text-2xl text-white">
             {formatPrice(product.price)}
           </span>
           <button
             onClick={addToCart}
-            className="flex items-center gap-1.5 btn-yellow px-4 py-2 rounded-full text-sm active:scale-95 font-inter"
+            className="flex items-center gap-1 sm:gap-1.5 btn-yellow px-2 py-1.5 sm:px-4 sm:py-2 rounded-full text-[10px] sm:text-sm active:scale-95 font-inter"
           >
-            <ShoppingCart size={13} />
-            Add to Cart
+            <ShoppingCart size={11} className="sm:hidden" />
+            <ShoppingCart size={13} className="hidden sm:block" />
+            <span className="hidden sm:inline">Add to Cart</span>
+            <span className="sm:hidden">Add</span>
           </button>
         </div>
       </div>

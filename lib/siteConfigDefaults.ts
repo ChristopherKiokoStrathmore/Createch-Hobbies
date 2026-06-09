@@ -97,6 +97,7 @@ export const DEFAULT_CONFIG: SiteConfig = {
       { text: "My son built the Hydraulic Digger over a weekend and hasn't stopped talking about hydraulics since! Worth every shilling.", name: "Amina W.", detail: "Mum · Hydraulic Digger Kit" },
       { text: "Ordered via WhatsApp on a Saturday, received it Sunday morning. The Marble Run is now a permanent fixture in our living room.", name: "Grace M.", detail: "Mum · Marble Run Kit" },
       { text: "Great quality for the price. My son built the Tank kit then started modifying it. He's been at it for weeks.", name: "John O.", detail: "Dad · Tank Kit" },
+      { text: "My daughter finished the Windmill Kit in one afternoon and immediately asked for the next one. Best KES 1,500 I've spent.", name: "Faith K.", detail: "Mum · Windmill Kit" },
     ],
   },
   whatsAppCTA: {

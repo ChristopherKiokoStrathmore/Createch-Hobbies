@@ -55,5 +55,5 @@ export const galleryVideos: GalleryVideo[] = [
   { id: "v49", filename: "IMG_1250.mp4" },
 ];
 
-// First 3 shown on the homepage teaser
-export const featuredVideos = galleryVideos.slice(0, 3);
+// First 4 shown on the homepage teaser (2×2 portrait / 2×2 desktop)
+export const featuredVideos = galleryVideos.slice(0, 4);
