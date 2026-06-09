@@ -141,20 +141,22 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Portrait-only nav strip — transparent, inherits header background */}
+      {/* Portrait-only nav strip — skip "Home" (logo handles it), fit all in one row */}
       {isPortrait && (
-        <div className="overflow-x-auto scrollbar-none border-t border-black/10">
-          <div className="flex items-center gap-0.5 px-3 py-1.5 whitespace-nowrap">
-            {nav.links.map((link) => (
-              <Link
-                key={link.id}
-                href={link.href}
-                onClick={() => setMenuOpen(false)}
-                className="px-3 py-1.5 rounded-full text-xs font-medium font-inter transition-colors text-brand-dark/75 hover:text-brand-dark hover:bg-black/10"
-              >
-                {link.label}
-              </Link>
-            ))}
+        <div className="border-t border-black/10">
+          <div className="flex items-center justify-around px-2 py-1.5">
+            {nav.links
+              .filter((link) => link.href !== "/")
+              .map((link) => (
+                <Link
+                  key={link.id}
+                  href={link.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="px-2 py-1 rounded-full text-[10px] font-medium font-inter transition-colors text-brand-dark/75 hover:text-brand-dark hover:bg-black/10 whitespace-nowrap"
+                >
+                  {link.label}
+                </Link>
+              ))}
           </div>
         </div>
       )}

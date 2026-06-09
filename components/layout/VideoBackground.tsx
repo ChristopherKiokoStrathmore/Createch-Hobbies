@@ -168,7 +168,7 @@ export default function VideoBackground() {
         <button
           onClick={toggleMute}
           aria-label={userMuted ? "Unmute video" : "Mute video"}
-          className="fixed top-[4.5rem] left-4 z-50 flex items-center gap-2 bg-black/50 hover:bg-black/70 backdrop-blur-md border border-white/15 hover:border-brand-yellow/40 px-3.5 py-2 rounded-full transition-all duration-200 text-xs font-inter group"
+          className="fixed top-[4.5rem] [@media(orientation:portrait)]:top-[6.5rem] left-4 z-50 flex items-center gap-2 bg-black/50 hover:bg-black/70 backdrop-blur-md border border-white/15 hover:border-brand-yellow/40 px-3.5 py-2 rounded-full transition-all duration-200 text-xs font-inter group"
         >
           {userMuted ? (
             <>
