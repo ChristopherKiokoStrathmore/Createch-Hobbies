@@ -32,11 +32,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   } as React.CSSProperties;
 
   return (
-    <html lang="en" style={cssVars}>
+    <html lang="en" style={cssVars} data-scroll-behavior="smooth">
       <head>
-        <link rel="preload" as="video" href="/video/hero-landscape.mp4" media="(orientation: landscape)" />
-        <link rel="preload" as="video" href="/video/hero-portrait.mp4"  media="(orientation: portrait)" />
-      </head>
       <body>
         <SiteConfigProvider serverConfig={cfg}>
           <PublicShell>{children}</PublicShell>

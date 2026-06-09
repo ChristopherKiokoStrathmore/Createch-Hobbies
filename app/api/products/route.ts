@@ -39,7 +39,7 @@ function mergeWithStatic(wooList: WooProductRaw[]): Product[] {
         category:   woo.category   ?? "Science",
         ageRange:   woo.ageRange   ?? "6–12",
         difficulty: woo.difficulty ?? "Beginner",
-        images:     woo.images.length > 0 ? woo.images : ["/images/placeholder.png"],
+        images:     woo.images,
       };
     }
 
