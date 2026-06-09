@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useSiteConfig } from "@/context/SiteConfigContext";
 
@@ -17,6 +19,77 @@ const fadeUp = (delay = 0) => ({
   transition:  { duration: 0.65, delay, ease: [0.22, 1, 0.36, 1] },
 });
 
+function easeOutCubic(t: number) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function animateStat(raw: string, setter: (v: string) => void) {
+  const DURATION = 1800;
+  const start    = performance.now();
+
+  if (raw.includes("–")) {
+    // Range like "1–2" or "4–12" — animate the upper bound
+    const [minStr, maxStr] = raw.split("–");
+    const min = parseInt(minStr, 10);
+    const max = parseInt(maxStr, 10);
+    const tick = (now: number) => {
+      const progress = Math.min((now - start) / DURATION, 1);
+      const current  = Math.round(min + (max - min) * easeOutCubic(progress));
+      setter(`${min}–${current}`);
+      if (progress < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  } else if (raw.endsWith("+")) {
+    const num = parseInt(raw, 10);
+    const tick = (now: number) => {
+      const progress = Math.min((now - start) / DURATION, 1);
+      const current  = Math.round(num * easeOutCubic(progress));
+      setter(`${current}+`);
+      if (progress < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  } else {
+    setter(raw);
+  }
+}
+
+function CountUpStat({ value, label }: { value: string; label: string }) {
+  const [display, setDisplay] = useState(() => {
+    if (value.includes("–")) return value.replace(/\d+$/, "0");
+    if (value.endsWith("+"))  return "0+";
+    return value;
+  });
+  const ref          = useRef<HTMLDivElement>(null);
+  const hasAnimated  = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasAnimated.current) {
+          hasAnimated.current = true;
+          animateStat(value, setDisplay);
+        }
+      },
+      { threshold: 0.5 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [value]);
+
+  return (
+    <div ref={ref} className="flex flex-col items-center">
+      <span className="font-playfair font-bold text-brand-yellow text-3xl sm:text-4xl leading-none tabular-nums">
+        {display}
+      </span>
+      <span className="mt-1.5 text-white/50 text-xs tracking-wide font-inter uppercase">
+        {label}
+      </span>
+    </div>
+  );
+}
+
 export default function HeroContent() {
   const { hero } = useSiteConfig();
 
@@ -26,7 +99,7 @@ export default function HeroContent() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "linear-gradient(to bottom, rgba(10,10,15,0.55) 0%, rgba(10,10,15,0.70) 50%, rgba(10,10,15,0.82) 100%)",
+            "linear-gradient(to bottom, rgba(10,10,15,0.42) 0%, rgba(10,10,15,0.60) 55%, rgba(10,10,15,0.75) 100%)",
         }}
       />
 
@@ -59,20 +132,13 @@ export default function HeroContent() {
           {hero.subheadline}
         </motion.p>
 
-        {/* Stats */}
+        {/* Stats — count up on scroll into view */}
         <motion.div
           className="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-8"
           {...fadeUp(0.32)}
         >
           {stats.map((s) => (
-            <div key={s.label} className="flex flex-col items-center">
-              <span className="font-playfair font-bold text-brand-yellow text-3xl sm:text-4xl leading-none">
-                {s.value}
-              </span>
-              <span className="mt-1.5 text-white/50 text-xs tracking-wide font-inter uppercase">
-                {s.label}
-              </span>
-            </div>
+            <CountUpStat key={s.label} value={s.value} label={s.label} />
           ))}
         </motion.div>
       </div>

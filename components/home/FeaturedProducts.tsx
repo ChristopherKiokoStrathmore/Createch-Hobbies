@@ -20,7 +20,7 @@ export default function FeaturedProducts() {
   if (products.length === 0) return null;
 
   return (
-    <section className="section-base py-14 sm:py-28 px-4 sm:px-6">
+    <section className="section-base py-8 sm:py-28 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -33,7 +33,7 @@ export default function FeaturedProducts() {
             <span className="text-brand-purple-light font-inter font-semibold text-xs uppercase tracking-[0.2em]">
               Top Picks
             </span>
-            <h2 className="font-playfair font-bold text-3xl sm:text-4xl md:text-5xl text-white mt-4">
+            <h2 className="font-playfair font-bold text-xl sm:text-4xl md:text-5xl text-white mt-3 sm:mt-4">
               Most Popular{" "}
               <em className="text-gradient not-italic">Kits</em>
             </h2>
@@ -47,7 +47,7 @@ export default function FeaturedProducts() {
           </Link>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
           {products.map((product, i) => (
             <motion.div
               key={product.id}

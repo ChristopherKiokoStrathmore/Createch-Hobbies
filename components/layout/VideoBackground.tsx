@@ -11,7 +11,7 @@ const LOAD_TIMEOUT    = 5000;
 const STALL_TIMEOUT   = 3000;
 
 const FALLBACK_STYLE: React.CSSProperties = {
-  background: "linear-gradient(135deg, #0f0a1a 0%, #1a0a2e 45%, #0a0f1a 100%)",
+  backgroundColor: "#f5be4d",
 };
 
 export default function VideoBackground() {
@@ -127,7 +127,7 @@ export default function VideoBackground() {
     <>
       <div
         className="fixed inset-0 w-full h-full"
-        style={{ zIndex: -1 }}
+        style={{ zIndex: -1, backgroundColor: "#f5be4d" }}
         aria-hidden="true"
       >
         {skipVideo ? (
@@ -150,7 +150,7 @@ export default function VideoBackground() {
                 muted
                 preload="auto"
                 className="absolute inset-0 w-full h-full object-cover"
-                style={{ backgroundColor: "#0a0a0f", pointerEvents: "none" }}
+                style={{ backgroundColor: "transparent", pointerEvents: "none" }}
                 onCanPlay={handleCanPlay}
                 onStalled={handleStalled}
                 onWaiting={handleStalled}
