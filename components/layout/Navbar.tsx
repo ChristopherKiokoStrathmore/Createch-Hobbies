@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Menu, X, ShoppingCart } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { useSiteConfig } from "@/context/SiteConfigContext";
 
 function Logo({ scrolled }: { scrolled: boolean }) {
   const [imgFailed, setImgFailed] = useState(false);
@@ -32,19 +33,11 @@ function Logo({ scrolled }: { scrolled: boolean }) {
   );
 }
 
-const navLinks = [
-  { href: "/",           label: "Home"       },
-  { href: "/shop",       label: "Shop"       },
-  { href: "/gift-guide", label: "Gift Guide" },
-  { href: "/gallery",    label: "Gallery"    },
-  { href: "/about",      label: "About"      },
-  { href: "/contact",    label: "Contact"    },
-];
-
 export default function Navbar() {
-  const [scrolled, setScrolled]   = useState(false);
-  const [menuOpen, setMenuOpen]   = useState(false);
-  const { totalItems, dispatch }  = useCart();
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const { totalItems, dispatch } = useCart();
+  const { nav } = useSiteConfig();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -69,10 +62,10 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
+          <nav className="hidden md:flex items-center gap-8" data-editor-key="nav">
+            {nav.links.map((link) => (
               <Link
-                key={link.href}
+                key={link.id}
                 href={link.href}
                 className={`font-medium transition-colors text-sm tracking-wide ${
                   scrolled
@@ -145,9 +138,9 @@ export default function Navbar() {
         }`}
       >
         <div className="bg-[#f5be4d]/98 backdrop-blur-xl px-4 pb-6 pt-2 border-t border-brand-dark/10">
-          {navLinks.map((link) => (
+          {nav.links.map((link) => (
             <Link
-              key={link.href}
+              key={link.id}
               href={link.href}
               className="block py-3 text-brand-dark/70 hover:text-brand-dark font-medium border-b border-brand-dark/10 transition-colors"
               onClick={() => setMenuOpen(false)}

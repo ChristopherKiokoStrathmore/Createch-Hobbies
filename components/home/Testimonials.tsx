@@ -2,34 +2,22 @@
 
 import { motion } from "framer-motion";
 import { whatsappGeneralLink } from "@/lib/whatsapp";
+import { useSiteConfig } from "@/context/SiteConfigContext";
 
-const reviews = [
-  {
-    text: "My son built the Hydraulic Digger over a weekend and hasn't stopped talking about hydraulics since! Worth every shilling.",
-    name: "Amina W.",
-    detail: "Mum · Hydraulic Digger Kit",
-    avatarBg: "rgba(245,190,77,0.90)",
-    border: "rgba(245,190,77,0.40)",
-  },
-  {
-    text: "Ordered via WhatsApp on a Saturday, received it Sunday morning. The Marble Run is now a permanent fixture in our living room.",
-    name: "Grace M.",
-    detail: "Mum · Marble Run Kit",
-    avatarBg: "rgba(117,67,152,0.20)",
-    border: "rgba(117,67,152,0.30)",
-  },
-  {
-    text: "Great quality for the price. My son built the Tank kit then started modifying it. He's been at it for weeks.",
-    name: "John O.",
-    detail: "Dad · Tank Kit",
-    avatarBg: "rgba(245,190,77,0.90)",
-    border: "rgba(245,190,77,0.40)",
-  },
+const AVATAR_STYLES = [
+  { bg: "rgba(245,190,77,0.90)",  border: "rgba(245,190,77,0.40)"  },
+  { bg: "rgba(117,67,152,0.20)",  border: "rgba(117,67,152,0.30)"  },
+  { bg: "rgba(245,190,77,0.90)",  border: "rgba(245,190,77,0.40)"  },
 ];
 
 export default function Testimonials() {
+  const { testimonials } = useSiteConfig();
+  const words      = testimonials.sectionTitle.split(" ");
+  const titleStart = words.slice(0, -2).join(" ");
+  const titleEnd   = words.slice(-2).join(" ");
+
   return (
-    <section className="section-alt py-14 sm:py-28 px-4 sm:px-6">
+    <section className="section-alt py-14 sm:py-28 px-4 sm:px-6" data-editor-key="testimonials">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -39,11 +27,11 @@ export default function Testimonials() {
           className="text-center mb-8 sm:mb-14"
         >
           <span className="text-brand-purple-light font-inter font-semibold text-xs uppercase tracking-[0.2em]">
-            Customer Feedback
+            {testimonials.sectionLabel}
           </span>
           <h2 className="font-playfair font-bold text-3xl sm:text-4xl md:text-5xl text-white mt-4">
-            What Families{" "}
-            <em className="text-gradient not-italic">Are Saying</em>
+            {titleStart}{" "}
+            <em className="text-gradient not-italic">{titleEnd}</em>
           </h2>
           <p className="text-white/35 text-sm font-inter mt-3">
             Early feedback from our first customers
@@ -51,54 +39,48 @@ export default function Testimonials() {
         </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8 items-stretch">
-          {reviews.map((r, i) => (
-            <motion.div
-              key={r.name}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="rounded-2xl p-5 sm:p-7 flex flex-col h-full"
-              style={{
-                background: "rgba(255,246,220,0.70)",
-                border: `1px solid ${r.border}`,
-                boxShadow: "0 2px 24px rgba(10,10,15,0.06)",
-              }}
-            >
-              {/* Quote mark */}
-              <div className="text-brand-purple font-playfair text-5xl leading-none mb-3 select-none">
-                &ldquo;
-              </div>
-              <p className="text-brand-dark/70 leading-relaxed text-base font-inter mb-6 flex-1">
-                {r.text}
-              </p>
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-brand-dark shrink-0"
-                  style={{ background: r.avatarBg }}
-                >
-                  {r.name[0]}
+          {testimonials.items.map((r, i) => {
+            const style = AVATAR_STYLES[i] ?? AVATAR_STYLES[0];
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                className="rounded-2xl p-5 sm:p-7 flex flex-col h-full"
+                style={{
+                  background:  "rgba(255,246,220,0.70)",
+                  border:      `1px solid ${style.border}`,
+                  boxShadow:   "0 2px 24px rgba(10,10,15,0.06)",
+                }}
+              >
+                <div className="text-brand-purple font-playfair text-5xl leading-none mb-3 select-none">&ldquo;</div>
+                <p className="text-brand-dark/70 leading-relaxed text-base font-inter mb-6 flex-1">{r.text}</p>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-brand-dark shrink-0"
+                    style={{ background: style.bg }}
+                  >
+                    {r.name[0]}
+                  </div>
+                  <div>
+                    <div className="font-inter font-semibold text-brand-dark text-base">{r.name}</div>
+                    <div className="text-brand-dark/45 text-sm font-inter">{r.detail}</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="font-inter font-semibold text-brand-dark text-base">{r.name}</div>
-                  <div className="text-brand-dark/45 text-sm font-inter">{r.detail}</div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
 
-        {/* CTA for real reviews */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.3 }}
           className="rounded-2xl p-6 text-center"
-          style={{
-            background: "rgba(255,255,255,0.55)",
-            border: "1px dashed rgba(37,211,102,0.45)",
-          }}
+          style={{ background: "rgba(255,255,255,0.55)", border: "1px dashed rgba(37,211,102,0.45)" }}
         >
           <p className="text-brand-dark/55 text-sm font-inter mb-3">
             Bought a kit? We&apos;d love to hear how your child got on.

@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { Search } from "lucide-react";
+import { Search, ChevronDown } from "lucide-react";
 import { categories, type Category, type Difficulty, type Product } from "@/data/products";
 import ProductCard from "@/components/products/ProductCard";
 
@@ -36,6 +36,9 @@ function ShopContent() {
   const [activeDifficulty, setActiveDifficulty] = useState<Difficulty | "All">("All");
   const [activeAge, setActiveAge] = useState<AgeGroup | "All">("All");
   const [sort, setSort] = useState<"default" | "price-asc" | "price-desc">("default");
+  const [ageOpen, setAgeOpen]           = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [difficultyOpen, setDifficultyOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/products")
@@ -119,64 +122,114 @@ function ShopContent() {
           </select>
         </div>
 
-        {/* Age chips */}
-        <div className="mb-3">
-          <p className="text-white/30 text-[10px] uppercase tracking-widest font-inter mb-2">Age Group</p>
-          <div className="flex flex-wrap gap-2">
-            {(["All", ...ageGroups] as const).map((age) => (
-              <button
-                key={age}
-                onClick={() => setActiveAge(age as AgeGroup | "All")}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all font-inter ${
-                  activeAge === age
-                    ? "border-brand-yellow text-brand-dark bg-brand-yellow"
-                    : "border-white/15 text-white/50 hover:border-brand-dark/35 hover:text-brand-dark"
-                }`}
-              >
-                {age}
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Collapsible filters */}
+        <div className="flex flex-col sm:flex-row gap-2 mb-8">
 
-        {/* Category chips */}
-        <div className="mb-3">
-          <p className="text-white/30 text-[10px] uppercase tracking-widest font-inter mb-2">Category</p>
-          <div className="flex flex-wrap gap-2">
-            {(["All", ...categories] as const).map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all font-inter ${
-                  activeCategory === cat
-                    ? "border-brand-yellow text-brand-dark bg-brand-yellow"
-                    : "border-white/15 text-white/50 hover:border-brand-dark/35 hover:text-brand-dark"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+          {/* Age Group */}
+          <div className="flex-1 rounded-xl border border-white/10 overflow-hidden">
+            <button
+              onClick={() => setAgeOpen(!ageOpen)}
+              className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-white/5 transition-colors"
+            >
+              <span className="flex items-center gap-2 text-xs font-semibold font-inter text-white/60 uppercase tracking-widest">
+                Sort by Age Group
+                {activeAge !== "All" && (
+                  <span className="px-2 py-0.5 rounded-full bg-brand-yellow text-brand-dark text-[10px] font-bold normal-case tracking-normal">
+                    {activeAge}
+                  </span>
+                )}
+              </span>
+              <ChevronDown size={14} className={`text-white/30 transition-transform duration-200 ${ageOpen ? "rotate-180" : ""}`} />
+            </button>
+            {ageOpen && (
+              <div className="flex flex-wrap gap-2 px-4 pb-4 pt-1">
+                {(["All", ...ageGroups] as const).map((age) => (
+                  <button
+                    key={age}
+                    onClick={() => setActiveAge(age as AgeGroup | "All")}
+                    className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all font-inter ${
+                      activeAge === age
+                        ? "border-brand-yellow text-brand-dark bg-brand-yellow"
+                        : "border-white/15 text-white/50 hover:border-white/35 hover:text-white"
+                    }`}
+                  >
+                    {age}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
 
-        {/* Difficulty chips */}
-        <div className="mb-10">
-          <p className="text-white/30 text-[10px] uppercase tracking-widest font-inter mb-2">Difficulty</p>
-          <div className="flex flex-wrap gap-2">
-            {(["All", ...difficulties] as const).map((d) => (
-              <button
-                key={d}
-                onClick={() => setActiveDifficulty(d)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all font-inter ${
-                  activeDifficulty === d
-                    ? "border-brand-purple text-white bg-brand-purple"
-                    : "border-white/10 text-white/35 hover:border-brand-dark/30 hover:text-brand-dark"
-                }`}
-              >
-                {d}
-              </button>
-            ))}
+          {/* Category */}
+          <div className="flex-1 rounded-xl border border-white/10 overflow-hidden">
+            <button
+              onClick={() => setCategoryOpen(!categoryOpen)}
+              className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-white/5 transition-colors"
+            >
+              <span className="flex items-center gap-2 text-xs font-semibold font-inter text-white/60 uppercase tracking-widest">
+                Sort by Category
+                {activeCategory !== "All" && (
+                  <span className="px-2 py-0.5 rounded-full bg-brand-yellow text-brand-dark text-[10px] font-bold normal-case tracking-normal">
+                    {activeCategory}
+                  </span>
+                )}
+              </span>
+              <ChevronDown size={14} className={`text-white/30 transition-transform duration-200 ${categoryOpen ? "rotate-180" : ""}`} />
+            </button>
+            {categoryOpen && (
+              <div className="flex flex-wrap gap-2 px-4 pb-4 pt-1">
+                {(["All", ...categories] as const).map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all font-inter ${
+                      activeCategory === cat
+                        ? "border-brand-yellow text-brand-dark bg-brand-yellow"
+                        : "border-white/15 text-white/50 hover:border-white/35 hover:text-white"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+
+          {/* Difficulty */}
+          <div className="flex-1 rounded-xl border border-white/10 overflow-hidden">
+            <button
+              onClick={() => setDifficultyOpen(!difficultyOpen)}
+              className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-white/5 transition-colors"
+            >
+              <span className="flex items-center gap-2 text-xs font-semibold font-inter text-white/60 uppercase tracking-widest">
+                Sort by Difficulty
+                {activeDifficulty !== "All" && (
+                  <span className="px-2 py-0.5 rounded-full bg-brand-purple text-white text-[10px] font-bold normal-case tracking-normal">
+                    {activeDifficulty}
+                  </span>
+                )}
+              </span>
+              <ChevronDown size={14} className={`text-white/30 transition-transform duration-200 ${difficultyOpen ? "rotate-180" : ""}`} />
+            </button>
+            {difficultyOpen && (
+              <div className="flex flex-wrap gap-2 px-4 pb-4 pt-1">
+                {(["All", ...difficulties] as const).map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setActiveDifficulty(d)}
+                    className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all font-inter ${
+                      activeDifficulty === d
+                        ? "border-brand-purple text-white bg-brand-purple"
+                        : "border-white/10 text-white/35 hover:border-white/30 hover:text-white"
+                    }`}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
         </div>
 
         {/* Grid */}

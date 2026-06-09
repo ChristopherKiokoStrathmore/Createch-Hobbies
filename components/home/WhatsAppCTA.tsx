@@ -2,10 +2,13 @@
 
 import { motion } from "framer-motion";
 import { whatsappGeneralLink } from "@/lib/whatsapp";
+import { useSiteConfig } from "@/context/SiteConfigContext";
 
 export default function WhatsAppCTA() {
+  const { whatsAppCTA } = useSiteConfig();
+
   return (
-    <section className="section-base py-14 sm:py-28 px-4 sm:px-6">
+    <section className="section-base py-14 sm:py-28 px-4 sm:px-6" data-editor-key="whatsAppCTA">
       <div className="max-w-4xl mx-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.97 }}
@@ -36,10 +39,10 @@ export default function WhatsAppCTA() {
             </div>
 
             <h2 className="font-playfair font-bold text-3xl sm:text-4xl md:text-5xl text-white mb-4">
-              Need Help Choosing?
+              {whatsAppCTA.headline}
             </h2>
             <p className="text-white/55 text-sm sm:text-lg mb-6 sm:mb-9 max-w-lg mx-auto leading-relaxed font-inter">
-              Not sure which kit fits your child's age or interest? Have a question about a product? We're here. Chat with us on WhatsApp and we'll reply within minutes.
+              {whatsAppCTA.body}
             </p>
 
             <a

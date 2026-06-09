@@ -3,13 +3,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ShoppingBag, Users, ExternalLink, LogOut } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, Users, ExternalLink, LogOut, Paintbrush } from "lucide-react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 
 const NAV = [
-  { href: "/admin",           label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/orders",    label: "Orders",    icon: ShoppingBag     },
-  { href: "/admin/customers", label: "Customers", icon: Users           },
+  { href: "/admin",           label: "Dashboard",   icon: LayoutDashboard },
+  { href: "/admin/orders",    label: "Orders",       icon: ShoppingBag     },
+  { href: "/admin/customers", label: "Customers",    icon: Users           },
+  { href: "/admin/editor",    label: "Page Editor",  icon: Paintbrush      },
 ];
 
 function Sidebar() {
@@ -86,15 +87,15 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const { pin, loaded } = useAdminAuth();
 
   if (!loaded) {
-    return <div className="min-h-screen bg-brand-dark" />;
+    return <div className="min-h-screen" style={{ backgroundColor: "#0a0a0f" }} />;
   }
 
   if (!pin) {
-    return <div className="min-h-screen bg-brand-dark">{children}</div>;
+    return <div className="min-h-screen" style={{ backgroundColor: "#0a0a0f" }}>{children}</div>;
   }
 
   return (
-    <div className="flex min-h-screen bg-brand-dark">
+    <div className="flex min-h-screen" style={{ backgroundColor: "#0a0a0f" }}>
       <Sidebar />
       <div className="ml-60 flex-1 min-w-0 overflow-x-auto">
         {children}

@@ -59,15 +59,17 @@ export default function ProductCard({ product }: Props) {
             {categoryEmoji[product.category]}
           </span>
         </div>
-        <Image
-          src={product.images[0]}
-          alt={product.name}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
-          onError={(e) => {
-            (e.target as HTMLImageElement).style.display = "none";
-          }}
-        />
+        {product.images[0] && (
+          <Image
+            src={product.images[0]}
+            alt={product.name}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = "none";
+            }}
+          />
+        )}
         {/* Badges */}
         <div className="absolute top-3 left-3">
           <span className="bg-black/60 backdrop-blur-sm text-white text-xs font-medium px-2.5 py-1 rounded-full border border-white/10 font-inter">
