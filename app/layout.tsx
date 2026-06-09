@@ -33,7 +33,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" style={cssVars} data-scroll-behavior="smooth">
-      <head>
+      <head />
       <body>
         <SiteConfigProvider serverConfig={cfg}>
           <PublicShell>{children}</PublicShell>
