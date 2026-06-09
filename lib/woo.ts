@@ -132,7 +132,7 @@ export function mapWooProductRaw(p: WooProduct): WooProductRaw {
     price:        parseFloat(p.price) || 0,
     description:  stripHtml(p.short_description || p.description),
     whatYouLearn: mapWhatYouLearn(p.attributes),
-    images:       p.images.length ? p.images.map((img) => img.src) : ["/images/placeholder.png"],
+    images:       p.images.map((img) => img.src),
     inStock:      p.stock_status === "instock",
     featured:     p.featured,
   };

@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { motion } from "framer-motion";
+import { useSiteConfig } from "@/context/SiteConfigContext";
 
 const stats = [
   { value: "17+",  label: "Kit Designs"    },
@@ -18,9 +18,10 @@ const fadeUp = (delay = 0) => ({
 });
 
 export default function HeroContent() {
+  const { hero } = useSiteConfig();
+
   return (
     <section className="relative overflow-hidden py-28 sm:py-36 px-4 sm:px-6 lg:px-8">
-      {/* Dark cinematic scrim — lets video show through while keeping text readable */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -43,40 +44,20 @@ export default function HeroContent() {
           className="font-playfair font-bold text-white leading-[1.08] tracking-tight"
           style={{ fontSize: "clamp(2.4rem, 6vw, 4.5rem)" }}
           {...fadeUp(0.08)}
+          data-editor-key="hero.headline"
         >
-          Build Something{" "}
-          <span className="text-brand-yellow italic">Amazing</span>
-          <br />
-          Today
+          {hero.headline}
         </motion.h1>
 
         {/* Description */}
         <motion.p
           className="mt-6 text-white/65 text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto font-inter"
           {...fadeUp(0.16)}
+          data-editor-key="hero.subheadline"
+          suppressHydrationWarning
         >
-          DIY kits that spark creativity, teach STEM skills, and turn every child
-          into a builder.
+          {hero.subheadline}
         </motion.p>
-
-        {/* CTAs */}
-        <motion.div
-          className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
-          {...fadeUp(0.24)}
-        >
-          <Link
-            href="/shop"
-            className="btn-yellow px-8 py-3.5 rounded-full text-base font-semibold active:scale-95"
-          >
-            Shop All Kits
-          </Link>
-          <Link
-            href="/gift-guide"
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full border-2 border-white/30 text-white font-semibold text-base hover:border-white/60 hover:bg-white/5 transition-all active:scale-95"
-          >
-            Gift Guide
-          </Link>
-        </motion.div>
 
         {/* Stats */}
         <motion.div

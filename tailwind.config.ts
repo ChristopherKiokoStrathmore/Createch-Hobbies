@@ -10,19 +10,19 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          yellow: "#f5be4d",
-          purple: "#754398",
+          yellow:        "rgb(var(--c-yellow) / <alpha-value>)",
+          purple:        "rgb(var(--c-purple) / <alpha-value>)",
           "purple-light": "#9b5cc4",
-          "yellow-dark": "#d4a030",
-          dark: "#0a0a0f",
-          charcoal: "#12101a",
-          card: "#1a1625",
-          muted: "#6b6580",
+          "yellow-dark":  "#d4a030",
+          dark:          "rgb(var(--c-dark) / <alpha-value>)",
+          charcoal:      "#12101a",
+          card:          "#1a1625",
+          muted:         "#6b6580",
         },
       },
       fontFamily: {
-        playfair: ["Playfair Display", "Georgia", "serif"],
-        inter: ["Inter", "sans-serif"],
+        playfair: ["var(--font-heading)", "Georgia", "serif"],
+        inter:    ["var(--font-body)", "Inter", "sans-serif"],
       },
       animation: {
         ticker: "ticker 35s linear infinite",

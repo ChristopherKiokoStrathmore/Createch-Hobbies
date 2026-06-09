@@ -3,95 +3,93 @@
 import { useEffect, useRef, useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 
-const LANDSCAPE_SRC  = "/video/hero-landscape.mp4";
-const PORTRAIT_SRC   = "/video/hero-portrait.mp4";
-const LOAD_TIMEOUT   = 5000; // ms to wait for first canplay before falling back
-const STALL_TIMEOUT  = 3000; // ms to wait after a stall/waiting event before falling back
+const LANDSCAPE_VIDEO = "/video/hero-landscape.mp4";
+const PORTRAIT_VIDEO  = "/video/hero-portrait.mp4";
+const LANDSCAPE_GIF   = "/gif/logo-landscape.gif";
+const PORTRAIT_GIF    = "/gif/logo-portrait.gif";
+const LOAD_TIMEOUT    = 5000;
+const STALL_TIMEOUT   = 3000;
 
-// Dark purple gradient matching the video's colour palette — shown on slow networks
-// or whenever the video hangs.
 const FALLBACK_STYLE: React.CSSProperties = {
   background: "linear-gradient(135deg, #0f0a1a 0%, #1a0a2e 45%, #0a0f1a 100%)",
 };
 
 export default function VideoBackground() {
-  const [src, setSrc]               = useState<string>(LANDSCAPE_SRC);
+  const [isPortrait, setIsPortrait] = useState(false);
   const [userMuted, setUserMuted]   = useState(true);
   const [interacted, setInteracted] = useState(false);
   const [skipVideo, setSkipVideo]   = useState(false);
-  const videoRef   = useRef<HTMLVideoElement>(null);
-  const timerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [videoEnded, setVideoEnded] = useState(false);
+
+  const vidRef       = useRef<HTMLVideoElement>(null);
+  const timerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const userMutedRef = useRef(true);
+
+  useEffect(() => { userMutedRef.current = userMuted; }, [userMuted]);
 
   const clearTimer = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
   };
+  const fallBack = () => { clearTimer(); setSkipVideo(true); };
 
-  const fallBack = () => {
-    clearTimer();
-    setSkipVideo(true);
-  };
-
-  // Skip immediately if the device reports a slow or data-saving connection.
+  // Skip on slow / save-data connection.
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const conn = (navigator as any).connection;
-    if (
-      conn?.saveData ||
-      conn?.effectiveType === "slow-2g" ||
-      conn?.effectiveType === "2g"
-    ) {
+    if (conn?.saveData || conn?.effectiveType === "slow-2g" || conn?.effectiveType === "2g") {
       setSkipVideo(true);
     }
   }, []);
 
-  // Orientation: pick the right src on mount and swap on change.
+  // Orientation detection.
   useEffect(() => {
     const mq   = window.matchMedia("(orientation: portrait)");
-    const pick = () => setSrc(mq.matches ? PORTRAIT_SRC : LANDSCAPE_SRC);
+    const pick = () => setIsPortrait(mq.matches);
     pick();
     mq.addEventListener("change", pick);
     return () => mq.removeEventListener("change", pick);
   }, []);
 
-  // Each time src changes, arm a load timeout. canPlay clears it.
+  // On orientation change: reset and replay the appropriate video.
   useEffect(() => {
     if (skipVideo) return;
+    setVideoEnded(false);
     clearTimer();
+    const v = vidRef.current;
+    if (v) {
+      v.muted = userMutedRef.current;
+      v.load();
+      v.play().catch(() => {});
+    }
     timerRef.current = setTimeout(fallBack, LOAD_TIMEOUT);
     return clearTimer;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src, skipVideo]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPortrait, skipVideo]);
 
-  // After every key-remount restore mute preference and nudge play.
+  // Keep mute in sync.
   useEffect(() => {
-    const vid = videoRef.current;
-    if (!vid) return;
-    vid.muted = userMuted;
-    if (vid.paused) vid.play().catch(() => {});
-  }, [src, userMuted]);
+    const v = vidRef.current;
+    if (v) v.muted = userMuted;
+  }, [userMuted]);
 
-  // Tab visibility: resume when tab becomes visible.
+  // Resume on tab focus while video is still playing.
   useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === "visible") {
-        videoRef.current?.play().catch(() => {});
-      }
+      if (document.visibilityState !== "visible" || videoEnded) return;
+      vidRef.current?.play().catch(() => {});
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, []);
+  }, [videoEnded]);
 
-  // Unmute on first user interaction anywhere on the page.
+  // Unmute on first interaction.
   useEffect(() => {
     if (interacted) return;
     const unlock = () => {
       setUserMuted(false);
       setInteracted(true);
-      const vid = videoRef.current;
-      if (vid) vid.muted = false;
+      const v = vidRef.current;
+      if (v) v.muted = false;
     };
     window.addEventListener("click",      unlock, { once: true });
     window.addEventListener("touchstart", unlock, { once: true });
@@ -101,26 +99,29 @@ export default function VideoBackground() {
     };
   }, [interacted]);
 
-  const handleCanPlay = () => clearTimer();
-
-  const handleStalled = () => {
-    // Video stalled mid-play — give it a short grace period then fall back.
+  const handleCanPlay  = () => clearTimer();
+  const handlePlaying  = () => clearTimer();
+  const handleProgress = () => clearTimer();
+  const handleStalled  = () => {
     clearTimer();
     timerRef.current = setTimeout(fallBack, STALL_TIMEOUT);
   };
-
-  // If data arrives again before the stall timer fires, cancel the fallback.
-  const handleProgress  = () => clearTimer();
-  const handlePlaying   = () => clearTimer();
+  const handleEnded = () => {
+    clearTimer();
+    setVideoEnded(true);
+  };
 
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
     const next = !userMuted;
     setUserMuted(next);
     setInteracted(true);
-    const vid = videoRef.current;
-    if (vid) vid.muted = next;
+    const v = vidRef.current;
+    if (v) v.muted = next;
   };
+
+  const videoSrc = isPortrait ? PORTRAIT_VIDEO : LANDSCAPE_VIDEO;
+  const gifSrc   = isPortrait ? PORTRAIT_GIF   : LANDSCAPE_GIF;
 
   return (
     <>
@@ -132,27 +133,38 @@ export default function VideoBackground() {
         {skipVideo ? (
           <div className="absolute inset-0 w-full h-full" style={FALLBACK_STYLE} />
         ) : (
-          <video
-            key={src}
-            ref={videoRef}
-            src={src}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ backgroundColor: "#0a0a0f" }}
-            onCanPlay={handleCanPlay}
-            onStalled={handleStalled}
-            onWaiting={handleStalled}
-            onProgress={handleProgress}
-            onPlaying={handlePlaying}
-          />
+          <>
+            <img
+              key={gifSrc}
+              src={gifSrc}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+
+            {!videoEnded && (
+              <video
+                ref={vidRef}
+                src={videoSrc}
+                playsInline
+                autoPlay
+                muted
+                preload="auto"
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ backgroundColor: "#0a0a0f", pointerEvents: "none" }}
+                onCanPlay={handleCanPlay}
+                onStalled={handleStalled}
+                onWaiting={handleStalled}
+                onProgress={handleProgress}
+                onPlaying={handlePlaying}
+                onEnded={handleEnded}
+              />
+            )}
+          </>
         )}
       </div>
 
-      {!skipVideo && (
+      {/* Mute toggle — only while the hero video is playing */}
+      {!skipVideo && !videoEnded && (
         <button
           onClick={toggleMute}
           aria-label={userMuted ? "Unmute video" : "Mute video"}

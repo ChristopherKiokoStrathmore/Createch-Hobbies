@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { whatsappSubscribeLink } from "@/lib/whatsapp";
+import { useSiteConfig } from "@/context/SiteConfigContext";
 
 export default function NewsletterCapture() {
+  const { newsletter } = useSiteConfig();
   const [name, setName] = useState("");
 
   const handleSubscribe = () => {
@@ -15,16 +17,14 @@ export default function NewsletterCapture() {
   return (
     <div
       className="rounded-2xl p-6 mb-12"
-      style={{
-        background: "rgba(255,255,255,0.35)",
-        border: "1px solid rgba(10,10,15,0.12)",
-      }}
+      data-editor-key="newsletter"
+      style={{ background: "rgba(255,255,255,0.35)", border: "1px solid rgba(10,10,15,0.12)" }}
     >
       <h3 className="font-playfair font-bold text-brand-dark text-lg mb-1">
-        Stay Updated
+        {newsletter.title}
       </h3>
       <p className="text-brand-dark/55 text-sm font-inter mb-4">
-        New kits, promotions, and STEM ideas. Straight to your WhatsApp.
+        {newsletter.subtitle}
       </p>
       <div className="flex flex-row gap-2">
         <input
