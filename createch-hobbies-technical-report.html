@@ -448,7 +448,7 @@
   <div class="toc-item">
     <span class="toc-num">07</span>
     <span class="toc-title">Payment Integration</span>
-    <span class="toc-desc">IntaSend: M-Pesa, Airtel Money, and card payments</span>
+    <span class="toc-desc">iPay Africa: M-Pesa, Airtel Money, and card payments</span>
   </div>
   <div class="toc-item">
     <span class="toc-num">08</span>
@@ -596,8 +596,8 @@
       </tr>
       <tr>
         <td><strong>Payment gateway</strong></td>
-        <td>IntaSend</td>
-        <td>Kenya-focused, handles M-Pesa + Airtel Money + Visa/Mastercard under a single API. Competitive rates, local support, PCI-compliant hosted card page</td>
+        <td>iPay Africa</td>
+        <td>Kenya-focused hosted payment page. Handles M-Pesa, Airtel Money, and Visa/Mastercard. MD5-authenticated redirect, no card data on our servers. IPN callback updates order status automatically</td>
       </tr>
       <tr>
         <td><strong>Database</strong></td>
@@ -620,7 +620,7 @@
       <tr><td>Next.js store (Vercel)</td><td>Vercel</td><td>Free (Hobby plan, suitable for this traffic level)</td></tr>
       <tr><td>WordPress + WooCommerce</td><td>Cloudoon cPanel</td><td>Existing hosting, no added cost</td></tr>
       <tr><td>Django backend + PostgreSQL</td><td>Railway</td><td>Pay-as-you-go, typically $5–10/month at this scale</td></tr>
-      <tr><td>Payment processing</td><td>IntaSend</td><td>Per-transaction fee (M-Pesa ~1%, Cards ~2.9%)</td></tr>
+      <tr><td>Payment processing</td><td>iPay Africa</td><td>Per-transaction fee (M-Pesa ~1%, Cards ~2.9%)</td></tr>
     </tbody>
   </table>
 </div>
@@ -733,7 +733,7 @@
       <ul class="checklist">
         <li><code>orders/</code>: Order and OrderItem models, create and retrieve API</li>
         <li><code>mpesa/</code>: Legacy Safaricom Daraja integration (kept as fallback)</li>
-        <li><code>intasend/</code>: IntaSend payment client and webhook receiver</li>
+        <li><code>ipay/</code>: iPay Africa IPN receiver and order status updater</li>
       </ul>
     </div>
     <div class="card">
@@ -742,9 +742,9 @@
         <li><code>POST /api/orders/</code>: Create order, trigger payment</li>
         <li><code>GET /api/orders/</code>: List all orders (admin only)</li>
         <li><code>GET /api/orders/&lt;id&gt;/</code>: Single order detail</li>
-        <li><code>POST /api/intasend/webhook/</code>: IntaSend payment callback</li>
-        <li><code>POST /api/mpesa/callback/</code>: Legacy M-Pesa callback</li>
-        <li><code>GET /api/mpesa/status/&lt;id&gt;/</code>: Payment status poll</li>
+        <li><code>POST /api/orders/&lt;id&gt;/mark-paid/</code>: Mark order paid (called from iPay IPN)</li>
+        <li><code>POST /api/orders/&lt;id&gt;/mark-failed/</code>: Mark order failed</li>
+        <li><code>POST /api/mpesa/callback/</code>: Legacy M-Pesa callback (kept as fallback)</li>
         <li><code>GET /api/health/</code>: Service health check</li>
       </ul>
     </div>
@@ -754,7 +754,7 @@
   <div class="flow">
     <div class="flow-box dark">Order created<br/><small>pending</small></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box yellow">Payment sent<br/><small>STK push / redirect</small></div>
+    <div class="flow-box yellow">Payment sent<br/><small>iPay hosted page</small></div>
     <div class="flow-arrow">→</div>
     <div class="flow-box green">Webhook received<br/><small>paid</small></div>
     <div class="flow-arrow">→</div>
@@ -773,13 +773,12 @@
     <tbody>
       <tr><td>id</td><td>UUID</td><td>Unique order identifier (unpredictable, not sequential)</td></tr>
       <tr><td>customer_name</td><td>Text</td><td>Name entered at checkout</td></tr>
-      <tr><td>customer_phone</td><td>Text</td><td>Phone number used for STK push</td></tr>
+      <tr><td>customer_phone</td><td>Text</td><td>Phone number entered at checkout (used by iPay for M-Pesa/Airtel STK)</td></tr>
       <tr><td>delivery_address</td><td>Text</td><td>Delivery location</td></tr>
       <tr><td>total_amount</td><td>Decimal</td><td>Order total in KES</td></tr>
       <tr><td>payment_method</td><td>Choice</td><td>mpesa / airtel / card</td></tr>
       <tr><td>status</td><td>Choice</td><td>pending / paid / failed / processing / shipped / delivered</td></tr>
-      <tr><td>intasend_invoice_id</td><td>Text</td><td>IntaSend reference for M-Pesa, Airtel, and card payments</td></tr>
-      <tr><td>card_checkout_url</td><td>URL</td><td>IntaSend hosted card page URL for card payments</td></tr>
+      <tr><td>ipay_txn_code</td><td>Text</td><td>iPay Africa transaction code (receipt) from IPN callback</td></tr>
     </tbody>
   </table>
 
@@ -814,7 +813,7 @@
       <h4>Railway</h4>
       <p style="color:#276749;">Django Backend</p>
       <hr style="margin:10px 0; border-color:#68d391;" />
-      <p style="font-size:11px;">web-production-391a4.up.railway.app<br/>Processes all payments via IntaSend<br/>and stores every order.</p>
+      <p style="font-size:11px;">web-production-391a4.up.railway.app<br/>Processes all payments via iPay Africa<br/>and stores every order.</p>
     </div>
   </div>
 
@@ -847,7 +846,7 @@
     <div class="flow-arrow">→</div>
     <div class="flow-box green">POST /api/orders<br/><small>Railway (Django)</small></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box green">IntaSend<br/><small>payment triggered</small></div>
+    <div class="flow-box green">iPay Africa<br/><small>hosted payment page</small></div>
     <div class="flow-arrow">→</div>
     <div class="flow-box green">Webhook confirms<br/><small>order marked paid</small></div>
   </div>
@@ -864,7 +863,7 @@
   </div>
 
   <div class="highlight" style="margin-top:20px;">
-    <strong>Security model:</strong> WooCommerce API credentials live only on Vercel's servers, never in the browser. The Django admin key lives only in Vercel's environment variables. IntaSend API keys live only in Railway's environment variables. No sensitive credential is ever accessible to a browser or included in the client-side JavaScript bundle.
+    <strong>Security model:</strong> WooCommerce API credentials live only on Vercel's servers, never in the browser. The Django admin key lives only in Vercel's environment variables. iPay credentials (vendor ID and datakey) live only in Vercel's environment variables and are used server-side to compute the MD5 hash. No sensitive credential is ever accessible to a browser or included in the client-side JavaScript bundle.
   </div>
 </div>
 
@@ -946,101 +945,94 @@
   <div class="section-label">Section 07</div>
   <h2>Payment Integration</h2>
   <p>
-    All payments are processed through <strong>IntaSend</strong>, a Kenyan payment gateway that
-    handles M-Pesa, Airtel Money, and Visa/Mastercard under one API. This replaced the original
-    direct Safaricom Daraja integration and added Airtel Money and card support in a single change.
+    All payments are processed through <strong>iPay Africa</strong>, a Kenyan payment gateway that
+    handles M-Pesa, Airtel Money, and Visa/Mastercard through a single hosted payment page.
+    Customers are redirected to iPay's secure page to complete payment, then returned to the store.
   </p>
 
   <div class="plain">
-    <strong>Why IntaSend instead of integrating each provider separately?</strong> Integrating Safaricom Daraja, a separate Airtel API, and Stripe or Flutterwave for cards would mean three separate integrations to maintain, each with its own API keys, webhook endpoint, and failure modes. IntaSend handles all three through one integration with one dashboard, one webhook, and competitive Kenya-market rates.
+    <strong>Why iPay Africa?</strong> iPay is a Kenya-focused gateway that handles M-Pesa, Airtel Money, and card payments under one integration. The hosted-page model means no card data ever touches our servers, no STK push infrastructure to maintain on our side, and a single IPN (Instant Payment Notification) endpoint handles all payment methods. Competitive Kenya-market transaction rates with local support.
   </div>
 
   <div class="three-col" style="margin:20px 0;">
     <div class="card card-green" style="margin-bottom:0;">
       <h3 style="margin-top:0; color:#276749;">M-Pesa</h3>
-      <p style="margin:0; font-size:12px;">STK Push to customer's Safaricom number. Customer enters PIN to approve. Confirmation is automatic.</p>
+      <p style="margin:0; font-size:12px;">Customer selects M-Pesa on iPay's hosted page. iPay sends STK push to phone. Customer enters PIN to approve.</p>
     </div>
     <div class="card card-yellow" style="margin-bottom:0;">
       <h3 style="margin-top:0; color:#7a5a00;">Airtel Money</h3>
-      <p style="margin:0; font-size:12px;">STK Push to customer's Airtel number. Customer enters PIN to approve. Confirmation is automatic.</p>
+      <p style="margin:0; font-size:12px;">Customer selects Airtel Money on iPay's hosted page. iPay sends STK push to Airtel number. Customer enters PIN.</p>
     </div>
     <div class="card card-purple" style="margin-bottom:0;">
       <h3 style="margin-top:0; color:#4a2570;">Visa / Mastercard</h3>
-      <p style="margin:0; font-size:12px;">Customer redirected to IntaSend's hosted card page. PCI-compliant. No card data touches our servers.</p>
+      <p style="margin:0; font-size:12px;">Customer enters card details on iPay's PCI-compliant hosted page. No card data touches our servers.</p>
     </div>
   </div>
 
   <div class="plain" style="margin-top:16px;">
-    <strong>What is an STK Push?</strong> It is the pop-up that appears on a Safaricom or Airtel phone asking you to enter your M-Pesa or Airtel Money PIN to authorise a payment. When a customer checks out, our Django server calls IntaSend's API, which sends that pop-up to the customer's phone. The customer approves it, and IntaSend sends a webhook notification to our server within seconds confirming the payment.
+    <strong>How does the redirect work?</strong> When a customer clicks "Pay", our Next.js server builds a signed form with the order details and an MD5 hash (using the vendor ID and datakey). The browser auto-submits that form to iPay's URL. iPay processes the payment on their side, then redirects the customer back to our confirmation page and sends an IPN notification to our server.
   </div>
 
   <div class="section-label" style="margin-top:20px;">Payment Flows</div>
 
-  <p style="font-weight:600; font-size:11px; color:#276749; margin: 16px 0 6px;">M-PESA OR AIRTEL MONEY</p>
+  <p style="font-weight:600; font-size:11px; color:#276749; margin: 16px 0 6px;">ALL PAYMENT METHODS</p>
   <div class="flow" style="margin-bottom:16px;">
-    <div class="flow-box dark">Select M-Pesa<br/><small>or Airtel at checkout</small></div>
+    <div class="flow-box dark">Fill checkout form<br/><small>Vercel</small></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box green">Django creates order<br/><small>status: pending</small></div>
+    <div class="flow-box green">Create order<br/><small>Django (pending)</small></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box green">IntaSend STK push<br/><small>sent to phone</small></div>
+    <div class="flow-box yellow">iPay hosted page<br/><small>customer pays</small></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box dark">Customer approves<br/><small>enters PIN</small></div>
+    <div class="flow-box green">IPN callback<br/><small>Next.js /api/ipay/callback</small></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box green">Webhook received<br/><small>status: paid</small></div>
+    <div class="flow-box green">Order marked paid<br/><small>Django updated</small></div>
   </div>
 
-  <p style="font-weight:600; font-size:11px; color:#4a2570; margin-bottom:6px;">VISA / MASTERCARD</p>
   <div class="flow" style="margin-bottom:20px;">
-    <div class="flow-box dark">Select Card<br/><small>at checkout</small></div>
+    <div class="flow-box dark">Customer redirected<br/><small>back to our store</small></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box green">Django creates order<br/><small>gets checkout URL</small></div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-box yellow">IntaSend hosted page<br/><small>card details entered</small></div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-box green">Webhook received<br/><small>status: paid</small></div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-box dark">Redirected back<br/><small>to confirmation page</small></div>
+    <div class="flow-box green">Confirmation page<br/><small>/checkout/confirmation/[id]</small></div>
   </div>
 
   <div class="note">
-    <strong>What is a webhook?</strong> A webhook is an automatic notification that IntaSend sends to our server the moment a payment succeeds or fails, like a text message from IntaSend to Django saying "order ABC123 is paid." The server receives it and immediately updates the order status in the database. This is why the confirmation page reflects the correct status in real time.
+    <strong>What is an IPN?</strong> An IPN (Instant Payment Notification) is an automatic server-to-server notification that iPay sends to our <code>/api/ipay/callback</code> endpoint the moment a payment completes or fails. Our server receives it, verifies the status code, and immediately updates the order status in the Django database. This is why the confirmation page shows the correct status.
   </div>
 
   <div class="warning">
-    <strong>What if an order stays "pending" for a long time?</strong> The customer likely did not approve the STK push, or timed out. The order updates automatically when the webhook arrives. If still pending after 10 minutes, the customer cancelled or had insufficient funds and can try again. Contact IntaSend support with the customer's phone number and transaction time if a payment was deducted but the order did not update.
+    <strong>What if an order stays "pending" for a long time?</strong> The customer may have closed the iPay page before completing payment, or the payment was declined. The IPN will arrive and update the status automatically. If still pending after 10 minutes, the customer can try again from the checkout page. Contact iPay Africa support with the transaction reference if a payment was deducted but the order did not update.
   </div>
 
   <hr />
 
   <div class="two-col">
     <div class="card">
-      <h3 style="margin-top:0;">Backend Changes Made</h3>
+      <h3 style="margin-top:0;">Changes Made</h3>
       <ul class="checklist">
-        <li>New <code>intasend/</code> Django app: payment client + webhook view</li>
-        <li>Order model: added <code>payment_method</code>, <code>intasend_invoice_id</code>, <code>card_checkout_url</code></li>
-        <li>POST /api/orders now routes to IntaSend based on <code>payment_method</code></li>
-        <li>Webhook endpoint at <code>/api/intasend/webhook/</code></li>
-        <li><code>intasend-python</code> SDK added to requirements.txt</li>
-        <li>Old Daraja M-Pesa code retained as a fallback</li>
+        <li>New <code>lib/ipay.ts</code>: MD5 hash builder per iPay v3 spec</li>
+        <li>New <code>/api/ipay/initiate</code> route: creates Django order, returns signed iPay form fields</li>
+        <li>New <code>/api/ipay/callback</code> route: IPN handler, updates order on Django</li>
+        <li>Order model: <code>ipay_txn_code</code> replaces <code>intasend_invoice_id</code></li>
+        <li>Django needs: <code>POST /api/orders/&lt;id&gt;/mark-paid/</code> and <code>mark-failed/</code> endpoints</li>
+        <li>Checkout page now redirects to iPay instead of polling for STK push</li>
       </ul>
     </div>
     <div class="card card-yellow">
       <h3 style="margin-top:0;">Going Live Checklist</h3>
       <ul class="checklist">
-        <li>Create production account at intasend.com</li>
-        <li>Get live API keys from Settings → API Keys</li>
-        <li>Set <code>INTASEND_TEST_MODE=False</code> in Railway</li>
-        <li>Replace sandbox keys with production keys in Railway</li>
-        <li>Register webhook URL in IntaSend production dashboard</li>
+        <li>Create production account at ipayafrica.com</li>
+        <li>Get Vendor ID and Datakey from iPay dashboard</li>
+        <li>Add <code>IPAY_VENDOR_ID</code> and <code>IPAY_DATAKEY</code> to Vercel environment variables</li>
+        <li>Set <code>NODE_ENV=production</code> on Vercel (sets <code>live=1</code> in hash)</li>
+        <li>Register IPN URL in iPay dashboard</li>
         <li>Run one live M-Pesa test transaction end-to-end</li>
       </ul>
     </div>
   </div>
 
   <div class="highlight">
-    <strong>Webhook URL to register in IntaSend dashboard:</strong><br/>
-    <span class="url">https://web-production-391a4.up.railway.app/api/intasend/webhook/</span><br/>
-    <span style="font-size:11px; color:#555; margin-top:6px; display:block;">Go to IntaSend dashboard → Settings → Webhooks → Add URL. IntaSend sends a verification challenge when you save. The system handles this automatically.</span>
+    <strong>IPN URL to register in iPay dashboard:</strong><br/>
+    <span class="url">https://createch-hobbies.co.ke/api/ipay/callback</span><br/>
+    <span style="font-size:11px; color:#555; margin-top:6px; display:block;">Go to iPay dashboard → Settings → IPN / Webhook → Add URL. iPay will POST payment status notifications to this endpoint. The endpoint returns HTTP 200 to acknowledge receipt.</span>
   </div>
 </div>
 
@@ -1182,7 +1174,7 @@
   <div class="qa">
     <div class="qa-item">
       <div class="q">A customer was charged but their order does not appear in the dashboard.</div>
-      <div class="a">Filter orders by "Pending". The order is there but the webhook has not arrived yet. Wait 5–10 minutes. If it stays pending, contact IntaSend support with the customer's phone number and transaction time. They can confirm whether the payment went through on their end.</div>
+      <div class="a">Filter orders by "Pending". The order is there but the iPay IPN has not arrived yet. Wait 5–10 minutes. If it stays pending, contact iPay Africa support with the customer's phone number and transaction reference. They can confirm whether the payment went through on their end.</div>
     </div>
     <div class="qa-item">
       <div class="q">A price I updated in WooCommerce is not showing on the store yet.</div>
@@ -1214,10 +1206,8 @@
       <tr><td>WOO_KEY</td><td>Vercel</td><td>WooCommerce REST API consumer key</td></tr>
       <tr><td>WOO_SECRET</td><td>Vercel</td><td>WooCommerce REST API consumer secret</td></tr>
       <tr><td>NEXT_PUBLIC_API_URL</td><td>Vercel</td><td>Django backend URL on Railway</td></tr>
-      <tr><td>INTASEND_PUBLISHABLE_KEY</td><td>Railway</td><td>IntaSend publishable key (test or live)</td></tr>
-      <tr><td>INTASEND_SECRET_KEY</td><td>Railway</td><td>IntaSend secret key; never share this</td></tr>
-      <tr><td>INTASEND_TEST_MODE</td><td>Railway</td><td>True = sandbox testing, False = live real payments</td></tr>
-      <tr><td>FRONTEND_URL</td><td>Railway</td><td>https://createch-hobbies.co.ke, used for card redirect</td></tr>
+      <tr><td>IPAY_VENDOR_ID</td><td>Vercel</td><td>iPay Africa vendor ID from dashboard</td></tr>
+      <tr><td>IPAY_DATAKEY</td><td>Vercel</td><td>iPay Africa datakey (secret); used to sign the MD5 hash. Never share this</td></tr>
     </tbody>
   </table>
 
