@@ -25,6 +25,7 @@ function Logo({ scrolled }: { scrolled: boolean }) {
         src="/images/logo.png"
         alt="Createch Hobbies"
         fill
+        sizes="176px"
         className="object-contain object-left"
         priority
         onError={() => setImgFailed(true)}
