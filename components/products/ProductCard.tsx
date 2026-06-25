@@ -27,9 +27,10 @@ const categoryEmoji: Record<string, string> = {
 
 interface Props {
   product: Product;
+  priority?: boolean;
 }
 
-export default function ProductCard({ product }: Props) {
+export default function ProductCard({ product, priority = false }: Props) {
   const { dispatch } = useCart();
 
   function addToCart() {
@@ -64,6 +65,7 @@ export default function ProductCard({ product }: Props) {
             src={product.images[0]}
             alt={product.name}
             fill
+            priority={priority}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className="object-cover group-hover:scale-105 transition-transform duration-500"
             onError={(e) => {

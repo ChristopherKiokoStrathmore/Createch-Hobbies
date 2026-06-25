@@ -62,6 +62,7 @@ export default function SplashScreen() {
               alt="Createch Hobbies"
               fill
               priority
+              sizes="min(72vw, 300px)"
               style={{ objectFit: "contain" }}
             />
           </div>

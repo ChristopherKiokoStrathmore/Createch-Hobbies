@@ -3,7 +3,9 @@
 import { Suspense, useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, ChevronDown } from "lucide-react";
-import { categories, type Category, type Difficulty, type Product } from "@/data/products";
+import { type Category, type Difficulty, type Product } from "@/data/products";
+
+const CATEGORIES: Category[] = ["Vehicles", "Machines", "Science", "Space", "Robots", "Architecture"];
 import ProductCard from "@/components/products/ProductCard";
 
 const difficulties: Difficulty[] = ["Beginner", "Intermediate", "Advanced"];
@@ -50,7 +52,7 @@ function ShopContent() {
   /* Sync category filter from URL query param (?category=Science) */
   useEffect(() => {
     const cat = searchParams.get("category");
-    if (cat && (categories as readonly string[]).includes(cat)) {
+    if (cat && (CATEGORIES as readonly string[]).includes(cat)) {
       setActiveCategory(cat as Category);
     } else {
       setActiveCategory("All");
@@ -178,7 +180,7 @@ function ShopContent() {
             </button>
             {categoryOpen && (
               <div className="flex flex-wrap gap-2 px-4 pb-4 pt-1">
-                {(["All", ...categories] as const).map((cat) => (
+                {(["All", ...CATEGORIES] as const).map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setActiveCategory(cat)}
@@ -252,8 +254,8 @@ function ShopContent() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {filtered.map((product) => (
-              <ProductCard key={product.id} product={product} />
+            {filtered.map((product, i) => (
+              <ProductCard key={product.id} product={product} priority={i < 2} />
             ))}
           </div>
         )}

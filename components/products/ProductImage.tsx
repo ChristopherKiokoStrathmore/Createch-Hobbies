@@ -4,17 +4,18 @@ import Image from "next/image";
 import { useState } from "react";
 
 interface Props {
-  src: string;
+  src?: string;
   alt: string;
   fill?: boolean;
+  sizes?: string;
   className?: string;
   fallbackEmoji: string;
 }
 
-export default function ProductImage({ src, alt, fill, className, fallbackEmoji }: Props) {
+export default function ProductImage({ src, alt, fill, sizes, className, fallbackEmoji }: Props) {
   const [failed, setFailed] = useState(false);
 
-  if (failed) {
+  if (!src || failed) {
     return (
       <div className="absolute inset-0 flex items-center justify-center text-7xl select-none">
         {fallbackEmoji}
@@ -27,6 +28,7 @@ export default function ProductImage({ src, alt, fill, className, fallbackEmoji 
       src={src}
       alt={alt}
       fill={fill}
+      sizes={sizes}
       className={className}
       onError={() => setFailed(true)}
     />

@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
-import { products as staticProducts } from "@/data/products";
 import { getProduct, getProducts, wooConfigured } from "@/lib/woo";
 import type { Product } from "@/data/products";
 import { formatPrice } from "@/lib/utils";
@@ -31,46 +30,29 @@ const categoryEmoji: Record<string, string> = {
 };
 
 export async function generateStaticParams() {
-  if (wooConfigured) {
-    try {
-      const products = await getProducts();
-      return products.map((p) => ({ slug: p.slug }));
-    } catch {
-      // fall through to static fallback
-    }
+  if (!wooConfigured) return [];
+  try {
+    const products = await getProducts();
+    return products.map((p) => ({ slug: p.slug }));
+  } catch {
+    return [];
   }
-  return staticProducts.map((p) => ({ slug: p.slug }));
 }
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
 
-  let product: Product | null = null;
+  if (!wooConfigured) notFound();
 
-  if (wooConfigured) {
-    product = await getProduct(slug).catch(() => null);
-  }
-  if (!product) {
-    product = staticProducts.find((p) => p.slug === slug) ?? null;
-  }
-
+  const product: Product | null = await getProduct(slug).catch(() => null);
   if (!product) notFound();
 
-  // Related products from the same source
   let related: Product[] = [];
-  if (wooConfigured) {
-    try {
-      const all = await getProducts();
-      related = all.filter((p) => p.category === product!.category && p.id !== product!.id).slice(0, 3);
-    } catch {
-      related = staticProducts
-        .filter((p) => p.category === product!.category && p.id !== product!.id)
-        .slice(0, 3);
-    }
-  } else {
-    related = staticProducts
-      .filter((p) => p.category === product!.category && p.id !== product!.id)
-      .slice(0, 3);
+  try {
+    const all = await getProducts();
+    related = all.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 3);
+  } catch {
+    related = [];
   }
 
   return (
