@@ -15,9 +15,10 @@ const footerLinks = {
     { label: "Gift Guide", href: "/gift-guide" },
   ],
   Help: [
-    { label: "FAQ",      href: "/faq" },
-    { label: "About Us", href: "/about" },
-    { label: "Contact",  href: "/contact" },
+    { label: "FAQ",                 href: "/faq" },
+    { label: "About Us",            href: "/about" },
+    { label: "Contact",             href: "/contact" },
+    { label: "Terms & Conditions",  href: "/terms" },
   ],
 };
 
@@ -85,9 +86,14 @@ export default function Footer() {
           <p className="text-brand-dark/45 text-sm font-inter">
             © 2025 Createch Hobbies. Made with ❤️ in Nairobi, Kenya.
           </p>
-          <p className="text-brand-dark/35 text-xs font-inter">
-            All prices in KES · Delivery within Nairobi
-          </p>
+          <div className="flex items-center gap-4">
+            <p className="text-brand-dark/35 text-xs font-inter">
+              All prices in KES · Delivery within Nairobi
+            </p>
+            <Link href="/terms" className="text-brand-dark/35 hover:text-brand-dark/60 text-xs font-inter transition-colors">
+              Terms & Conditions
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

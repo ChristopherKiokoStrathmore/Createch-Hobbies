@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
 import { Car, Cog, FlaskConical, Rocket, Bot, Building2 } from "lucide-react";
-import { products } from "@/data/products";
+import type { Product } from "@/data/products";
 
 const ICON_CLASS = "w-10 h-10 sm:w-12 sm:h-12 text-white";
 const SW = 1.5;
@@ -60,11 +60,6 @@ const categoryMeta = [
   },
 ] as const;
 
-const categories = categoryMeta.map((meta) => ({
-  ...meta,
-  count: products.filter((p) => p.category === meta.name).length,
-}));
-
 function makeAnimate(from: { x: number; y: number; rotate: number }) {
   return {
     opacity: [0,         1,                1,                 1,                1],
@@ -83,6 +78,24 @@ const CARD_EASE      = ["easeOut", "easeOut", "easeInOut", "easeInOut"] as const
 export default function CategoryShowcase() {
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: false, amount: 0.15 });
+
+  const [categories, setCategories] = useState(() =>
+    categoryMeta.map((meta) => ({ ...meta, count: 0 }))
+  );
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then((r) => r.json())
+      .then((data: Product[]) => {
+        setCategories(
+          categoryMeta.map((meta) => ({
+            ...meta,
+            count: data.filter((p) => p.category === meta.name).length,
+          }))
+        );
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <section

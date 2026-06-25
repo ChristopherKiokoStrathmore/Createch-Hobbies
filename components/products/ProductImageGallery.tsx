@@ -19,6 +19,7 @@ export default function ProductImageGallery({ images, productName, fallbackEmoji
         <ProductImage
           src={images[active]}
           alt={productName}
+          sizes="(max-width: 768px) 100vw, 50vw"
           fill
           className="object-cover transition-opacity duration-200"
           fallbackEmoji={fallbackEmoji}
@@ -43,6 +44,7 @@ export default function ProductImageGallery({ images, productName, fallbackEmoji
                 src={img}
                 alt={`${productName} — view ${i + 1}`}
                 fill
+                sizes="64px"
                 className="object-cover"
                 fallbackEmoji={fallbackEmoji}
               />

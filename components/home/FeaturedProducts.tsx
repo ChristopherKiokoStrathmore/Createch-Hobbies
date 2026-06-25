@@ -56,7 +56,7 @@ export default function FeaturedProducts() {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
             >
-              <ProductCard product={product} />
+              <ProductCard product={product} priority={i === 0} />
             </motion.div>
           ))}
         </div>

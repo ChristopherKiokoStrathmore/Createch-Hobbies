@@ -5,32 +5,41 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ShoppingBag, Smartphone, Loader2, AlertCircle,
-  ChevronLeft, CreditCard, Radio,
+  ChevronLeft, CreditCard, CheckCircle2,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/utils";
+import {
+  initCart,
+  syncCartItems,
+  checkoutWoo,
+  normalisePhone,
+  isValidMpesaPhone,
+  type WooBillingAddress,
+} from "@/lib/woo-store";
 
-type PaymentMethod = "mpesa" | "airtel" | "card";
-type Step = "form" | "failed";
+type PaymentMethod = "mpesa" | "card";
+type Step = "form" | "pending" | "failed";
 
 const METHOD_OPTIONS: { id: PaymentMethod; label: string; sub: string; icon: React.ReactNode }[] = [
-  { id: "mpesa",  label: "M-Pesa",       sub: "Safaricom M-Pesa",   icon: <Smartphone size={18} /> },
-  { id: "airtel", label: "Airtel Money", sub: "Airtel Money Kenya",  icon: <Radio size={18} /> },
-  { id: "card",   label: "Card",         sub: "Visa / Mastercard",  icon: <CreditCard size={18} /> },
+  { id: "mpesa", label: "M-Pesa", sub: "Safaricom STK Push", icon: <Smartphone size={18} /> },
+  { id: "card",  label: "Card",   sub: "Visa / Mastercard",  icon: <CreditCard  size={18} /> },
 ];
 
 export default function CheckoutPage() {
-  const router              = useRouter();
-  const { state, totalPrice } = useCart();
-  const [step, setStep]     = useState<Step>("form");
-  const [error, setError]   = useState("");
+  const router                  = useRouter();
+  const { state, totalPrice, dispatch } = useCart();
+  const [step, setStep]         = useState<Step>("form");
+  const [error, setError]       = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingOrderId, setPendingOrderId] = useState<number | null>(null);
 
   const [form, setForm] = useState({
     name:           "",
     phone:          "",
     email:          "",
     address:        "",
+    mpesa_phone:    "",
     payment_method: "mpesa" as PaymentMethod,
   });
 
@@ -44,53 +53,107 @@ export default function CheckoutPage() {
     e.preventDefault();
     if (isSubmitting) return;
     setError("");
+
+    if (form.payment_method === "mpesa") {
+      const normalised = normalisePhone(form.mpesa_phone);
+      if (!isValidMpesaPhone(normalised)) {
+        setError("Enter your M-Pesa number in the format 0712 345 678 or 2547XXXXXXXX.");
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
-      const res = await fetch("/api/ipay/initiate", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customer_name:    form.name.trim(),
-          customer_phone:   form.phone.trim(),
-          customer_email:   form.email.trim(),
-          delivery_address: form.address.trim(),
-          payment_method:   form.payment_method,
-          total:            totalPrice,
-          items: state.items.map((i) => ({
-            product_id:   i.id,
-            product_name: i.name,
-            product_slug: i.slug,
-            quantity:     i.quantity,
-            unit_price:   i.price,
-          })),
-        }),
-      });
+      // Step 1: Init WooCommerce cart session
+      const { cartToken, nonce } = await initCart();
 
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error ?? "Failed to initiate payment");
+      // Step 2: Sync local cart items into WooCommerce cart
+      const { cartToken: token2, nonce: nonce2 } = await syncCartItems(
+        state.items.map((i) => ({ productId: parseInt(i.id, 10) || 0, quantity: i.quantity })),
+        cartToken,
+        nonce
+      );
 
-      const { fields, ipayUrl } = result;
+      // Step 3: Build billing address for WooCommerce
+      const nameParts = form.name.trim().split(/\s+/);
+      const firstName = nameParts[0] ?? form.name.trim();
+      const lastName  = nameParts.slice(1).join(" ") || "-";
 
-      const formEl = document.createElement("form");
-      formEl.method = "POST";
-      formEl.action = ipayUrl;
-      Object.entries(fields as Record<string, string>).forEach(([key, value]) => {
-        const input = document.createElement("input");
-        input.type  = "hidden";
-        input.name  = key;
-        input.value = value;
-        formEl.appendChild(input);
-      });
-      document.body.appendChild(formEl);
-      formEl.submit();
+      const billing: WooBillingAddress = {
+        first_name: firstName,
+        last_name:  lastName,
+        email:      form.email.trim() || "orders@createch-hobbies.co.ke",
+        phone:      form.phone.trim(),
+        address_1:  form.address.trim(),
+        city:       "Nairobi",
+        country:    "KE",
+        state:      "KE47",
+        postcode:   "00100",
+      };
+
+      // Step 4: Submit checkout to WooCommerce Store API
+      const result = await checkoutWoo(
+        {
+          billing,
+          paymentMethod: form.payment_method === "mpesa" ? "wc_mpesa_stk" : "woocommerce_dpo",
+          paymentData:
+            form.payment_method === "mpesa"
+              ? [{ key: "mpesa_phone", value: normalisePhone(form.mpesa_phone) }]
+              : [],
+        },
+        token2,
+        nonce2
+      );
+
+      dispatch({ type: "CLEAR_CART" });
+
+      if (form.payment_method === "card" && result.redirectUrl) {
+        window.location.href = result.redirectUrl;
+        return;
+      }
+
+      setPendingOrderId(result.orderId);
+      setStep("pending");
+
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      setStep("failed");
+    } finally {
       setIsSubmitting(false);
     }
   }
 
-  /* ─────────────────── FAILED SCREEN ─────────────────── */
+  /* ─── M-Pesa pending screen ─── */
+  if (step === "pending") {
+    return (
+      <main className="min-h-screen bg-brand-dark flex items-center justify-center px-4 pt-24 pb-16">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="mx-auto w-16 h-16 rounded-full bg-brand-yellow/20 flex items-center justify-center">
+            <Smartphone size={32} className="text-brand-yellow" />
+          </div>
+          <h2 className="font-playfair font-bold text-3xl text-white">Check Your Phone</h2>
+          <p className="text-white/60 font-inter text-sm leading-relaxed">
+            An M-Pesa prompt has been sent to{" "}
+            <strong className="text-white">{normalisePhone(form.mpesa_phone)}</strong>.
+            Enter your PIN to complete the payment.
+          </p>
+          {pendingOrderId && (
+            <p className="text-white/30 font-inter text-xs">Order #{pendingOrderId}</p>
+          )}
+          <div className="flex items-center justify-center gap-2 text-white/40 font-inter text-xs">
+            <CheckCircle2 size={14} className="text-green-400" />
+            Your order is saved. We will confirm once payment is received.
+          </div>
+          <Link href="/shop" className="block text-brand-yellow font-inter text-sm underline underline-offset-4">
+            Continue Shopping
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  /* ─── Failed screen ─── */
   if (step === "failed") {
     return (
       <main className="min-h-screen bg-brand-dark flex items-center justify-center px-4 pt-24 pb-16">
@@ -111,7 +174,7 @@ export default function CheckoutPage() {
     );
   }
 
-  /* ─────────────────── CHECKOUT FORM ─────────────────── */
+  /* ─── Checkout form ─── */
   const selected = METHOD_OPTIONS.find((m) => m.id === form.payment_method)!;
 
   return (
@@ -139,7 +202,7 @@ export default function CheckoutPage() {
               <h2 className="font-inter font-semibold text-white mb-4 text-sm uppercase tracking-widest">
                 Payment Method
               </h2>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 {METHOD_OPTIONS.map((opt) => {
                   const active = form.payment_method === opt.id;
                   return (
@@ -181,7 +244,7 @@ export default function CheckoutPage() {
                 </div>
 
                 <div>
-                  <label className="block text-white/50 text-xs font-inter mb-1.5">Phone Number</label>
+                  <label className="block text-white/50 text-xs font-inter mb-1.5">Contact Phone</label>
                   <input
                     required
                     type="tel"
@@ -190,11 +253,6 @@ export default function CheckoutPage() {
                     placeholder="0712 345 678"
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-inter text-sm placeholder:text-white/20 focus:outline-none focus:border-brand-yellow/60 transition-colors"
                   />
-                  {(form.payment_method === "mpesa" || form.payment_method === "airtel") && (
-                    <p className="text-white/25 text-xs font-inter mt-1.5">
-                      iPay will send a {form.payment_method === "airtel" ? "Airtel Money" : "M-Pesa"} prompt to this number.
-                    </p>
-                  )}
                 </div>
 
                 <div>
@@ -219,10 +277,30 @@ export default function CheckoutPage() {
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-inter text-sm placeholder:text-white/20 focus:outline-none focus:border-brand-yellow/60 transition-colors resize-none"
                   />
                 </div>
+
+                {/* M-Pesa phone field — only shown when M-Pesa is selected */}
+                {form.payment_method === "mpesa" && (
+                  <div>
+                    <label className="block text-white/50 text-xs font-inter mb-1.5">
+                      M-Pesa Number <span className="text-brand-yellow">*</span>
+                    </label>
+                    <input
+                      required
+                      type="tel"
+                      value={form.mpesa_phone}
+                      onChange={(e) => setForm({ ...form, mpesa_phone: e.target.value })}
+                      placeholder="e.g. 0712 345 678 or 2547XXXXXXXX"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-inter text-sm placeholder:text-white/20 focus:outline-none focus:border-brand-yellow/60 transition-colors"
+                    />
+                    <p className="text-white/25 text-xs font-inter mt-1.5">
+                      You will receive an M-Pesa prompt on this number to enter your PIN.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
-            {error && (
+            {error && step === "form" && (
               <div className="flex items-start gap-2 bg-red-100 border border-red-300 rounded-xl px-4 py-3">
                 <AlertCircle size={15} className="text-red-700 mt-0.5 shrink-0" />
                 <p className="text-red-700 text-sm font-inter">{error}</p>
@@ -237,7 +315,7 @@ export default function CheckoutPage() {
               {isSubmitting ? (
                 <>
                   <Loader2 size={18} className="animate-spin" />
-                  Redirecting to iPay…
+                  Processing…
                 </>
               ) : (
                 <>
@@ -248,14 +326,16 @@ export default function CheckoutPage() {
             </button>
 
             <p className="text-white/25 text-xs text-center font-inter">
-              You will be redirected to iPay&apos;s secure payment page to complete your purchase.
+              {form.payment_method === "mpesa"
+                ? "You will receive an M-Pesa STK push on your phone to confirm."
+                : "You will be redirected to DPO Pay's secure card payment page."}
             </p>
 
             <Link
               href="/shop"
               className="block text-center text-white/30 hover:text-white font-inter text-sm underline underline-offset-4 transition-colors"
             >
-              ← Continue Shopping
+              Continue Shopping
             </Link>
           </form>
 
@@ -276,7 +356,7 @@ export default function CheckoutPage() {
                       {item.name}
                     </p>
                     <p className="text-white/40 font-inter text-xs">
-                      {formatPrice(item.price)} × {item.quantity}
+                      {formatPrice(item.price)} x {item.quantity}
                     </p>
                   </div>
                   <span className="text-white font-bold font-inter text-sm shrink-0">
@@ -294,7 +374,7 @@ export default function CheckoutPage() {
             </div>
 
             <p className="mt-3 text-white/25 text-xs font-inter">
-              Delivery across Nairobi, usually 1–2 days. Delivery fee TBD.
+              Delivery across Nairobi, usually 1-2 days. Delivery fee TBD.
             </p>
           </div>
         </div>
