@@ -164,7 +164,10 @@ const sections = [
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6 bg-brand-dark">
+    <div
+      className="min-h-screen pt-24 pb-20 px-4 sm:px-6"
+      style={{ backgroundColor: "rgb(10, 10, 15)" }}
+    >
       <div className="max-w-3xl mx-auto">
 
         {/* Header */}
@@ -175,7 +178,7 @@ export default function TermsPage() {
           <h1 className="font-playfair font-bold text-4xl sm:text-5xl text-white mt-5 mb-4">
             Terms and <em className="text-gradient not-italic">Conditions</em>
           </h1>
-          <p className="text-white/45 text-base font-inter">
+          <p className="text-white/60 text-base font-inter">
             Effective Date: 1st July 2025. Nairobi, Kenya.
           </p>
         </div>
@@ -183,9 +186,9 @@ export default function TermsPage() {
         {/* Intro */}
         <div
           className="rounded-2xl p-6 mb-10"
-          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+          style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}
         >
-          <p className="text-white/60 text-sm font-inter leading-relaxed">
+          <p className="text-white/80 text-sm font-inter leading-relaxed">
             These Terms and Conditions ("Terms") govern all purchases, transactions, and interactions between Createch Enterprises LLP (also known as "Createch Hobbies") and any customer who purchases products or services from us, whether in-store, via our website, or through any other channel. By placing an order or making a purchase, you agree to be bound by these Terms in their entirety.
           </p>
         </div>
@@ -195,14 +198,14 @@ export default function TermsPage() {
           {sections.map((section) => (
             <div key={section.title}>
               <h2 className="font-playfair font-bold text-white text-xl mb-4 pb-3"
-                style={{ borderBottom: "1px solid rgba(117,67,152,0.25)" }}>
+                style={{ borderBottom: "1px solid rgba(117,67,152,0.35)" }}>
                 {section.title}
               </h2>
 
               {section.content && (
                 <ul className="space-y-3">
                   {section.content.map((line, i) => (
-                    <li key={i} className="text-white/60 text-sm font-inter leading-relaxed">
+                    <li key={i} className="text-white/75 text-sm font-inter leading-relaxed">
                       {line}
                     </li>
                   ))}
@@ -213,10 +216,10 @@ export default function TermsPage() {
                 <div className="space-y-5">
                   {section.subsections.map((sub) => (
                     <div key={sub.heading}>
-                      <h3 className="font-inter font-semibold text-white/85 text-sm mb-2">
+                      <h3 className="font-inter font-semibold text-white text-sm mb-2">
                         {sub.heading}
                       </h3>
-                      <p className="text-white/60 text-sm font-inter leading-relaxed">
+                      <p className="text-white/75 text-sm font-inter leading-relaxed">
                         {sub.body}
                       </p>
                     </div>
@@ -225,27 +228,27 @@ export default function TermsPage() {
               )}
 
               {section.contact && (
-                <div className="space-y-3 text-sm font-inter text-white/60">
+                <div className="space-y-3 text-sm font-inter text-white/80">
                   <p>For queries, complaints, or refund requests, contact us through:</p>
                   <ul className="space-y-2 mt-3">
                     <li>
-                      <span className="text-white/40 text-xs uppercase tracking-wider">Email: </span>
+                      <span className="text-white/55 text-xs uppercase tracking-wider">Email: </span>
                       <a href="mailto:createch.hobbies@gmail.com" className="text-brand-purple hover:text-brand-purple-light transition-colors">
                         createch.hobbies@gmail.com
                       </a>
                     </li>
                     <li>
-                      <span className="text-white/40 text-xs uppercase tracking-wider">Phone / WhatsApp: </span>
+                      <span className="text-white/55 text-xs uppercase tracking-wider">Phone / WhatsApp: </span>
                       <a href="https://wa.me/254742152233" target="_blank" rel="noopener noreferrer" className="text-brand-purple hover:text-brand-purple-light transition-colors">
                         +254 742 152 233
                       </a>
                     </li>
                     <li>
-                      <span className="text-white/40 text-xs uppercase tracking-wider">Address: </span>
+                      <span className="text-white/55 text-xs uppercase tracking-wider">Address: </span>
                       <span>Laxcon Court and Plaza, Mall Section, Ground Floor, 3B, Nairobi, Kenya</span>
                     </li>
                     <li>
-                      <span className="text-white/40 text-xs uppercase tracking-wider">Business Hours: </span>
+                      <span className="text-white/55 text-xs uppercase tracking-wider">Business Hours: </span>
                       <span>Monday to Friday, 9:00 AM to 5:00 PM EAT</span>
                     </li>
                   </ul>
@@ -264,7 +267,7 @@ export default function TermsPage() {
           }}
         >
           <h3 className="font-playfair font-bold text-white text-lg mb-3">Acceptance of Terms</h3>
-          <p className="text-white/60 text-sm font-inter leading-relaxed">
+          <p className="text-white/80 text-sm font-inter leading-relaxed">
             By purchasing any product from Createch Hobbies, whether in-store, online, or through any other channel, you confirm that you have read, understood, and agree to be bound by these Terms and Conditions in full.
           </p>
         </div>
@@ -273,7 +276,7 @@ export default function TermsPage() {
           <Link href="/shop" className="text-brand-purple text-sm font-inter hover:underline font-semibold">
             Browse all kits
           </Link>
-          <span className="text-white/20 mx-3">|</span>
+          <span className="text-white/40 mx-3">|</span>
           <Link href="/contact" className="text-brand-purple text-sm font-inter hover:underline font-semibold">
             Contact us
           </Link>
