@@ -3,62 +3,92 @@
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
-import { Car, Cog, FlaskConical, Rocket, Bot, Building2 } from "lucide-react";
+import { Car, Cog, FlaskConical, Rocket, Bot, Building2, type LucideIcon } from "lucide-react";
 import type { Product } from "@/data/products";
 
-const ICON_CLASS = "w-10 h-10 sm:w-12 sm:h-12 text-white";
+const ICON_SIZE = "w-10 h-10 sm:w-12 sm:h-12";
 const SW = 1.5;
 
-const categoryMeta = [
+type CategoryMeta = {
+  name:       string;
+  Icon:       LucideIcon;
+  gradient:   string;
+  glowBase:   string;
+  glowHover:  string;
+  iconColor:  string;
+  labelColor: string;
+  countColor: string;
+  from:       { x: number; y: number; rotate: number };
+};
+
+const categoryMeta: CategoryMeta[] = [
   {
-    name:      "Vehicles",
-    icon:      <Car      className={ICON_CLASS} strokeWidth={SW} />,
-    gradient:  "from-[#ef4444] to-[#991b1b]",
-    glowBase:  "rgba(239,68,68,0.22)",
-    glowHover: "rgba(239,68,68,0.60)",
+    name:       "Vehicles",
+    Icon:       Car,
+    gradient:   "from-[#f56a77] to-[#b83347]",
+    glowBase:   "rgba(245,106,119,0.22)",
+    glowHover:  "rgba(245,106,119,0.60)",
+    iconColor:  "text-white",
+    labelColor: "text-white",
+    countColor: "rgba(255,255,255,0.60)",
     from: { x:  700, y: -210, rotate:  46 },
   },
   {
-    name:      "Machines",
-    icon:      <Cog      className={ICON_CLASS} strokeWidth={SW} />,
-    gradient:  "from-[#3b82f6] to-[#1d4ed8]",
-    glowBase:  "rgba(59,130,246,0.22)",
-    glowHover: "rgba(59,130,246,0.60)",
+    name:       "Machines",
+    Icon:       Cog,
+    gradient:   "from-[#418cdb] to-[#1a5ca8]",
+    glowBase:   "rgba(65,140,219,0.22)",
+    glowHover:  "rgba(65,140,219,0.60)",
+    iconColor:  "text-white",
+    labelColor: "text-white",
+    countColor: "rgba(255,255,255,0.60)",
     from: { x: -660, y: -250, rotate: -42 },
   },
   {
-    name:      "Science",
-    icon:      <FlaskConical className={ICON_CLASS} strokeWidth={SW} />,
-    gradient:  "from-[#a855f7] to-[#6d28d9]",
-    glowBase:  "rgba(168,85,247,0.22)",
-    glowHover: "rgba(168,85,247,0.60)",
+    name:       "Science",
+    Icon:       FlaskConical,
+    gradient:   "from-[#82bec6] to-[#3d8c99]",
+    glowBase:   "rgba(130,190,198,0.22)",
+    glowHover:  "rgba(130,190,198,0.60)",
+    iconColor:  "text-white",
+    labelColor: "text-white",
+    countColor: "rgba(255,255,255,0.65)",
     from: { x:  580, y:  330, rotate:  38 },
   },
   {
-    name:      "Space",
-    icon:      <Rocket   className={ICON_CLASS} strokeWidth={SW} />,
-    gradient:  "from-[#4f46e5] to-[#1e1b4b]",
-    glowBase:  "rgba(79,70,229,0.22)",
-    glowHover: "rgba(79,70,229,0.60)",
+    name:       "Space",
+    Icon:       Rocket,
+    gradient:   "from-[#644536] to-[#3a2518]",
+    glowBase:   "rgba(100,69,54,0.22)",
+    glowHover:  "rgba(100,69,54,0.55)",
+    iconColor:  "text-white",
+    labelColor: "text-white",
+    countColor: "rgba(255,255,255,0.55)",
     from: { x: -720, y: -175, rotate: -50 },
   },
   {
-    name:      "Robots",
-    icon:      <Bot      className={ICON_CLASS} strokeWidth={SW} />,
-    gradient:  "from-[#14b8a6] to-[#0f766e]",
-    glowBase:  "rgba(20,184,166,0.22)",
-    glowHover: "rgba(20,184,166,0.60)",
+    name:       "Robots",
+    Icon:       Bot,
+    gradient:   "from-[#e88062] to-[#b54a28]",
+    glowBase:   "rgba(232,128,98,0.22)",
+    glowHover:  "rgba(232,128,98,0.60)",
+    iconColor:  "text-white",
+    labelColor: "text-white",
+    countColor: "rgba(255,255,255,0.60)",
     from: { x:  640, y: -290, rotate:  44 },
   },
   {
-    name:      "Architecture",
-    icon:      <Building2 className={ICON_CLASS} strokeWidth={SW} />,
-    gradient:  "from-[#f97316] to-[#c2410c]",
-    glowBase:  "rgba(249,115,22,0.22)",
-    glowHover: "rgba(249,115,22,0.60)",
+    name:       "Architecture",
+    Icon:       Building2,
+    gradient:   "from-[#ffffff] to-[#d0d0d0]",
+    glowBase:   "rgba(180,180,180,0.22)",
+    glowHover:  "rgba(180,180,180,0.50)",
+    iconColor:  "text-gray-600",
+    labelColor: "text-gray-800",
+    countColor: "rgba(30,30,30,0.55)",
     from: { x: -700, y:  295, rotate: -38 },
   },
-] as const;
+];
 
 function makeAnimate(from: { x: number; y: number; rotate: number }) {
   return {
@@ -172,12 +202,12 @@ export default function CategoryShowcase() {
                 }}
               >
                 <div className="mb-3" aria-label={cat.name}>
-                  {cat.icon}
+                  <cat.Icon className={`${ICON_SIZE} ${cat.iconColor}`} strokeWidth={SW} />
                 </div>
-                <div className="font-playfair font-bold text-white text-sm sm:text-base leading-tight">
+                <div className={`font-playfair font-bold text-sm sm:text-base leading-tight ${cat.labelColor}`}>
                   {cat.name}
                 </div>
-                <div className="mt-1 text-xs font-inter" style={{ color: "rgba(255,255,255,0.60)" }}>
+                <div className="mt-1 text-xs font-inter" style={{ color: cat.countColor }}>
                   {cat.count} {cat.count === 1 ? "kit" : "kits"}
                 </div>
               </Link>

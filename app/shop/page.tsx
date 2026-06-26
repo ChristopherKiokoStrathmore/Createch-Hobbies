@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, LayoutGrid, LayoutList } from "lucide-react";
 import { type Category, type Difficulty, type Product } from "@/data/products";
 
 const CATEGORIES: Category[] = ["Vehicles", "Machines", "Science", "Space", "Robots", "Architecture"];
@@ -41,6 +41,7 @@ function ShopContent() {
   const [ageOpen, setAgeOpen]           = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [difficultyOpen, setDifficultyOpen] = useState(false);
+  const [compact, setCompact]           = useState(true);
 
   useEffect(() => {
     fetch("/api/products")
@@ -86,52 +87,71 @@ function ShopContent() {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6 bg-brand-dark">
+    <div className="min-h-screen pt-16 sm:pt-24 pb-20 px-3 sm:px-6 bg-brand-dark">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-10">
+        <div className="mb-3 sm:mb-10">
           <span className="text-brand-purple-light font-inter font-semibold text-xs uppercase tracking-[0.2em]">
             Our Collection
           </span>
-          <h1 className="font-playfair font-bold text-3xl sm:text-4xl md:text-5xl text-white mt-4">
+          <h1 className="font-playfair font-bold text-2xl sm:text-4xl md:text-5xl text-white mt-1 sm:mt-4">
             All DIY Kits
           </h1>
-          <p className="text-white/40 mt-3 font-inter text-sm">
-            {loadingProducts ? "Loading…" : `${filtered.length} kit${filtered.length !== 1 ? "s" : ""} found`}
-          </p>
+          <div className="flex items-center justify-between mt-1 sm:mt-3">
+            <p className="text-white/40 font-inter text-xs sm:text-sm">
+              {loadingProducts ? "Loading…" : `${filtered.length} kit${filtered.length !== 1 ? "s" : ""} found`}
+            </p>
+            {/* View toggle — portrait only */}
+            <div className="flex sm:hidden items-center gap-1 p-1 rounded-lg" style={{ background: "rgba(255,255,255,0.07)" }}>
+              <button
+                onClick={() => setCompact(true)}
+                aria-label="Grid view"
+                className={`p-1.5 rounded-md transition-all ${compact ? "bg-brand-yellow text-brand-dark" : "text-white/40 hover:text-white"}`}
+              >
+                <LayoutGrid size={15} />
+              </button>
+              <button
+                onClick={() => setCompact(false)}
+                aria-label="List view"
+                className={`p-1.5 rounded-md transition-all ${!compact ? "bg-brand-yellow text-brand-dark" : "text-white/40 hover:text-white"}`}
+              >
+                <LayoutList size={15} />
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Search + Sort */}
-        <div className="flex flex-col lg:flex-row gap-4 mb-8">
+        {/* Search + Sort — side by side on mobile */}
+        <div className="flex flex-row gap-2 mb-2 sm:mb-8">
           <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={16} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" size={14} />
             <input
               type="text"
               placeholder="Search kits..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full section-card border border-white/8 rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-brand-dark/40 focus:outline-none focus:border-brand-purple/50 transition-colors text-sm font-inter"
+              className="w-full section-card border border-white/8 rounded-xl pl-8 pr-3 py-2 sm:py-3 text-white placeholder:text-brand-dark/40 focus:outline-none focus:border-brand-purple/50 transition-colors text-xs sm:text-sm font-inter"
             />
           </div>
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as typeof sort)}
-            className="section-card border border-white/8 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-purple/50 transition-colors cursor-pointer text-sm font-inter"
+            className="section-card border border-white/8 rounded-xl px-2 sm:px-4 py-2 sm:py-3 text-white focus:outline-none focus:border-brand-purple/50 transition-colors cursor-pointer text-xs sm:text-sm font-inter"
           >
-            <option value="default">Sort: Default</option>
-            <option value="price-asc">Price: Low → High</option>
-            <option value="price-desc">Price: High → Low</option>
+            <option value="default">Default</option>
+            <option value="price-asc">Price ↑</option>
+            <option value="price-desc">Price ↓</option>
           </select>
         </div>
 
         {/* Collapsible filters */}
-        <div className="flex flex-col sm:flex-row gap-2 mb-8">
+        <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 mb-2 sm:mb-8">
 
           {/* Age Group */}
           <div className="flex-1 rounded-xl border border-white/10 overflow-hidden">
             <button
               onClick={() => setAgeOpen(!ageOpen)}
-              className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-white/5 transition-colors"
+              className="w-full flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 text-left hover:bg-white/5 transition-colors"
             >
               <span className="flex items-center gap-2 text-xs font-semibold font-inter text-white/60 uppercase tracking-widest">
                 Sort by Age Group
@@ -166,7 +186,7 @@ function ShopContent() {
           <div className="flex-1 rounded-xl border border-white/10 overflow-hidden">
             <button
               onClick={() => setCategoryOpen(!categoryOpen)}
-              className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-white/5 transition-colors"
+              className="w-full flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 text-left hover:bg-white/5 transition-colors"
             >
               <span className="flex items-center gap-2 text-xs font-semibold font-inter text-white/60 uppercase tracking-widest">
                 Sort by Category
@@ -201,7 +221,7 @@ function ShopContent() {
           <div className="flex-1 rounded-xl border border-white/10 overflow-hidden">
             <button
               onClick={() => setDifficultyOpen(!difficultyOpen)}
-              className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-white/5 transition-colors"
+              className="w-full flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 text-left hover:bg-white/5 transition-colors"
             >
               <span className="flex items-center gap-2 text-xs font-semibold font-inter text-white/60 uppercase tracking-widest">
                 Sort by Difficulty
@@ -236,9 +256,9 @@ function ShopContent() {
 
         {/* Grid */}
         {loadingProducts ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className={`grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 sm:gap-5 ${compact ? "grid-cols-2 gap-1" : "grid-cols-1 gap-3"}`}>
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="rounded-2xl bg-white/5 aspect-[4/5] animate-pulse" />
+              <div key={i} className={`rounded-xl sm:rounded-2xl bg-white/5 animate-pulse ${compact ? "aspect-square sm:aspect-[4/5]" : "aspect-[4/3] sm:aspect-[4/5]"}`} />
             ))}
           </div>
         ) : filtered.length === 0 ? (
@@ -253,9 +273,9 @@ function ShopContent() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className={`grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 sm:gap-5 ${compact ? "grid-cols-2 gap-1" : "grid-cols-1 gap-3"}`}>
             {filtered.map((product, i) => (
-              <ProductCard key={product.id} product={product} priority={i < 2} />
+              <ProductCard key={product.id} product={product} priority={i < 4} compact={compact} />
             ))}
           </div>
         )}

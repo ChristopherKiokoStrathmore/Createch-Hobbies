@@ -60,6 +60,23 @@ export default function FeaturedProducts() {
             </motion.div>
           ))}
         </div>
+
+        {/* Portrait-only CTA below the grid */}
+        <motion.div
+          className="sm:hidden flex justify-center mt-6"
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <Link
+            href="/shop"
+            className="flex items-center gap-2 btn-yellow px-8 py-3 rounded-full text-sm font-semibold active:scale-95 shadow-lg shadow-black/20"
+          >
+            View All Kits
+            <ArrowRight size={15} />
+          </Link>
+        </motion.div>
       </div>
     </section>
   );
