@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 
 const LANDSCAPE_VIDEO = "/video/hero-landscape.mp4";
@@ -23,6 +23,17 @@ export default function VideoBackground() {
   const userMutedRef = useRef(true);
 
   useEffect(() => { userMutedRef.current = userMuted; }, [userMuted]);
+
+  // iOS Safari fix: React never writes the `muted` HTML attribute, only the JS property.
+  // iOS checks the HTML attribute at parse time and blocks autoplay if it's absent.
+  // Setting defaultMuted=true writes the attribute so load() can never reset it to false.
+  const setVideoRef = useCallback((el: HTMLVideoElement | null) => {
+    if (el) {
+      el.defaultMuted = true;
+      el.muted = true;
+    }
+    vidRef.current = el;
+  }, []);
 
   const clearTimer = () => {
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
@@ -48,14 +59,16 @@ export default function VideoBackground() {
   }, []);
 
   // On orientation change: reset and replay the appropriate video.
+  // Critically: re-set muted=true AFTER load() — load() re-reads the HTML attribute,
+  // and without defaultMuted being set the muted state would revert to false on iOS.
   useEffect(() => {
     if (skipVideo) return;
     setVideoEnded(false);
     clearTimer();
     const v = vidRef.current;
     if (v) {
-      v.muted = userMutedRef.current;
       v.load();
+      v.muted = userMutedRef.current;
       v.play().catch(() => {});
     }
     timerRef.current = setTimeout(fallBack, LOAD_TIMEOUT);
@@ -135,11 +148,13 @@ export default function VideoBackground() {
         />
 
         {!skipVideo && !videoEnded && (
+          // autoPlay is intentionally omitted — iOS shows a native play button when
+          // it blocks attribute-based autoplay. We drive playback entirely via
+          // programmatic play() after defaultMuted is set, which iOS allows.
           <video
-            ref={vidRef}
+            ref={setVideoRef}
             src={videoSrc}
             playsInline
-            autoPlay
             muted
             preload="auto"
             className="absolute inset-0 w-full h-full object-cover"
