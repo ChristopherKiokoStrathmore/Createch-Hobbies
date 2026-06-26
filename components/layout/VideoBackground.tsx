@@ -133,7 +133,7 @@ export default function VideoBackground() {
     <>
       <div
         className="fixed inset-0 w-full h-full"
-        style={{ zIndex: -1, backgroundColor: "#f5be4d" }}
+        style={{ zIndex: 0, backgroundColor: "#f5be4d" }}
         aria-hidden="true"
       >
         <img
