@@ -53,12 +53,27 @@ const CATEGORY_MAP: Record<string, Category> = {
 
 const DIFFICULTIES: Difficulty[] = ["Beginner", "Intermediate", "Advanced"];
 
-function mapCategory(cats: WooCategory[]): Category {
+const NAME_CATEGORY_KEYWORDS: Array<{ pattern: RegExp; category: Category }> = [
+  { pattern: /robot/i,                                          category: "Robots" },
+  { pattern: /lunar|space|moon|rocket|satellite|asteroid/i,    category: "Space" },
+  { pattern: /house|building|bridge|tower|architectural/i,     category: "Architecture" },
+  { pattern: /solar|optical|illusion|marble|science|lab/i,     category: "Science" },
+  { pattern: /windmill|ferris|elevator|pulley|crank|gear/i,    category: "Machines" },
+  { pattern: /car|train|tank|rover|glider|digger|cable car|bus|truck|boat|plane/i, category: "Vehicles" },
+  { pattern: /fan/i,                                            category: "Machines" },
+];
+
+function mapCategory(cats: WooCategory[], name?: string): Category {
   for (const c of cats) {
     const byName = CATEGORY_MAP[c.name.toLowerCase()];
     if (byName) return byName;
     const bySlug = CATEGORY_MAP[c.slug];
     if (bySlug) return bySlug;
+  }
+  if (name) {
+    for (const { pattern, category } of NAME_CATEGORY_KEYWORDS) {
+      if (pattern.test(name)) return category;
+    }
   }
   return "Science";
 }
@@ -82,7 +97,7 @@ export function mapWooProduct(p: WooProduct): Product {
     id:           String(p.id),
     name:         p.name,
     slug:         p.slug,
-    category:     mapCategory(p.categories),
+    category:     mapCategory(p.categories, p.name),
     ageRange:     mapAgeRange(p.attributes),
     difficulty:   mapDifficulty(p.attributes),
     price:        parseFloat(p.price) || 0,
@@ -115,6 +130,11 @@ export function mapWooProductRaw(p: WooProduct): WooProductRaw {
     if (byName) { category = byName; break; }
     const bySlug = CATEGORY_MAP[c.slug];
     if (bySlug) { category = bySlug; break; }
+  }
+  if (!category) {
+    for (const { pattern, category: cat } of NAME_CATEGORY_KEYWORDS) {
+      if (pattern.test(p.name)) { category = cat; break; }
+    }
   }
 
   const ageRaw  = getAttr(p.attributes, "Age Range")[0];
