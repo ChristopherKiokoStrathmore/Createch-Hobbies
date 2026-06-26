@@ -1,4 +1,4 @@
-import { CheckCircle2, ShoppingBag, MapPin, Phone, Receipt, Clock } from "lucide-react";
+import { CheckCircle2, XCircle, ShoppingBag, MapPin, Phone, Receipt, Clock } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { formatPrice } from "@/lib/utils";
@@ -61,7 +61,7 @@ export default async function ConfirmationPage({ params, searchParams }: Props) 
       <main className="min-h-screen bg-brand-dark flex items-center justify-center px-4 pt-24 pb-16">
         <div className="max-w-md w-full text-center space-y-6">
           <div className="mx-auto w-16 h-16 rounded-full bg-red-200 flex items-center justify-center">
-            <CheckCircle2 size={32} className="text-red-700" />
+            <XCircle size={32} className="text-red-700" />
           </div>
           <h1 className="font-playfair font-bold text-3xl text-white">Payment Failed</h1>
           <p className="text-white/60 font-inter text-sm">
@@ -79,7 +79,7 @@ export default async function ConfirmationPage({ params, searchParams }: Props) 
   }
 
   /* ── SUCCESS ── */
-  const total = parseFloat(order.total_amount);
+  const total = parseFloat(order.total_amount) || 0;
 
   return (
     <main className="min-h-screen bg-brand-dark pt-24 pb-16 px-4 sm:px-6">

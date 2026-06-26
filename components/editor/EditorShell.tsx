@@ -191,7 +191,7 @@ export default function EditorShell() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-key": process.env.NEXT_PUBLIC_ADMIN_KEY || pin,
+          "x-admin-key": pin,
         },
         body: JSON.stringify(config),
       });
@@ -201,16 +201,15 @@ export default function EditorShell() {
     } finally {
       setSaving(false);
     }
-  }, [config]);
+  }, [config, pin]);
 
   const publish = useCallback(async () => {
     await saveDraft();
-    // Trigger ISR revalidation
     await fetch("/api/admin/revalidate", {
       method: "POST",
-      headers: { "x-admin-key": process.env.NEXT_PUBLIC_ADMIN_KEY || pin },
+      headers: { "x-admin-key": pin },
     }).catch(() => {});
-  }, [saveDraft]);
+  }, [saveDraft, pin]);
 
   const revert = useCallback(() => {
     setConfig(savedConfig);

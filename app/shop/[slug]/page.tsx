@@ -60,9 +60,9 @@ export default async function ProductPage({ params }: Props) {
       <div className="max-w-7xl mx-auto">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-white/30 text-sm mb-6 font-inter">
-          <Link href="/" className="hover:text-brand-dark transition-colors">Home</Link>
+          <Link href="/" className="hover:text-white transition-colors">Home</Link>
           <span className="text-white/15">/</span>
-          <Link href="/shop" className="hover:text-brand-dark transition-colors">Shop</Link>
+          <Link href="/shop" className="hover:text-white transition-colors">Shop</Link>
           <span className="text-white/15">/</span>
           <span className="text-white/60">{product.name}</span>
         </div>
