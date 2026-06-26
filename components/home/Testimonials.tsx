@@ -46,7 +46,7 @@ export default function Testimonials() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-5 mb-8 items-stretch">
+        <div className="grid grid-cols-2 [@media(orientation:landscape)]:grid-cols-3 gap-3 sm:gap-5 mb-8 items-stretch">
           {testimonials.items.map((r, i) => {
             const style = AVATAR_STYLES[i] ?? AVATAR_STYLES[0];
             return (
@@ -57,7 +57,7 @@ export default function Testimonials() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
                 onClick={() => setSelected(i)}
-                className="rounded-2xl p-3 sm:p-7 flex flex-col h-full cursor-pointer active:scale-95 transition-transform"
+                className={`rounded-2xl p-3 sm:p-7 flex flex-col h-full cursor-pointer active:scale-95 transition-transform ${i === 3 ? "[@media(orientation:landscape)]:hidden" : ""}`}
                 style={{
                   background: "rgba(255,246,220,0.70)",
                   border:     `1px solid ${style.border}`,
