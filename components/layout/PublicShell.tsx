@@ -28,19 +28,17 @@ export default function PublicShell({ children }: { children: React.ReactNode })
     <>
       <SplashScreen />
       <VideoBackground />
-      <div className="relative" style={{ zIndex: 1 }}>
-        <EditorOverlay />
-        <CartProvider>
-          <LenisProvider>
-            <AnnouncementBanner />
-            <Navbar />
-            <CartDrawer />
-            <main>{children}</main>
-            <Footer />
-            <WhatsAppBubble />
-          </LenisProvider>
-        </CartProvider>
-      </div>
+      <EditorOverlay />
+      <CartProvider>
+        <LenisProvider>
+          <AnnouncementBanner />
+          <Navbar />
+          <CartDrawer />
+          <main>{children}</main>
+          <Footer />
+          <WhatsAppBubble />
+        </LenisProvider>
+      </CartProvider>
     </>
   );
 }

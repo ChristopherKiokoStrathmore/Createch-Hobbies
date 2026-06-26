@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 
 const LANDSCAPE_VIDEO = "/video/hero-landscape.mp4";
@@ -18,16 +18,7 @@ export default function VideoBackground() {
   const [skipVideo, setSkipVideo]   = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
 
-  const vidRef = useRef<HTMLVideoElement>(null);
-
-  // iOS Safari ignores React's muted prop — set it imperatively before first play.
-  const setVideoRef = useCallback((el: HTMLVideoElement | null) => {
-    if (el) {
-      el.muted = true;
-      el.setAttribute("muted", "");
-    }
-    vidRef.current = el;
-  }, []);
+  const vidRef       = useRef<HTMLVideoElement>(null);
   const timerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userMutedRef = useRef(true);
 
@@ -133,7 +124,7 @@ export default function VideoBackground() {
     <>
       <div
         className="fixed inset-0 w-full h-full"
-        style={{ zIndex: 0, backgroundColor: "#f5be4d" }}
+        style={{ zIndex: -1, backgroundColor: "#f5be4d" }}
         aria-hidden="true"
       >
         <img
@@ -145,7 +136,7 @@ export default function VideoBackground() {
 
         {!skipVideo && !videoEnded && (
           <video
-            ref={setVideoRef}
+            ref={vidRef}
             src={videoSrc}
             playsInline
             autoPlay
