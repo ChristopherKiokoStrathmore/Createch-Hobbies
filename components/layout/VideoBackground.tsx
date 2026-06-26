@@ -10,9 +10,6 @@ const PORTRAIT_GIF    = "/gif/logo-portrait.gif";
 const LOAD_TIMEOUT    = 5000;
 const STALL_TIMEOUT   = 3000;
 
-const FALLBACK_STYLE: React.CSSProperties = {
-  backgroundColor: "#f5be4d",
-};
 
 export default function VideoBackground() {
   const [isPortrait, setIsPortrait] = useState(false);
@@ -130,36 +127,30 @@ export default function VideoBackground() {
         style={{ zIndex: -1, backgroundColor: "#f5be4d" }}
         aria-hidden="true"
       >
-        {skipVideo ? (
-          <div className="absolute inset-0 w-full h-full" style={FALLBACK_STYLE} />
-        ) : (
-          <>
-            <img
-              key={gifSrc}
-              src={gifSrc}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-            />
+        <img
+          key={gifSrc}
+          src={gifSrc}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+        />
 
-            {!videoEnded && (
-              <video
-                ref={vidRef}
-                src={videoSrc}
-                playsInline
-                autoPlay
-                muted
-                preload="auto"
-                className="absolute inset-0 w-full h-full object-cover"
-                style={{ backgroundColor: "transparent", pointerEvents: "none" }}
-                onCanPlay={handleCanPlay}
-                onStalled={handleStalled}
-                onWaiting={handleStalled}
-                onProgress={handleProgress}
-                onPlaying={handlePlaying}
-                onEnded={handleEnded}
-              />
-            )}
-          </>
+        {!skipVideo && !videoEnded && (
+          <video
+            ref={vidRef}
+            src={videoSrc}
+            playsInline
+            autoPlay
+            muted
+            preload="auto"
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ backgroundColor: "transparent", pointerEvents: "none" }}
+            onCanPlay={handleCanPlay}
+            onStalled={handleStalled}
+            onWaiting={handleStalled}
+            onProgress={handleProgress}
+            onPlaying={handlePlaying}
+            onEnded={handleEnded}
+          />
         )}
       </div>
 
