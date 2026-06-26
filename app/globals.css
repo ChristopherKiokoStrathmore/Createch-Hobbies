@@ -27,10 +27,11 @@
 
   html {
     scroll-behavior: smooth;
+    background-color: #f5be4d;
   }
 
   body {
-    background-color: transparent;
+    background-color: #f5be4d;
     color: #0a0a0f;
     font-family: "Inter", sans-serif;
     -webkit-font-smoothing: antialiased;

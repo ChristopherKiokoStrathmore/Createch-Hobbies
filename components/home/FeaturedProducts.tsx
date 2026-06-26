@@ -11,9 +11,12 @@ export default function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    fetch("/api/products?featured=true")
+    fetch("/api/products")
       .then((r) => r.json())
-      .then((data: Product[]) => setProducts(data))
+      .then((data: Product[]) => {
+        const sorted = [...data].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+        setProducts(sorted);
+      })
       .catch(() => {});
   }, []);
 
@@ -62,9 +65,9 @@ export default function FeaturedProducts() {
           ))}
         </div>
 
-        {/* Portrait-only CTA below the grid */}
+        {/* View All CTA — visible on all orientations */}
         <motion.div
-          className="sm:hidden flex justify-center mt-6"
+          className="flex justify-center mt-8 sm:mt-12"
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}

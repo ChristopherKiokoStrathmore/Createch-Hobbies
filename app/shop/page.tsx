@@ -87,7 +87,7 @@ function ShopContent() {
   };
 
   return (
-    <div className="min-h-screen pt-16 sm:pt-24 pb-20 px-3 sm:px-6 bg-brand-dark">
+    <div className="min-h-screen pt-16 [@media(orientation:portrait)]:pt-24 sm:pt-24 pb-20 px-3 sm:px-6 bg-brand-dark">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-3 sm:mb-10">
