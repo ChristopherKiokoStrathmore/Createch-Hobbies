@@ -65,10 +65,15 @@ export default function HeroVideo() {
         </motion.div>
       </div>
 
-      {/* Portrait-only CTA row — pinned near the bottom of the hero, visible on page open */}
+      {/* Portrait-only CTA row — pinned at 70% from top of visible screen */}
       <motion.div
-        className="hidden [@media(orientation:portrait)]:flex absolute top-[75%] -translate-y-1/2 left-0 right-0 z-10 items-center justify-center gap-4 px-8"
-        style={{ opacity: scrolled ? 0 : 1, pointerEvents: scrolled ? "none" : "auto" }}
+        className="hidden [@media(orientation:portrait)]:flex absolute left-0 right-0 z-10 items-center justify-center gap-4 px-8"
+        style={{
+          top: "70svh",
+          transform: "translateY(-50%)",
+          opacity: scrolled ? 0 : 1,
+          pointerEvents: scrolled ? "none" : "auto",
+        }}
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.8, ease: [0.22, 1, 0.36, 1] }}

@@ -47,14 +47,15 @@ export default function FeaturedProducts() {
           </Link>
         </motion.div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-          {products.map((product, i) => (
+        <div className="grid grid-cols-2 [@media(orientation:landscape)]:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-6">
+          {products.slice(0, 6).map((product, i) => (
             <motion.div
               key={product.id}
               initial={{ opacity: 0, y: 32 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
+              className={i >= 4 ? "[@media(orientation:portrait)]:hidden" : ""}
             >
               <ProductCard product={product} priority={i === 0} />
             </motion.div>
