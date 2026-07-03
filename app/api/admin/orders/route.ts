@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isAdminAuthorized } from '@/lib/adminAuth';
 
 const DJANGO_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
 export async function GET(req: NextRequest) {
-  const ADMIN_PIN = process.env.ADMIN_PIN ?? '';
-  const ADMIN_KEY = process.env.ADMIN_SECRET_KEY ?? '';
-  const entered   = req.headers.get('x-admin-key') ?? '';
+  const ADMIN_KEY = process.env.ADMIN_SECRET_KEY ?? process.env.ADMIN_PIN ?? '';
 
-  if (!ADMIN_PIN || entered !== ADMIN_PIN) {
+  if (!isAdminAuthorized(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

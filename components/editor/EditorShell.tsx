@@ -42,6 +42,7 @@ export default function EditorShell() {
   const [loading, setLoading]           = useState(true);
   const [saving, setSaving]             = useState(false);
   const [saved, setSaved]               = useState(false);
+  const [saveError, setSaveError]       = useState("");
   const [activePanel, setActivePanel]       = useState<PanelId>("colours");
   const [contentFocusTab, setContentFocusTab] = useState<string>("hero");
   const [previewMode, setPreviewMode]       = useState<PreviewMode>("desktop");
@@ -184,10 +185,11 @@ export default function EditorShell() {
 
   const isDirty = JSON.stringify(config) !== JSON.stringify(savedConfig);
 
-  const saveDraft = useCallback(async () => {
+  const saveDraft = useCallback(async (): Promise<boolean> => {
     setSaving(true);
+    setSaveError("");
     try {
-      await fetch("/api/admin/site-config", {
+      const res = await fetch("/api/admin/site-config", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -195,16 +197,30 @@ export default function EditorShell() {
         },
         body: JSON.stringify(config),
       });
+      if (!res.ok) {
+        setSaveError(
+          res.status === 401
+            ? "Not authorized. Please sign in again."
+            : "Save failed. Please try again.",
+        );
+        return false;
+      }
       setSavedConfig(config);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
+      return true;
+    } catch {
+      setSaveError("Network error while saving.");
+      return false;
     } finally {
       setSaving(false);
     }
   }, [config, pin]);
 
   const publish = useCallback(async () => {
-    await saveDraft();
+    // Only revalidate the live site if the draft actually persisted.
+    const ok = await saveDraft();
+    if (!ok) return;
     await fetch("/api/admin/revalidate", {
       method: "POST",
       headers: { "x-admin-key": pin },
@@ -300,6 +316,13 @@ export default function EditorShell() {
         >
           <MousePointerClick size={14} />
         </button>
+
+        {/* Save error */}
+        {saveError && (
+          <span className="hidden sm:inline text-red-400 font-inter text-xs max-w-[180px] truncate" title={saveError}>
+            {saveError}
+          </span>
+        )}
 
         {/* Save draft */}
         <button

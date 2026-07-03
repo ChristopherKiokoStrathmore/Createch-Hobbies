@@ -5,11 +5,26 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { useSiteConfig } from "@/context/SiteConfigContext";
 
+// Defence in depth: the config PUT already scrubs this, but never hand an
+// unvalidated string to <Link href> — block javascript:/data: and friends.
+function safeHref(href: string): string | null {
+  const s = (href ?? "").trim();
+  if (s === "") return null;
+  if (s.startsWith("/") && !s.startsWith("//")) return s;
+  try {
+    const u = new URL(s);
+    if (u.protocol === "http:" || u.protocol === "https:") return s;
+  } catch { /* not absolute */ }
+  return null;
+}
+
 export default function AnnouncementBanner() {
   const { banner } = useSiteConfig();
   const [dismissed, setDismissed] = useState(false);
 
   if (!banner.enabled || dismissed) return null;
+
+  const href = safeHref(banner.link);
 
   return (
     <div
@@ -18,9 +33,9 @@ export default function AnnouncementBanner() {
       data-editor-key="banner"
     >
       <span>{banner.text}</span>
-      {banner.link && banner.linkLabel && (
+      {href && banner.linkLabel && (
         <Link
-          href={banner.link}
+          href={href}
           className="underline underline-offset-2 font-semibold hover:opacity-80 transition-opacity"
           style={{ color: banner.textColor }}
         >
