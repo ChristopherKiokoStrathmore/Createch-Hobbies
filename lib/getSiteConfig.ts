@@ -19,6 +19,7 @@ function deepMerge(
 ): Record<string, unknown> {
   const result = { ...base };
   for (const key of Object.keys(over)) {
+    if (key === "__proto__" || key === "constructor" || key === "prototype") continue;
     const b = base[key];
     const o = over[key];
     if (

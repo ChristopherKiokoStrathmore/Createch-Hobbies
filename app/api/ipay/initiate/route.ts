@@ -43,10 +43,23 @@ export async function POST(req: Request) {
     const order = await orderRes.json();
     const orderId: string = order.order_id ?? String(order.id);
 
+    // Never charge the client-supplied `total`. Django recomputes the order
+    // total server-side from the line items, so use that authoritative value
+    // for the amount we hash and send to iPay. Fall back to the client value
+    // only if the backend did not return one.
+    const authoritative = Number(order.total_amount ?? order.total);
+    const amount = Number.isFinite(authoritative) && authoritative > 0
+      ? authoritative
+      : Number(total);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return NextResponse.json({ error: "Invalid order total" }, { status: 400 });
+    }
+
     const origin = new URL(req.url).origin;
     const fields = buildIPayFields({
       orderId,
-      amount:        total,
+      amount,
       phone:         customer_phone,
       email:         customer_email || "",
       paymentMethod: payment_method,

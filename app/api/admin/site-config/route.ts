@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { DEFAULT_CONFIG } from "@/lib/siteConfigDefaults";
+import { isAdminAuthorized } from "@/lib/adminAuth";
+import { safeDeepMerge, sanitizeSiteConfig } from "@/lib/siteConfigValidation";
 import type { SiteConfig } from "@/types/site-config";
 
 const TMP_PATH = "/tmp/site-config.json";
@@ -33,24 +35,36 @@ function writeConfig(config: SiteConfig): void {
   try { fs.writeFileSync(getStaticPath(), json); } catch { /* read-only in prod */ }
 }
 
-function authOk(req: Request): boolean {
-  return req.headers.get("x-admin-key") === process.env.ADMIN_SECRET_KEY;
-}
-
 export async function GET() {
   return NextResponse.json(readCurrent());
 }
 
 export async function PUT(req: Request) {
-  if (!authOk(req)) {
+  if (!isAdminAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  let body: unknown;
   try {
-    const body = (await req.json()) as SiteConfig;
-    const merged: SiteConfig = { ...DEFAULT_CONFIG, ...body };
-    writeConfig(merged);
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "Config must be an object" }, { status: 400 });
+  }
+  try {
+    // Deep-merge over defaults (a shallow spread wiped sibling nested keys) with
+    // a prototype-pollution guard, then scrub every field that reaches a CSS or
+    // href sink before it ever touches disk.
+    const merged = safeDeepMerge(
+      DEFAULT_CONFIG as unknown as Record<string, unknown>,
+      body as Record<string, unknown>,
+    ) as unknown as SiteConfig;
+    writeConfig(sanitizeSiteConfig(merged));
     return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    // Do not leak internal error detail to the client.
+    console.error("[site-config] write failed:", e);
+    return NextResponse.json({ error: "Failed to save configuration" }, { status: 500 });
   }
 }

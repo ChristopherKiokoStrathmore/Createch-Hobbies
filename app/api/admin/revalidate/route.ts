@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
+import { isAdminAuthorized } from "@/lib/adminAuth";
 
 export async function POST(req: Request) {
-  if (req.headers.get("x-admin-key") !== process.env.ADMIN_SECRET_KEY) {
+  if (!isAdminAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   revalidateTag("site-config");

@@ -329,6 +329,19 @@ function wc_mpesa_stk_init() {
 
             $order = $orders[0];
 
+            // Idempotency: Safaricom can (and does) retry callbacks. If this
+            // order is already paid, acknowledge and stop so we never process a
+            // completed payment twice.
+            if ( $order->is_paid() ) {
+                $this->log->info(
+                    '[M-Pesa STK] Duplicate callback for already-paid Order #' . $order->get_id() . '. Ignored.',
+                    [ 'source' => 'mpesa-stk' ]
+                );
+                status_header( 200 );
+                wp_send_json( [ 'ResultCode' => 0, 'ResultDesc' => 'Accepted' ] );
+                exit;
+            }
+
             if ( 0 === $result_code ) {
                 $receipt_number = '';
                 $amount_paid    = '';
@@ -348,6 +361,38 @@ function wc_mpesa_stk_init() {
                                 break;
                         }
                     }
+                }
+
+                // SECURITY: never complete an order without confirming the amount
+                // actually paid covers the order total. Without this, a partial
+                // payment (or a forged/replayed callback with a smaller amount)
+                // would mark the order fully paid. Compare in whole shillings,
+                // matching how the STK amount was sent ( (int) ceil( total ) ).
+                $order_total = (int) ceil( (float) $order->get_total() );
+                $paid_amount = (int) round( (float) $amount_paid );
+
+                if ( $paid_amount < $order_total ) {
+                    $order->update_status(
+                        'on-hold',
+                        sprintf(
+                            'M-Pesa amount mismatch: paid KES %s but order total is KES %s. Receipt: %s. Holding for manual review.',
+                            $amount_paid,
+                            $order_total,
+                            $receipt_number
+                        )
+                    );
+                    $order->update_meta_data( '_mpesa_receipt_number', $receipt_number );
+                    $order->save();
+
+                    $this->log->error(
+                        '[M-Pesa STK] Amount mismatch for Order #' . $order->get_id() .
+                        ': paid ' . $paid_amount . ' < total ' . $order_total . '. NOT completing.',
+                        [ 'source' => 'mpesa-stk' ]
+                    );
+
+                    status_header( 200 );
+                    wp_send_json( [ 'ResultCode' => 0, 'ResultDesc' => 'Accepted' ] );
+                    exit;
                 }
 
                 $order->update_meta_data( '_mpesa_receipt_number', $receipt_number );
