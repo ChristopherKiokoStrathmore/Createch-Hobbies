@@ -36,7 +36,9 @@ async function storeApiFetch(
   });
 
   const cartToken = res.headers.get('Cart-Token')           ?? options.cartToken ?? '';
-  const nonce     = res.headers.get('X-WC-Store-API-Nonce') ?? options.nonce     ?? '';
+  const nonce     = res.headers.get('Nonce')
+                 ?? res.headers.get('X-WC-Store-API-Nonce')
+                 ?? options.nonce ?? '';
 
   persistToken(cartToken);
 
