@@ -16,9 +16,7 @@ export async function GET(req: Request) {
     const params: Record<string, string> = {};
     if (featured) params.featured = "true";
     const all = await getProducts(params);
-    // Filter out WooCommerce sample/demo products (USD-priced, price < 200 KES)
-    const kits = all.filter((p) => p.price > 200);
-    return NextResponse.json(featured ? kits.filter((p) => p.featured) : kits);
+    return NextResponse.json(featured ? all.filter((p) => p.featured) : all);
   } catch (err) {
     console.error("[/api/products]", err);
     return NextResponse.json([] as Product[]);
