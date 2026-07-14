@@ -106,13 +106,22 @@ export default function CheckoutPage() {
         nonce2
       );
 
-      dispatch({ type: "CLEAR_CART" });
-
-      if (form.payment_method === "card" && result.redirectUrl) {
+      if (form.payment_method === "card") {
+        if (!result.redirectUrl) {
+          setError(
+            "The card payment service could not be reached. Please try again shortly or pay via M-Pesa."
+          );
+          setStep("failed");
+          return;
+        }
+        // Keep the cart intact through the DPO redirect — it is only cleared
+        // once /payment/return confirms the payment server-side. This way a
+        // cancelled or failed card payment doesn't wipe the customer's cart.
         window.location.href = result.redirectUrl;
         return;
       }
 
+      dispatch({ type: "CLEAR_CART" });
       setPendingOrderId(result.orderId);
       setStep("pending");
 
