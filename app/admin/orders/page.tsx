@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search, RefreshCw, Download, X, Copy, CheckCheck,
@@ -9,7 +9,7 @@ import {
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { formatPrice } from "@/lib/utils";
 import {
-  AdminOrder, OrdersResponse, STATUS_STYLES,
+  AdminOrder, OrdersResponse, STATUS_STYLES, ORDER_FILTERS,
   displayStatus, formatDate, apiFetchOrders,
 } from "../_types";
 
@@ -173,26 +173,23 @@ function OrderDrawer({ order, onClose }: { order: AdminOrder; onClose: () => voi
 export default function OrdersPage() {
   const router              = useRouter();
   const { pin, loaded, signOut } = useAdminAuth();
-  const [orders, setOrders] = useState<AdminOrder[]>([]);
-  const [total, setTotal]   = useState(0);
+  const [allOrders, setAllOrders] = useState<AdminOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage]     = useState(1);
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<AdminOrder | null>(null);
-  const searchRef           = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const load = useCallback(async (p = 1, s = "", q = "") => {
+  // Load every order once, then filter and paginate client-side. This lets the
+  // status filter group raw backend statuses (e.g. a paid card order stored as
+  // "processing" matched by "Paid") without depending on the backend's status
+  // vocabulary. Fine at this scale; revisit if order volume outgrows one page.
+  const load = useCallback(async () => {
     if (!pin) return;
     setLoading(true);
     try {
-      const params: Record<string, string> = {};
-      if (p > 1) params.page   = String(p);
-      if (s)     params.status = s;
-      if (q)     params.search = q;
-      const data: OrdersResponse = await apiFetchOrders(pin, params);
-      setOrders(data.results ?? []);
-      setTotal(data.count ?? 0);
+      const data: OrdersResponse = await apiFetchOrders(pin, { page_size: "1000" });
+      setAllOrders(data.results ?? []);
     } catch {
       signOut();
     } finally {
@@ -203,30 +200,42 @@ export default function OrdersPage() {
   useEffect(() => {
     if (!loaded) return;
     if (!pin) { router.push("/admin"); return; }
-    load(page, status, search);
-  }, [loaded, pin, router, load, page, status, search]);
+    load();
+  }, [loaded, pin, router, load]);
+
+  const matchStatus = ORDER_FILTERS.find(f => f.value === status)?.match;
+  const q = search.trim().toLowerCase();
+  const filtered = allOrders.filter(o => {
+    if (matchStatus && !matchStatus(o.status)) return false;
+    if (q) {
+      const hay = `${o.customer_name} ${o.customer_phone} ${o.mpesa_receipt_number} ${o.delivery_address}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const total      = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const pageSafe   = Math.min(page, totalPages);
+  const orders     = filtered.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
 
   function handleSearch(q: string) {
     setSearch(q);
     setPage(1);
-    if (searchRef.current) clearTimeout(searchRef.current);
-    searchRef.current = setTimeout(() => load(1, status, q), 400);
   }
 
   function handleStatus(s: string) {
     setStatus(s);
     setPage(1);
-    load(1, s, search);
   }
 
   function handlePage(p: number) {
     setPage(p);
-    load(p, status, search);
   }
 
   function exportCSV() {
     const headers = ["Date", "Name", "Phone", "Address", "Items", "Total", "Receipt", "Status", "Notes"];
-    const rows = orders.map(o => [
+    const rows = filtered.map(o => [
       formatDate(o.created_at),
       o.customer_name,
       o.customer_phone,
@@ -246,8 +255,6 @@ export default function OrdersPage() {
     a.click();
     URL.revokeObjectURL(url);
   }
-
-  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   if (!loaded) return null;
 
@@ -285,12 +292,12 @@ export default function OrdersPage() {
             className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white font-inter text-sm focus:outline-none focus:border-brand-yellow/40 transition-colors [color-scheme:dark]"
           >
             <option value="">All statuses</option>
-            {["paid","pending","failed","cancelled","processing","shipped","delivered"].map(s => (
-              <option key={s} value={s} className="bg-[#0f0c1a] capitalize">{s}</option>
+            {ORDER_FILTERS.map(f => (
+              <option key={f.value} value={f.value} className="bg-[#0f0c1a]">{f.label}</option>
             ))}
           </select>
           <button
-            onClick={() => load(page, status, search)}
+            onClick={() => load()}
             className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white/60 hover:text-white font-inter text-sm transition-colors"
           >
             <RefreshCw size={13} /> Refresh
@@ -364,19 +371,19 @@ export default function OrdersPage() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between mt-5">
             <span className="text-white/30 font-inter text-xs">
-              Page {page} of {totalPages}
+              Page {pageSafe} of {totalPages}
             </span>
             <div className="flex gap-2">
               <button
-                disabled={page <= 1}
-                onClick={() => handlePage(page - 1)}
+                disabled={pageSafe <= 1}
+                onClick={() => handlePage(pageSafe - 1)}
                 className="flex items-center gap-1 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white/60 hover:text-white font-inter text-xs disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronLeft size={13} /> Prev
               </button>
               <button
-                disabled={page >= totalPages}
-                onClick={() => handlePage(page + 1)}
+                disabled={pageSafe >= totalPages}
+                onClick={() => handlePage(pageSafe + 1)}
                 className="flex items-center gap-1 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white/60 hover:text-white font-inter text-xs disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
                 Next <ChevronRight size={13} />

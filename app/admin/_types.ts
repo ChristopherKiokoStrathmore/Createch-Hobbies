@@ -50,6 +50,25 @@ export const STATUS_STYLES: Record<DisplayStatus, string> = {
   failed:  "bg-red-100    text-red-800",
 };
 
+// Orders-page status filter. Deliberately finer than the 3 display badges:
+// "Refunded" is split out from "Failed" so the operator can isolate refunds.
+// Filtering runs client-side against these predicates, so a paid card order
+// stored as raw "processing" is correctly matched by "Paid" without depending
+// on the backend's status vocabulary. Scalable by design: add a row to add a
+// filter — no backend change required.
+const raw = (s: string) => (s ?? "").toLowerCase().trim();
+
+export const ORDER_FILTERS: ReadonlyArray<{
+  value: string;
+  label: string;
+  match: (rawStatus: string) => boolean;
+}> = [
+  { value: "paid",     label: "Paid",     match: s => displayStatus(s) === "paid" },
+  { value: "pending",  label: "Pending",  match: s => displayStatus(s) === "pending" },
+  { value: "failed",   label: "Failed",   match: s => raw(s) === "failed" || raw(s) === "cancelled" || raw(s) === "canceled" },
+  { value: "refunded", label: "Refunded", match: s => raw(s) === "refunded" },
+];
+
 export function formatDate(iso: string) {
   return new Date(iso).toLocaleString("en-KE", {
     day: "2-digit", month: "short", year: "numeric",
