@@ -10,17 +10,16 @@ import { useAdminAuth } from "@/context/AdminAuthContext";
 import { formatPrice } from "@/lib/utils";
 import {
   AdminOrder, OrdersResponse, STATUS_STYLES,
-  formatDate, apiFetchOrders,
+  displayStatus, formatDate, apiFetchOrders,
 } from "./_types";
 
 function StatusBadge({ status }: { status: string }) {
+  const d = displayStatus(status);
   return (
     <span
-      className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold font-inter capitalize ${
-        STATUS_STYLES[status] ?? "bg-gray-100 text-gray-700"
-      }`}
+      className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold font-inter capitalize ${STATUS_STYLES[d]}`}
     >
-      {status}
+      {d}
     </span>
   );
 }
@@ -114,9 +113,9 @@ function Dashboard() {
 
   useEffect(() => { load(); }, [load]);
 
-  const paid      = orders.filter(o => o.status === "paid");
-  const pending   = orders.filter(o => o.status === "pending");
-  const failed    = orders.filter(o => o.status === "failed" || o.status === "cancelled");
+  const paid      = orders.filter(o => displayStatus(o.status) === "paid");
+  const pending   = orders.filter(o => displayStatus(o.status) === "pending");
+  const failed    = orders.filter(o => displayStatus(o.status) === "failed");
   const revenue   = paid.reduce((s, o) => s + parseFloat(o.total_amount), 0);
   const todayStr  = new Date().toDateString();
   const todayCount = orders.filter(o => new Date(o.created_at).toDateString() === todayStr).length;

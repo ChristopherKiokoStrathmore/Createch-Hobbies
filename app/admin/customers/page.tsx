@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Users, Search, Phone, MapPin, ShoppingBag } from "lucide-react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { formatPrice } from "@/lib/utils";
-import { AdminOrder, STATUS_STYLES, formatDate, apiFetchOrders } from "../_types";
+import { AdminOrder, STATUS_STYLES, displayStatus, formatDate, apiFetchOrders } from "../_types";
 
 interface Customer {
   phone:       string;
@@ -16,13 +16,12 @@ interface Customer {
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const d = displayStatus(status);
   return (
     <span
-      className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold font-inter capitalize ${
-        STATUS_STYLES[status] ?? "bg-gray-100 text-gray-700"
-      }`}
+      className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold font-inter capitalize ${STATUS_STYLES[d]}`}
     >
-      {status}
+      {d}
     </span>
   );
 }
@@ -36,7 +35,7 @@ function buildCustomers(orders: AdminOrder[]): Customer[] {
     }
     const c = map.get(key)!;
     c.orders.push(o);
-    if (o.status === "paid") c.totalSpent += parseFloat(o.total_amount);
+    if (displayStatus(o.status) === "paid") c.totalSpent += parseFloat(o.total_amount);
     if (new Date(o.created_at) > new Date(c.lastOrder)) c.lastOrder = o.created_at;
   }
   return Array.from(map.values()).sort(
@@ -176,7 +175,7 @@ export default function CustomersPage() {
             { label: "Total Customers",  value: String(customers.length)       },
             { label: "Total Revenue",    value: formatPrice(totalRevenue)       },
             { label: "Avg. Order Value", value: customers.length
-                ? formatPrice(Math.round(totalRevenue / customers.reduce((s, c) => s + c.orders.filter(o => o.status === "paid").length, 0) || 0))
+                ? formatPrice(Math.round(totalRevenue / customers.reduce((s, c) => s + c.orders.filter(o => displayStatus(o.status) === "paid").length, 0) || 0))
                 : "KES 0" },
           ].map(({ label, value }) => (
             <div key={label} className="bg-brand-charcoal rounded-2xl p-5 border border-white/5">

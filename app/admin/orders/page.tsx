@@ -10,19 +10,18 @@ import { useAdminAuth } from "@/context/AdminAuthContext";
 import { formatPrice } from "@/lib/utils";
 import {
   AdminOrder, OrdersResponse, STATUS_STYLES,
-  formatDate, apiFetchOrders,
+  displayStatus, formatDate, apiFetchOrders,
 } from "../_types";
 
 const PAGE_SIZE = 20;
 
 function StatusBadge({ status }: { status: string }) {
+  const d = displayStatus(status);
   return (
     <span
-      className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold font-inter capitalize ${
-        STATUS_STYLES[status] ?? "bg-gray-100 text-gray-700"
-      }`}
+      className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold font-inter capitalize ${STATUS_STYLES[d]}`}
     >
-      {status}
+      {d}
     </span>
   );
 }
@@ -235,7 +234,7 @@ export default function OrdersPage() {
       o.items.map(i => `${i.product_name} x${i.quantity}`).join(" | "),
       o.total_amount,
       o.mpesa_receipt_number,
-      o.status,
+      displayStatus(o.status),
       o.mpesa_failure_reason,
     ]);
     const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
