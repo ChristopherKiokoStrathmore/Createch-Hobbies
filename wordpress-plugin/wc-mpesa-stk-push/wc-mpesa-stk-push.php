@@ -3,7 +3,7 @@
  * Plugin Name: WC M-Pesa STK Push (Daraja API 2.0)
  * Plugin URI:  https://createch-hobbies.co.ke
  * Description: WooCommerce payment gateway for Safaricom M-Pesa Express (STK Push) via Daraja API 2.0.
- * Version:     1.2.0
+ * Version:     1.3.0
  * Author:      Createch Hobbies
  * License:     GPL-2.0+
  * Text Domain: wc-mpesa-stk
@@ -82,6 +82,12 @@ function wc_mpesa_stk_init() {
 
             // Callback URL format: https://wp.createch-hobbies.co.ke/wp/wc-api/wc_gateway_mpesa_stk/
             add_action( 'woocommerce_api_wc_gateway_mpesa_stk', [ $this, 'handle_callback' ] );
+
+            // Customer-pollable payment status, authenticated by the order key:
+            // GET /?wc-api=wc_mpesa_status&order_id=<id>&key=<order_key>
+            // The headless frontend polls this (via its own proxy) so the
+            // "Check Your Phone" screen can flip to a success/failure state.
+            add_action( 'woocommerce_api_wc_mpesa_status', [ $this, 'handle_status_check' ] );
         }
 
         // -----------------------------------------------------------
@@ -448,7 +454,45 @@ function wc_mpesa_stk_init() {
         }
 
         // -----------------------------------------------------------
-        // 8. Internal helpers.
+        // 8. Status check — polled by the headless frontend.
+        // Read-only and key-authenticated: it can never change order
+        // state, and without the exact order key it reveals nothing.
+        // -----------------------------------------------------------
+        public function handle_status_check(): void {
+            nocache_headers();
+
+            $order_id = isset( $_GET['order_id'] ) ? absint( wp_unslash( $_GET['order_id'] ) ) : 0;
+            $key      = isset( $_GET['key'] ) ? sanitize_text_field( wp_unslash( $_GET['key'] ) ) : '';
+
+            if ( ! $order_id || '' === $key ) {
+                status_header( 400 );
+                wp_send_json( [ 'error' => 'Missing order_id or key.' ] );
+            }
+
+            $order = wc_get_order( $order_id );
+
+            if ( ! $order || ! hash_equals( (string) $order->get_order_key(), $key ) ) {
+                status_header( 404 );
+                wp_send_json( [ 'error' => 'Order not found.' ] );
+            }
+
+            if ( $order->is_paid() ) {
+                $status = 'paid';
+            } elseif ( in_array( $order->get_status(), [ 'failed', 'cancelled' ], true ) ) {
+                $status = 'failed';
+            } else {
+                // pending, on-hold (amount-mismatch review), draft… — still open.
+                $status = 'pending';
+            }
+
+            wp_send_json( [
+                'status'  => $status,
+                'receipt' => (string) $order->get_meta( '_mpesa_receipt_number' ),
+            ] );
+        }
+
+        // -----------------------------------------------------------
+        // 9. Internal helpers.
         // -----------------------------------------------------------
 
         private function get_access_token(): string|WP_Error {

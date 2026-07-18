@@ -10,7 +10,7 @@ import { useAdminAuth } from "@/context/AdminAuthContext";
 import { formatPrice } from "@/lib/utils";
 import {
   AdminOrder, OrdersResponse, STATUS_STYLES, ORDER_FILTERS,
-  displayStatus, formatDate, apiFetchOrders,
+  displayStatus, paymentMethodOf, formatDate, apiFetchOrders,
 } from "../_types";
 
 const PAGE_SIZE = 20;
@@ -355,6 +355,9 @@ export default function OrdersPage() {
                       </td>
                       <td className="px-5 py-4 whitespace-nowrap">
                         <StatusBadge status={o.status} />
+                        {paymentMethodOf(o) && (
+                          <p className="text-white/40 text-[10px] font-inter mt-1">{paymentMethodOf(o)}</p>
+                        )}
                       </td>
                       <td className="px-5 py-4 text-white/40 text-xs max-w-[160px] truncate">
                         {o.mpesa_failure_reason || "—"}

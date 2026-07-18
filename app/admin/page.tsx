@@ -10,7 +10,7 @@ import { useAdminAuth } from "@/context/AdminAuthContext";
 import { formatPrice } from "@/lib/utils";
 import {
   AdminOrder, OrdersResponse, STATUS_STYLES,
-  displayStatus, formatDate, apiFetchOrders,
+  displayStatus, paymentMethodOf, formatDate, apiFetchOrders,
 } from "./_types";
 
 function StatusBadge({ status }: { status: string }) {
@@ -231,6 +231,9 @@ function Dashboard() {
                     </td>
                     <td className="px-5 py-3.5">
                       <StatusBadge status={o.status} />
+                      {paymentMethodOf(o) && (
+                        <p className="text-white/40 text-[10px] font-inter mt-1">{paymentMethodOf(o)}</p>
+                      )}
                     </td>
                   </tr>
                 ))}
