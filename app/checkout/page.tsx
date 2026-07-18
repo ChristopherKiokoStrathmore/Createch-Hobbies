@@ -219,10 +219,10 @@ export default function CheckoutPage() {
                       key={opt.id}
                       type="button"
                       onClick={() => setForm({ ...form, payment_method: opt.id })}
-                      className={`flex flex-col items-center gap-1.5 rounded-xl px-3 py-4 border transition-colors text-center ${
+                      className={`flex flex-col items-center gap-1.5 rounded-xl px-3 py-4 border-2 transition-colors text-center ${
                         active
-                          ? "border-brand-yellow bg-brand-yellow/10 text-brand-yellow"
-                          : "border-white/10 text-white/50 hover:border-white/30 hover:text-white/80"
+                          ? "border-black bg-black text-brand-yellow shadow-md"
+                          : "border-black/15 bg-white/60 text-black/70 hover:bg-white/80 hover:border-black/40 hover:text-black"
                       }`}
                     >
                       {opt.icon}
