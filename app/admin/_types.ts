@@ -69,6 +69,15 @@ export const ORDER_FILTERS: ReadonlyArray<{
   { value: "refunded", label: "Refunded", match: s => raw(s) === "refunded" },
 ];
 
+// Infer the payment rail. The backend doesn't send payment_method, but an
+// M-Pesa order carries a receipt (paid) or an M-Pesa failure reason (failed);
+// a paid order with neither went through DPO card. Anything else is unknown.
+export function paymentMethodOf(o: AdminOrder): "M-Pesa" | "Card" | null {
+  if (o.mpesa_receipt_number || o.mpesa_failure_reason) return "M-Pesa";
+  if (displayStatus(o.status) === "paid") return "Card";
+  return null;
+}
+
 export function formatDate(iso: string) {
   return new Date(iso).toLocaleString("en-KE", {
     day: "2-digit", month: "short", year: "numeric",

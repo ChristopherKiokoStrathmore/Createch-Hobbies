@@ -19,7 +19,12 @@ import {
 } from "@/lib/woo-store";
 
 type PaymentMethod = "mpesa" | "card";
-type Step = "form" | "pending" | "failed";
+type Step = "form" | "pending" | "paid" | "failed";
+
+// M-Pesa confirmation polling. The STK prompt itself lives ~60s on the phone;
+// poll a little past that so a slow PIN entry still resolves on-screen.
+const MPESA_POLL_INTERVAL = 3000; // ms
+const MPESA_POLL_MAX_ATTEMPTS = 40; // ~2 minutes
 
 const METHOD_OPTIONS: { id: PaymentMethod; label: string; sub: string; icon: React.ReactNode }[] = [
   { id: "mpesa", label: "M-Pesa", sub: "Safaricom STK Push", icon: <Smartphone size={18} /> },
@@ -33,6 +38,9 @@ export default function CheckoutPage() {
   const [error, setError]       = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingOrderId, setPendingOrderId] = useState<number | null>(null);
+  const [pendingOrderKey, setPendingOrderKey] = useState<string | null>(null);
+  const [paidReceipt, setPaidReceipt] = useState("");
+  const [paidAmount, setPaidAmount] = useState(0);
 
   const [form, setForm] = useState({
     name:           "",
@@ -48,6 +56,60 @@ export default function CheckoutPage() {
       router.replace("/shop");
     }
   }, [state.items.length, step, router]);
+
+  // While the STK prompt is open, poll WooCommerce (via /api/mpesa/status) for
+  // the outcome. Safaricom's callback marks the order paid server-side whether
+  // or not the customer is still on this page — polling only decides what the
+  // screen shows: paid → clear cart + receipt; failed → retry with cart intact;
+  // timeout → keep the honest "we will confirm" copy and stop.
+  useEffect(() => {
+    if (step !== "pending" || !pendingOrderId || !pendingOrderKey) return;
+
+    let cancelled = false;
+    let attempts = 0;
+
+    async function poll() {
+      attempts += 1;
+      try {
+        const res = await fetch(
+          `/api/mpesa/status?order=${pendingOrderId}&key=${encodeURIComponent(pendingOrderKey ?? "")}`,
+          { cache: "no-store" },
+        );
+        if (cancelled) return;
+
+        if (res.status === 400) return; // terminal: bad order/key — stop polling
+
+        if (res.ok) {
+          const data = (await res.json()) as { status: string; receipt: string };
+          if (data.status === "paid") {
+            dispatch({ type: "CLEAR_CART" });
+            setPaidReceipt(data.receipt);
+            setStep("paid");
+            return;
+          }
+          if (data.status === "failed") {
+            setError(
+              "The M-Pesa payment was not completed — the prompt may have timed out or been cancelled. No money moved; you can safely try again."
+            );
+            setStep("failed");
+            return;
+          }
+        }
+        // pending or transient error — fall through to retry
+      } catch {
+        // network hiccup — fall through to retry
+      }
+
+      if (cancelled) return;
+      if (attempts >= MPESA_POLL_MAX_ATTEMPTS) return;
+      setTimeout(poll, MPESA_POLL_INTERVAL);
+    }
+
+    poll();
+    return () => {
+      cancelled = true;
+    };
+  }, [step, pendingOrderId, pendingOrderKey, dispatch]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -121,8 +183,12 @@ export default function CheckoutPage() {
         return;
       }
 
-      dispatch({ type: "CLEAR_CART" });
+      // Keep the cart intact while the STK prompt is open — it is only cleared
+      // once polling confirms the payment, so a cancelled/failed/timed-out
+      // prompt doesn't wipe the customer's cart (same rule as the card flow).
+      setPaidAmount(totalPrice);
       setPendingOrderId(result.orderId);
+      setPendingOrderKey(result.orderKey);
       setStep("pending");
 
     } catch (err) {
@@ -131,6 +197,53 @@ export default function CheckoutPage() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  /* ─── M-Pesa success screen ─── */
+  if (step === "paid") {
+    return (
+      <main className="min-h-screen bg-brand-dark flex items-center justify-center px-4 pt-24 pb-16">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="mx-auto w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
+            <CheckCircle2 size={32} className="text-green-400" />
+          </div>
+          <h2 className="font-playfair font-bold text-3xl text-white">Payment Confirmed!</h2>
+          <p className="text-white/60 font-inter text-sm leading-relaxed">
+            Thank you! Your M-Pesa payment has been received and your order is
+            being prepared. Delivery is usually within 1–2 days — we will call
+            you to confirm.
+          </p>
+
+          <div className="section-card rounded-2xl p-5 border border-white/5 text-left space-y-2">
+            {pendingOrderId && (
+              <div className="flex items-center justify-between">
+                <span className="text-white/50 font-inter text-xs uppercase tracking-widest">Order</span>
+                <span className="text-white font-inter font-semibold text-sm">#{pendingOrderId}</span>
+              </div>
+            )}
+            {paidReceipt && (
+              <div className="flex items-center justify-between">
+                <span className="text-white/50 font-inter text-xs uppercase tracking-widest">M-Pesa Receipt</span>
+                <span className="text-white font-inter font-semibold text-sm">{paidReceipt}</span>
+              </div>
+            )}
+            {paidAmount > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-white/50 font-inter text-xs uppercase tracking-widest">Amount</span>
+                <span className="text-white font-inter font-semibold text-sm">{formatPrice(paidAmount)}</span>
+              </div>
+            )}
+          </div>
+
+          <Link
+            href="/shop"
+            className="btn-yellow inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full font-inter font-bold text-sm"
+          >
+            Continue Shopping
+          </Link>
+        </div>
+      </main>
+    );
   }
 
   /* ─── M-Pesa pending screen ─── */
@@ -150,6 +263,10 @@ export default function CheckoutPage() {
           {pendingOrderId && (
             <p className="text-white/30 font-inter text-xs">Order #{pendingOrderId}</p>
           )}
+          <div className="flex items-center justify-center gap-2 text-white/40 font-inter text-xs">
+            <Loader2 size={14} className="animate-spin" />
+            Waiting for confirmation — this page will update automatically.
+          </div>
           <div className="flex items-center justify-center gap-2 text-white/40 font-inter text-xs">
             <CheckCircle2 size={14} className="text-green-400" />
             Your order is saved. We will confirm once payment is received.
