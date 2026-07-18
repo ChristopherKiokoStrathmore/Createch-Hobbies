@@ -34,9 +34,9 @@ const nextConfig: NextConfig = {
     const csp = [
       "default-src 'self'",
       "img-src 'self' data: https:",
-      "style-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "script-src 'self' 'unsafe-inline'",
-      "font-src 'self' data:",
+      "font-src 'self' data: https://fonts.gstatic.com",
       "connect-src 'self' https:",
       "frame-ancestors 'self'",
       "base-uri 'self'",
