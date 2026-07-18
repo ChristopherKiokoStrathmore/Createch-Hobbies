@@ -3,7 +3,7 @@
  * Plugin Name: WC M-Pesa STK Push (Daraja API 2.0)
  * Plugin URI:  https://createch-hobbies.co.ke
  * Description: WooCommerce payment gateway for Safaricom M-Pesa Express (STK Push) via Daraja API 2.0.
- * Version:     1.1.0
+ * Version:     1.2.0
  * Author:      Createch Hobbies
  * License:     GPL-2.0+
  * Text Domain: wc-mpesa-stk
@@ -120,11 +120,18 @@ function wc_mpesa_stk_init() {
                     ],
                 ],
                 'shortcode' => [
-                    'title'       => 'Paybill / Till Number',
+                    'title'       => 'Store Number (BusinessShortCode)',
                     'type'        => 'text',
-                    'description' => 'Your Safaricom Paybill or Business Till Number (Shortcode).',
+                    'description' => 'The BusinessShortCode used to build the STK password (pairs with the Passkey). For a Buy Goods / Till setup this is the store / head-office number (e.g. 4574069) — NOT the till the customer pays into.',
                     'desc_tip'    => true,
                     'default'     => '',
+                ],
+                'till_number' => [
+                    'title'       => 'Till Number (Buy Goods, PartyB)',
+                    'type'        => 'text',
+                    'description' => 'The Buy Goods Till the money is collected on (sent as PartyB with TransactionType CustomerBuyGoodsOnline), e.g. 3434039.',
+                    'desc_tip'    => true,
+                    'default'     => '3434039',
                 ],
                 'consumer_key' => [
                     'title'       => 'Consumer Key',
@@ -216,7 +223,11 @@ function wc_mpesa_stk_init() {
             }
 
             // Step 2: Build STK Push password.
+            // The password is derived from the BusinessShortCode (store number)
+            // + Passkey + timestamp — this exact pairing is what authenticates
+            // the STK request, and must NOT be switched to the till number.
             $shortcode = $this->get_option( 'shortcode' );
+            $till      = $this->get_option( 'till_number' ) ?: $shortcode;
             $passkey   = $this->get_option( 'passkey' );
             $timestamp = gmdate( 'YmdHis' );
             $password  = base64_encode( $shortcode . $passkey . $timestamp );
@@ -224,14 +235,20 @@ function wc_mpesa_stk_init() {
             $amount       = (int) ceil( $order->get_total() );
             $callback_url = add_query_arg( 'wc-api', 'wc_gateway_mpesa_stk', trailingslashit( get_home_url() ) );
 
+            // This is a Buy Goods / Till setup: money is collected on the Till
+            // (PartyB = till number) with TransactionType CustomerBuyGoodsOnline,
+            // while BusinessShortCode stays the store number (it only pairs with
+            // the passkey for the password). Sending CustomerPayBillOnline with
+            // PartyB = the shortcode is the combination Safaricom rejected with
+            // ResultCode 2029 ("unresolved reason type").
             $payload = [
                 'BusinessShortCode' => $shortcode,
                 'Password'          => $password,
                 'Timestamp'         => $timestamp,
-                'TransactionType'   => 'CustomerPayBillOnline', // Change to 'CustomerBuyGoodsOnline' for Till numbers
+                'TransactionType'   => 'CustomerBuyGoodsOnline',
                 'Amount'            => $amount,
                 'PartyA'            => $phone,
-                'PartyB'            => $shortcode,
+                'PartyB'            => $till,
                 'PhoneNumber'       => $phone,
                 'CallBackURL'       => $callback_url,
                 'AccountReference'  => 'Order #' . $order_id,
