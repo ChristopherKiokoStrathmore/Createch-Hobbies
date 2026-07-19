@@ -152,7 +152,17 @@ export default async function ProductPage({ params }: Props) {
                 <div className="text-white/35 text-xs font-inter uppercase tracking-widest mb-0.5">Price</div>
                 <div className="font-playfair font-bold text-3xl text-white">
                   {formatPrice(product.price)}
+                  {product.onSale && (
+                    <span className="ml-3 text-white/30 line-through text-lg font-inter font-medium align-middle">
+                      {formatPrice(product.regularPrice)}
+                    </span>
+                  )}
                 </div>
+                {product.onSale && (
+                  <div className="text-brand-yellow text-xs font-inter font-semibold mt-1">
+                    On sale — save {formatPrice(product.regularPrice - product.price)}
+                  </div>
+                )}
               </div>
               <div className="text-white/30 text-xs text-right font-inter leading-relaxed">
                 Delivery across Nairobi<br />usually 1–2 days

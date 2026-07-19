@@ -87,6 +87,11 @@ export default function ProductCard({ product, priority = false, compact = true 
             <div className="flex items-center justify-between mt-0.5">
               <span className="font-bold text-brand-yellow text-[10px] font-inter">
                 {formatPrice(product.price)}
+                {product.onSale && (
+                  <span className="ml-1 text-white/50 line-through font-medium">
+                    {formatPrice(product.regularPrice)}
+                  </span>
+                )}
               </span>
               {soldOut ? (
                 <span className="bg-white/20 text-white/70 px-2 py-0.5 rounded-full text-[9px] font-bold font-inter">
@@ -113,6 +118,11 @@ export default function ProductCard({ product, priority = false, compact = true 
           {soldOut && (
             <span className="bg-red-600/80 backdrop-blur-sm text-white text-[8px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full border border-white/10 font-inter">
               Out of stock
+            </span>
+          )}
+          {product.onSale && (
+            <span className="bg-brand-yellow text-brand-dark text-[8px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full font-inter">
+              Sale
             </span>
           )}
         </div>
@@ -149,6 +159,11 @@ export default function ProductCard({ product, priority = false, compact = true 
         <div className="flex items-center justify-between gap-2 mt-auto">
           <span className="font-playfair font-bold text-lg sm:text-2xl text-white">
             {formatPrice(product.price)}
+            {product.onSale && (
+              <span className="ml-2 text-white/30 line-through text-sm font-inter font-medium align-middle">
+                {formatPrice(product.regularPrice)}
+              </span>
+            )}
           </span>
           <button
             onClick={addToCart}
