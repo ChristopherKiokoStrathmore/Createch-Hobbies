@@ -18,10 +18,12 @@ interface WooProduct {
   description:       string;
   short_description: string;
   price:             string;
+  regular_price:     string;
+  on_sale:           boolean;
   images:            WooImage[];
   attributes:        WooAttribute[];
   categories:        WooCategory[];
-  stock_status:      "instock" | "outofstock";
+  stock_status:      "instock" | "outofstock" | "onbackorder";
   featured:          boolean;
 }
 
@@ -94,6 +96,12 @@ function mapWhatYouLearn(attrs: WooAttribute[]): string[] {
   return learn.length ? learn : getAttr(attrs, "Skills");
 }
 
+function mapPricing(p: WooProduct): { price: number; regularPrice: number; onSale: boolean } {
+  const price   = parseFloat(p.price) || 0;
+  const regular = parseFloat(p.regular_price) || price;
+  return { price, regularPrice: regular, onSale: Boolean(p.on_sale) && regular > price };
+}
+
 export function mapWooProduct(p: WooProduct): Product {
   return {
     id:           String(p.id),
@@ -102,7 +110,7 @@ export function mapWooProduct(p: WooProduct): Product {
     category:     mapCategory(p.categories, p.name),
     ageRange:     mapAgeRange(p.attributes),
     difficulty:   mapDifficulty(p.attributes),
-    price:        parseFloat(p.price) || 0,
+    ...mapPricing(p),
     description:  stripHtml(p.short_description || p.description),
     whatYouLearn: mapWhatYouLearn(p.attributes),
     images:       p.images.map((img) => img.src),
@@ -151,7 +159,7 @@ export function mapWooProductRaw(p: WooProduct): WooProductRaw {
     category,
     ageRange:     ageRaw  ?? null,
     difficulty:   (diffRaw as Difficulty) ?? null,
-    price:        parseFloat(p.price) || 0,
+    ...mapPricing(p),
     description:  stripHtml(p.short_description || p.description),
     whatYouLearn: mapWhatYouLearn(p.attributes),
     images:       p.images.map((img) => img.src),
@@ -214,4 +222,30 @@ export async function getProducts(params?: Record<string, string>): Promise<Prod
 export async function getProduct(slug: string): Promise<Product | null> {
   const raw = await wooFetch<WooProduct[]>("/products", { slug });
   return raw.length ? mapWooProduct(raw[0]) : null;
+}
+
+// ─── Payment gateways ──────────────────────────────────────────────────────
+//
+// Which payment methods the checkout offers is decided in WooCommerce
+// (Settings → Payments), not in code: the checkout renders whichever enabled
+// gateways it knows how to drive (M-Pesa STK, DPO card, Cash on Delivery).
+
+export interface PaymentGateway {
+  id:          string;
+  title:       string;
+  description: string;
+}
+
+interface WooGatewayRaw {
+  id:          string;
+  title:       string;
+  description: string;
+  enabled:     boolean;
+}
+
+export async function getEnabledGateways(): Promise<PaymentGateway[]> {
+  const raw = await wooFetch<WooGatewayRaw[]>("/payment_gateways");
+  return raw
+    .filter((g) => g.enabled)
+    .map((g) => ({ id: g.id, title: stripHtml(g.title), description: stripHtml(g.description) }));
 }

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ShoppingBag, Smartphone, Loader2, AlertCircle,
-  ChevronLeft, CreditCard, CheckCircle2,
+  ChevronLeft, CreditCard, CheckCircle2, Banknote, Tag, X,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/utils";
@@ -13,23 +13,66 @@ import {
   initCart,
   syncCartItems,
   checkoutWoo,
+  updateCartCustomer,
+  applyCoupon,
+  removeCoupon,
+  selectShippingRate,
   normalisePhone,
   isValidMpesaPhone,
   type WooBillingAddress,
+  type WooCartSnapshot,
 } from "@/lib/woo-store";
 
-type PaymentMethod = "mpesa" | "card";
-type Step = "form" | "pending" | "paid" | "failed";
+type Step = "form" | "pending" | "paid" | "failed" | "cod-placed";
 
 // M-Pesa confirmation polling. The STK prompt itself lives ~60s on the phone;
 // poll a little past that so a slow PIN entry still resolves on-screen.
 const MPESA_POLL_INTERVAL = 3000; // ms
 const MPESA_POLL_MAX_ATTEMPTS = 40; // ~2 minutes
 
-const METHOD_OPTIONS: { id: PaymentMethod; label: string; sub: string; icon: React.ReactNode }[] = [
-  { id: "mpesa", label: "M-Pesa", sub: "Safaricom STK Push", icon: <Smartphone size={18} /> },
-  { id: "card",  label: "Card",   sub: "Visa / Mastercard",  icon: <CreditCard  size={18} /> },
+// Which payment methods appear is decided in WooCommerce (Settings →
+// Payments): the checkout offers every enabled gateway it knows how to
+// drive. The gateway's own title (set in wp-admin) is used as the label.
+type MethodKind = "mpesa" | "card" | "cod";
+
+interface MethodOption {
+  id:    string;
+  kind:  MethodKind;
+  label: string;
+}
+
+const KIND_BY_GATEWAY: Record<string, MethodKind> = {
+  wc_mpesa_stk:    "mpesa",
+  woocommerce_dpo: "card",
+  cod:             "cod",
+};
+
+const KIND_META: Record<MethodKind, { icon: ReactNode; sub: string }> = {
+  mpesa: { icon: <Smartphone size={18} />, sub: "Safaricom STK Push" },
+  card:  { icon: <CreditCard size={18} />, sub: "Visa / Mastercard" },
+  cod:   { icon: <Banknote size={18} />,   sub: "Cash or M-Pesa at the door" },
+};
+
+// Shown until /api/payment-methods answers (and if it can't).
+const FALLBACK_METHODS: MethodOption[] = [
+  { id: "wc_mpesa_stk",    kind: "mpesa", label: "M-Pesa" },
+  { id: "woocommerce_dpo", kind: "card",  label: "Card" },
 ];
+
+// All deliveries are within Nairobi, so a placeholder address is enough for
+// WooCommerce to resolve the shipping zone and price the delivery. The real
+// address the customer types goes on the checkout request itself.
+const PLACEHOLDER_BILLING: WooBillingAddress = {
+  first_name: "Guest",
+  last_name:  "-",
+  email:      "orders@createch-hobbies.co.ke",
+  phone:      "0700000000",
+  address_1:  "Nairobi",
+  city:       "Nairobi",
+  country:    "KE",
+  state:      "KE47",
+  postcode:   "00100",
+};
 
 export default function CheckoutPage() {
   const router                  = useRouter();
@@ -42,13 +85,21 @@ export default function CheckoutPage() {
   const [paidReceipt, setPaidReceipt] = useState("");
   const [paidAmount, setPaidAmount] = useState(0);
 
+  const [methods, setMethods] = useState<MethodOption[]>(FALLBACK_METHODS);
+  const [wooCart, setWooCart] = useState<WooCartSnapshot | null>(null);
+  const [cartBusy, setCartBusy] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [couponError, setCouponError] = useState("");
+  const [couponBusy, setCouponBusy] = useState(false);
+  const sessionRef = useRef<{ cartToken: string; nonce: string } | null>(null);
+
   const [form, setForm] = useState({
     name:           "",
     phone:          "",
     email:          "",
     address:        "",
     mpesa_phone:    "",
-    payment_method: "mpesa" as PaymentMethod,
+    payment_method: "wc_mpesa_stk",
   });
 
   useEffect(() => {
@@ -56,6 +107,64 @@ export default function CheckoutPage() {
       router.replace("/shop");
     }
   }, [state.items.length, step, router]);
+
+  // Offer whatever gateways are enabled in WooCommerce (of the kinds this
+  // checkout can drive). Falls back to M-Pesa + Card if the lookup fails.
+  useEffect(() => {
+    fetch("/api/payment-methods")
+      .then((r) => r.json())
+      .then((gateways: { id: string; title: string }[]) => {
+        const options = gateways
+          .filter((g) => KIND_BY_GATEWAY[g.id])
+          .map((g) => ({
+            id:    g.id,
+            kind:  KIND_BY_GATEWAY[g.id],
+            label: g.title || FALLBACK_METHODS.find((m) => m.id === g.id)?.label || g.id,
+          }));
+        if (options.length > 0) {
+          setMethods(options);
+          setForm((f) =>
+            options.some((o) => o.id === f.payment_method)
+              ? f
+              : { ...f, payment_method: options[0].id }
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Load server-side totals: sync the local cart into a WooCommerce cart
+  // session and read back the real money — sale prices, coupon discounts and
+  // the delivery fee configured in WooCommerce shipping zones. If this fails,
+  // the page falls back to locally-computed totals and checkout still works.
+  const itemsKey = JSON.stringify(state.items.map((i) => [i.id, i.quantity]));
+  useEffect(() => {
+    if (state.items.length === 0) return;
+    let cancelled = false;
+
+    (async () => {
+      setCartBusy(true);
+      try {
+        const { cartToken, nonce } = await initCart();
+        const synced = await syncCartItems(
+          state.items.map((i) => ({ productId: parseInt(i.id, 10) || 0, quantity: i.quantity })),
+          cartToken,
+          nonce
+        );
+        const res = await updateCartCustomer(PLACEHOLDER_BILLING, synced.cartToken, synced.nonce);
+        if (cancelled) return;
+        sessionRef.current = { cartToken: res.cartToken, nonce: res.nonce };
+        setWooCart(res.cart);
+      } catch {
+        if (!cancelled) setWooCart(null);
+      } finally {
+        if (!cancelled) setCartBusy(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemsKey]);
 
   // While the STK prompt is open, poll WooCommerce (via /api/mpesa/status) for
   // the outcome. Safaricom's callback marks the order paid server-side whether
@@ -111,12 +220,59 @@ export default function CheckoutPage() {
     };
   }, [step, pendingOrderId, pendingOrderKey, dispatch]);
 
+  const selected      = methods.find((m) => m.id === form.payment_method) ?? methods[0];
+  const displayTotal  = wooCart?.total ?? totalPrice;
+  const shippingRates = wooCart?.shippingPackages[0]?.rates ?? [];
+
+  async function refreshCart(fn: (token: string, nonce: string) => Promise<{ cart: WooCartSnapshot; cartToken: string; nonce: string }>) {
+    if (!sessionRef.current) return;
+    const res = await fn(sessionRef.current.cartToken, sessionRef.current.nonce);
+    sessionRef.current = { cartToken: res.cartToken, nonce: res.nonce };
+    setWooCart(res.cart);
+  }
+
+  async function handleApplyCoupon() {
+    const code = couponInput.trim();
+    if (!code || couponBusy) return;
+    setCouponBusy(true);
+    setCouponError("");
+    try {
+      await refreshCart((t, n) => applyCoupon(code, t, n));
+      setCouponInput("");
+    } catch (err) {
+      setCouponError(err instanceof Error ? err.message : "That code could not be applied.");
+    } finally {
+      setCouponBusy(false);
+    }
+  }
+
+  async function handleRemoveCoupon(code: string) {
+    if (couponBusy) return;
+    setCouponBusy(true);
+    setCouponError("");
+    try {
+      await refreshCart((t, n) => removeCoupon(code, t, n));
+    } catch {
+      // leave the coupon visible; totals are still correct server-side
+    } finally {
+      setCouponBusy(false);
+    }
+  }
+
+  async function handleSelectRate(packageId: number | string, rateId: string) {
+    try {
+      await refreshCart((t, n) => selectShippingRate(packageId, rateId, t, n));
+    } catch {
+      // keep previous selection on failure
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (isSubmitting) return;
     setError("");
 
-    if (form.payment_method === "mpesa") {
+    if (selected?.kind === "mpesa") {
       const normalised = normalisePhone(form.mpesa_phone);
       if (!isValidMpesaPhone(normalised)) {
         setError("Enter your M-Pesa number in the format 0712 345 678 or 2547XXXXXXXX.");
@@ -127,7 +283,8 @@ export default function CheckoutPage() {
     setIsSubmitting(true);
 
     try {
-      // Step 1: Init WooCommerce cart session
+      // Step 1: Init WooCommerce cart session (the stored Cart-Token keeps the
+      // same server cart, so an applied coupon or chosen delivery rate sticks).
       const { cartToken, nonce } = await initCart();
 
       // Step 2: Sync local cart items into WooCommerce cart
@@ -158,9 +315,9 @@ export default function CheckoutPage() {
       const result = await checkoutWoo(
         {
           billing,
-          paymentMethod: form.payment_method === "mpesa" ? "wc_mpesa_stk" : "woocommerce_dpo",
+          paymentMethod: form.payment_method,
           paymentData:
-            form.payment_method === "mpesa"
+            selected?.kind === "mpesa"
               ? [{ key: "mpesa_phone", value: normalisePhone(form.mpesa_phone) }]
               : [],
         },
@@ -168,7 +325,7 @@ export default function CheckoutPage() {
         nonce2
       );
 
-      if (form.payment_method === "card") {
+      if (selected?.kind === "card") {
         if (!result.redirectUrl) {
           setError(
             "The card payment service could not be reached. Please try again shortly or pay via M-Pesa."
@@ -183,10 +340,20 @@ export default function CheckoutPage() {
         return;
       }
 
+      if (selected?.kind === "cod") {
+        // Order placed; payment happens at the door (cash, or an M-Pesa
+        // prompt our rider triggers). Safe to clear the cart now.
+        dispatch({ type: "CLEAR_CART" });
+        setPaidAmount(displayTotal);
+        setPendingOrderId(result.orderId);
+        setStep("cod-placed");
+        return;
+      }
+
       // Keep the cart intact while the STK prompt is open — it is only cleared
       // once polling confirms the payment, so a cancelled/failed/timed-out
       // prompt doesn't wipe the customer's cart (same rule as the card flow).
-      setPaidAmount(totalPrice);
+      setPaidAmount(displayTotal);
       setPendingOrderId(result.orderId);
       setPendingOrderKey(result.orderKey);
       setStep("pending");
@@ -230,6 +397,47 @@ export default function CheckoutPage() {
             {paidAmount > 0 && (
               <div className="flex items-center justify-between">
                 <span className="text-white/50 font-inter text-xs uppercase tracking-widest">Amount</span>
+                <span className="text-white font-inter font-semibold text-sm">{formatPrice(paidAmount)}</span>
+              </div>
+            )}
+          </div>
+
+          <Link
+            href="/shop"
+            className="btn-yellow inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full font-inter font-bold text-sm"
+          >
+            Continue Shopping
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  /* ─── Pay-on-delivery success screen ─── */
+  if (step === "cod-placed") {
+    return (
+      <main className="min-h-screen bg-brand-dark flex items-center justify-center px-4 pt-24 pb-16">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="mx-auto w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
+            <CheckCircle2 size={32} className="text-green-400" />
+          </div>
+          <h2 className="font-playfair font-bold text-3xl text-white">Order Placed!</h2>
+          <p className="text-white/60 font-inter text-sm leading-relaxed">
+            Your order is confirmed and will be delivered within 1–2 days — we
+            will call you first. Pay on delivery with cash, or our rider will
+            send an M-Pesa prompt to your phone at the door.
+          </p>
+
+          <div className="section-card rounded-2xl p-5 border border-white/5 text-left space-y-2">
+            {pendingOrderId && (
+              <div className="flex items-center justify-between">
+                <span className="text-white/50 font-inter text-xs uppercase tracking-widest">Order</span>
+                <span className="text-white font-inter font-semibold text-sm">#{pendingOrderId}</span>
+              </div>
+            )}
+            {paidAmount > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-white/50 font-inter text-xs uppercase tracking-widest">Due on delivery</span>
                 <span className="text-white font-inter font-semibold text-sm">{formatPrice(paidAmount)}</span>
               </div>
             )}
@@ -301,8 +509,6 @@ export default function CheckoutPage() {
   }
 
   /* ─── Checkout form ─── */
-  const selected = METHOD_OPTIONS.find((m) => m.id === form.payment_method)!;
-
   return (
     <main className="min-h-screen bg-brand-dark pt-24 pb-16 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
@@ -328,8 +534,8 @@ export default function CheckoutPage() {
               <h2 className="font-inter font-semibold text-white mb-4 text-sm uppercase tracking-widest">
                 Payment Method
               </h2>
-              <div className="grid grid-cols-2 gap-3">
-                {METHOD_OPTIONS.map((opt) => {
+              <div className={`grid gap-3 ${methods.length >= 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+                {methods.map((opt) => {
                   const active = form.payment_method === opt.id;
                   return (
                     <button
@@ -342,9 +548,9 @@ export default function CheckoutPage() {
                           : "border-black/15 bg-white/60 text-black/70 hover:bg-white/80 hover:border-black/40 hover:text-black"
                       }`}
                     >
-                      {opt.icon}
+                      {KIND_META[opt.kind].icon}
                       <span className="font-inter font-semibold text-xs">{opt.label}</span>
-                      <span className="font-inter text-[10px] opacity-60 leading-tight">{opt.sub}</span>
+                      <span className="font-inter text-[10px] opacity-60 leading-tight">{KIND_META[opt.kind].sub}</span>
                     </button>
                   );
                 })}
@@ -405,7 +611,7 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* M-Pesa phone field — only shown when M-Pesa is selected */}
-                {form.payment_method === "mpesa" && (
+                {selected?.kind === "mpesa" && (
                   <div>
                     <label className="block text-white/50 text-xs font-inter mb-1.5">
                       M-Pesa Number <span className="text-brand-yellow">*</span>
@@ -443,18 +649,25 @@ export default function CheckoutPage() {
                   <Loader2 size={18} className="animate-spin" />
                   Processing…
                 </>
+              ) : selected?.kind === "cod" ? (
+                <>
+                  {KIND_META.cod.icon}
+                  Place Order — {formatPrice(displayTotal)} on Delivery
+                </>
               ) : (
                 <>
-                  {selected.icon}
-                  Pay {formatPrice(totalPrice)} via {selected.label}
+                  {selected && KIND_META[selected.kind].icon}
+                  Pay {formatPrice(displayTotal)} via {selected?.label}
                 </>
               )}
             </button>
 
             <p className="text-white/25 text-xs text-center font-inter">
-              {form.payment_method === "mpesa"
+              {selected?.kind === "mpesa"
                 ? "You will receive an M-Pesa STK push on your phone to confirm."
-                : "You will be redirected to DPO Pay's secure card payment page."}
+                : selected?.kind === "card"
+                ? "You will be redirected to DPO Pay's secure card payment page."
+                : "No payment now — pay cash or M-Pesa when your order arrives."}
             </p>
 
             <Link
@@ -492,15 +705,113 @@ export default function CheckoutPage() {
               ))}
             </div>
 
-            <div className="border-t border-white/10 pt-4 flex items-center justify-between">
-              <span className="text-white/60 font-inter text-sm">Total</span>
-              <span className="font-playfair font-bold text-2xl text-white">
-                {formatPrice(totalPrice)}
-              </span>
+            {/* Coupon */}
+            <div className="border-t border-white/10 pt-4 mb-4">
+              {wooCart && wooCart.coupons.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {wooCart.coupons.map((code) => (
+                    <span
+                      key={code}
+                      className="inline-flex items-center gap-1.5 bg-brand-yellow/15 border border-brand-yellow/30 text-brand-yellow text-xs font-semibold px-3 py-1 rounded-full font-inter uppercase"
+                    >
+                      <Tag size={11} />
+                      {code}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCoupon(code)}
+                        aria-label={`Remove coupon ${code}`}
+                        className="hover:text-white transition-colors"
+                      >
+                        <X size={11} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              {wooCart && (
+                <div className="flex gap-2">
+                  <input
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") { e.preventDefault(); handleApplyCoupon(); }
+                    }}
+                    placeholder="Discount code"
+                    className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white font-inter text-xs placeholder:text-white/20 focus:outline-none focus:border-brand-yellow/60 transition-colors uppercase"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyCoupon}
+                    disabled={couponBusy || !couponInput.trim()}
+                    className="shrink-0 border border-brand-yellow/50 text-brand-yellow text-xs font-semibold px-4 py-2 rounded-xl font-inter hover:bg-brand-yellow/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {couponBusy ? "…" : "Apply"}
+                  </button>
+                </div>
+              )}
+              {couponError && (
+                <p className="text-red-400 text-xs font-inter mt-2">{couponError}</p>
+              )}
+            </div>
+
+            {/* Delivery rate choice — only when WooCommerce offers more than one */}
+            {shippingRates.length > 1 && (
+              <div className="mb-4 space-y-2">
+                <p className="text-white/50 font-inter text-xs uppercase tracking-widest">Delivery Option</p>
+                {shippingRates.map((rate) => (
+                  <label
+                    key={rate.rateId}
+                    className="flex items-center justify-between gap-2 cursor-pointer text-sm font-inter"
+                  >
+                    <span className="flex items-center gap-2 text-white/70">
+                      <input
+                        type="radio"
+                        name="shipping-rate"
+                        checked={rate.selected}
+                        onChange={() => handleSelectRate(wooCart!.shippingPackages[0].packageId, rate.rateId)}
+                        className="accent-[#f5be4d]"
+                      />
+                      {rate.name}
+                    </span>
+                    <span className="text-white/70">{rate.price > 0 ? formatPrice(rate.price) : "Free"}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {/* Totals */}
+            <div className="border-t border-white/10 pt-4 space-y-2">
+              <div className="flex items-center justify-between text-sm font-inter">
+                <span className="text-white/50">Subtotal</span>
+                <span className="text-white">{formatPrice(wooCart?.itemsTotal ?? totalPrice)}</span>
+              </div>
+              {wooCart && wooCart.discount > 0 && (
+                <div className="flex items-center justify-between text-sm font-inter">
+                  <span className="text-brand-yellow">Discount</span>
+                  <span className="text-brand-yellow">−{formatPrice(wooCart.discount)}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between text-sm font-inter">
+                <span className="text-white/50">Delivery</span>
+                <span className="text-white">
+                  {!wooCart || shippingRates.length === 0
+                    ? "Confirmed by our rider"
+                    : wooCart.shipping > 0
+                    ? formatPrice(wooCart.shipping)
+                    : "Free"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-white/60 font-inter text-sm">Total</span>
+                <span className="font-playfair font-bold text-2xl text-white inline-flex items-center gap-2">
+                  {cartBusy && <Loader2 size={14} className="animate-spin text-white/30" />}
+                  {formatPrice(displayTotal)}
+                </span>
+              </div>
             </div>
 
             <p className="mt-3 text-white/25 text-xs font-inter">
-              Delivery across Nairobi, usually 1-2 days. Delivery fee TBD.
+              Delivery across Nairobi, usually 1–2 days.
             </p>
           </div>
         </div>

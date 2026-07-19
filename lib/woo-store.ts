@@ -48,7 +48,13 @@ async function storeApiFetch(
       data?:    { params?: Record<string, string> };
     };
     const params = err.data?.params ? ' — ' + JSON.stringify(err.data.params) : '';
-    throw new Error((err.message ?? `Store API error ${res.status}`) + params);
+    // Store API messages arrive HTML-encoded (e.g. Coupon &quot;x&quot;…) —
+    // decode the common entities so they read cleanly in the UI.
+    const message = ((err.message ?? `Store API error ${res.status}`) + params)
+      .replace(/&quot;|&#0?34;/g, '"')
+      .replace(/&apos;|&#0?39;/g, "'")
+      .replace(/&amp;/g, '&');
+    throw new Error(message);
   }
 
   return { data: await res.json(), cartToken, nonce };
@@ -105,6 +111,122 @@ export async function syncCartItems(
   }
 
   return { cartToken: token, nonce: nce };
+}
+
+// ── Cart snapshot: server-side totals, coupons and delivery rates ─────────────
+//
+// The Store API cart is the single source of truth for money: sale prices,
+// coupon discounts and the delivery fees the client configures in WooCommerce
+// (Settings → Shipping) all land in these totals. The checkout page renders
+// this instead of doing its own arithmetic over locally-stored prices.
+
+export interface WooShippingRate {
+  rateId:   string;
+  name:     string;
+  price:    number;
+  selected: boolean;
+}
+
+export interface WooCartSnapshot {
+  itemsTotal: number;
+  discount:   number;
+  shipping:   number;
+  total:      number;
+  coupons:    string[];
+  shippingPackages: { packageId: number | string; rates: WooShippingRate[] }[];
+}
+
+function toMajorUnits(value: string | undefined, minorUnit: number): number {
+  return (parseInt(value ?? '0', 10) || 0) / Math.pow(10, minorUnit);
+}
+
+export function parseCartSnapshot(data: unknown): WooCartSnapshot {
+  const cart = data as {
+    totals?: {
+      currency_minor_unit?: number;
+      total_items?:         string;
+      total_price?:         string;
+      total_shipping?:      string;
+      total_discount?:      string;
+    };
+    coupons?:        { code: string }[];
+    shipping_rates?: {
+      package_id:      number | string;
+      shipping_rates?: {
+        rate_id:              string;
+        name:                 string;
+        price:                string;
+        selected?:            boolean;
+        currency_minor_unit?: number;
+      }[];
+    }[];
+  };
+
+  const totals = cart.totals ?? {};
+  const minor  = totals.currency_minor_unit ?? 2;
+
+  return {
+    itemsTotal: toMajorUnits(totals.total_items, minor),
+    discount:   toMajorUnits(totals.total_discount, minor),
+    shipping:   toMajorUnits(totals.total_shipping, minor),
+    total:      toMajorUnits(totals.total_price, minor),
+    coupons:    (cart.coupons ?? []).map((c) => c.code),
+    shippingPackages: (cart.shipping_rates ?? []).map((pkg) => ({
+      packageId: pkg.package_id,
+      rates: (pkg.shipping_rates ?? []).map((r) => ({
+        rateId:   r.rate_id,
+        name:     r.name,
+        price:    toMajorUnits(r.price, r.currency_minor_unit ?? minor),
+        selected: Boolean(r.selected),
+      })),
+    })),
+  };
+}
+
+interface CartResponse {
+  cart:      WooCartSnapshot;
+  cartToken: string;
+  nonce:     string;
+}
+
+async function cartMutation(
+  path:      string,
+  body:      unknown,
+  cartToken: string,
+  nonce:     string
+): Promise<CartResponse> {
+  const r = await storeApiFetch(path, { method: 'POST', body, cartToken, nonce });
+  return { cart: parseCartSnapshot(r.data), cartToken: r.cartToken, nonce: r.nonce };
+}
+
+// Setting the customer address is what makes WooCommerce resolve the shipping
+// zone and return delivery rates — all orders deliver within Nairobi, so a
+// placeholder address is enough for the fee; the real address goes on the
+// checkout request itself.
+export function updateCartCustomer(
+  billing: WooBillingAddress, cartToken: string, nonce: string
+): Promise<CartResponse> {
+  const { email: _email, ...shippingAddress } = billing;
+  return cartMutation(
+    '/cart/update-customer',
+    { billing_address: billing, shipping_address: shippingAddress },
+    cartToken,
+    nonce
+  );
+}
+
+export function applyCoupon(code: string, cartToken: string, nonce: string): Promise<CartResponse> {
+  return cartMutation('/cart/apply-coupon', { code }, cartToken, nonce);
+}
+
+export function removeCoupon(code: string, cartToken: string, nonce: string): Promise<CartResponse> {
+  return cartMutation('/cart/remove-coupon', { code }, cartToken, nonce);
+}
+
+export function selectShippingRate(
+  packageId: number | string, rateId: string, cartToken: string, nonce: string
+): Promise<CartResponse> {
+  return cartMutation('/cart/select-shipping-rate', { package_id: packageId, rate_id: rateId }, cartToken, nonce);
 }
 
 // ── Checkout ──────────────────────────────────────────────────────────────────

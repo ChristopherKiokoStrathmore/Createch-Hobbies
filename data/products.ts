@@ -43,7 +43,9 @@ export interface Product {
   category: Category;
   ageRange: string;
   difficulty: Difficulty;
-  price: number;
+  price: number;         // active price — the sale price while a sale runs
+  regularPrice: number;  // pre-sale price; equals price when not on sale
+  onSale: boolean;
   description: string;
   whatYouLearn: string[];
   images: string[];
