@@ -2,8 +2,8 @@
 /**
  * Plugin Name: WC M-Pesa STK Push (Daraja API 2.0)
  * Plugin URI:  https://createch-hobbies.co.ke
- * Description: WooCommerce payment gateway for Safaricom M-Pesa Express (STK Push) via Daraja API 2.0.
- * Version:     1.3.0
+ * Description: WooCommerce payment gateway for Safaricom M-Pesa Express (STK Push) via Daraja API 2.0. Includes an admin order action to send an STK push for any unpaid order (pay-on-delivery / retry).
+ * Version:     1.4.0
  * Author:      Createch Hobbies
  * License:     GPL-2.0+
  * Text Domain: wc-mpesa-stk
@@ -220,12 +220,44 @@ function wc_mpesa_stk_init() {
                 return [ 'result' => 'failure' ];
             }
 
+            $body = $this->initiate_stk( $order, $phone );
+
+            if ( is_wp_error( $body ) ) {
+                wc_add_notice( $body->get_error_message(), 'error' );
+                return [ 'result' => 'failure' ];
+            }
+
+            $order->update_status(
+                'pending',
+                sprintf(
+                    'M-Pesa STK Push sent. MerchantRequestID: %s | CheckoutRequestID: %s. Awaiting customer confirmation.',
+                    sanitize_text_field( $body['MerchantRequestID'] ),
+                    sanitize_text_field( $body['CheckoutRequestID'] )
+                )
+            );
+
+            WC()->cart->empty_cart();
+
+            return [
+                'result'   => 'success',
+                'redirect' => $this->get_return_url( $order ),
+            ];
+        }
+
+        // -----------------------------------------------------------
+        // 6b. Shared STK push core — used by checkout AND the manual
+        // admin order action. Sends the push, stores the request ids
+        // the callback matches on, and returns the API body (or a
+        // WP_Error with a customer-safe message).
+        // -----------------------------------------------------------
+        private function initiate_stk( WC_Order $order, string $phone ): array|WP_Error {
+            $order_id = $order->get_id();
+
             // Step 1: Get OAuth access token.
             $token = $this->get_access_token();
             if ( is_wp_error( $token ) ) {
                 $this->log->error( '[M-Pesa STK] Token error: ' . $token->get_error_message(), [ 'source' => 'mpesa-stk' ] );
-                wc_add_notice( 'M-Pesa service is temporarily unavailable. Please try again.', 'error' );
-                return [ 'result' => 'failure' ];
+                return new WP_Error( 'mpesa_unavailable', 'M-Pesa service is temporarily unavailable. Please try again.' );
             }
 
             // Step 2: Build STK Push password.
@@ -281,41 +313,82 @@ function wc_mpesa_stk_init() {
 
             if ( is_wp_error( $response ) ) {
                 $this->log->error( '[M-Pesa STK] STK Push request failed: ' . $response->get_error_message(), [ 'source' => 'mpesa-stk' ] );
-                wc_add_notice( 'Could not reach M-Pesa. Check your connection and try again.', 'error' );
-                return [ 'result' => 'failure' ];
+                return new WP_Error( 'mpesa_unreachable', 'Could not reach M-Pesa. Check your connection and try again.' );
             }
 
             $body = json_decode( wp_remote_retrieve_body( $response ), true );
             $this->log->info( '[M-Pesa STK] STK Push response: ' . wp_json_encode( $body ), [ 'source' => 'mpesa-stk' ] );
 
             // Step 4: Handle API response.
-            if ( isset( $body['ResponseCode'] ) && '0' === (string) $body['ResponseCode'] ) {
-                $order->update_meta_data( '_mpesa_checkout_request_id', sanitize_text_field( $body['CheckoutRequestID'] ) );
-                $order->update_meta_data( '_mpesa_merchant_request_id', sanitize_text_field( $body['MerchantRequestID'] ) );
-                $order->delete_meta_data( '_mpesa_pending_phone' ); // Clean up temp field.
-                $order->save();
-
-                $order->update_status(
-                    'pending',
-                    sprintf(
-                        'M-Pesa STK Push sent. MerchantRequestID: %s | CheckoutRequestID: %s. Awaiting customer confirmation.',
-                        sanitize_text_field( $body['MerchantRequestID'] ),
-                        sanitize_text_field( $body['CheckoutRequestID'] )
-                    )
-                );
-
-                WC()->cart->empty_cart();
-
-                return [
-                    'result'   => 'success',
-                    'redirect' => $this->get_return_url( $order ),
-                ];
+            if ( ! isset( $body['ResponseCode'] ) || '0' !== (string) $body['ResponseCode'] ) {
+                $error_msg = $body['errorMessage'] ?? $body['ResponseDescription'] ?? 'Unknown error from M-Pesa API.';
+                $this->log->error( '[M-Pesa STK] STK Push failed: ' . $error_msg, [ 'source' => 'mpesa-stk' ] );
+                return new WP_Error( 'mpesa_rejected', 'M-Pesa payment failed: ' . esc_html( $error_msg ) );
             }
 
-            $error_msg = $body['errorMessage'] ?? $body['ResponseDescription'] ?? 'Unknown error from M-Pesa API.';
-            $this->log->error( '[M-Pesa STK] STK Push failed: ' . $error_msg, [ 'source' => 'mpesa-stk' ] );
-            wc_add_notice( 'M-Pesa payment failed: ' . esc_html( $error_msg ), 'error' );
-            return [ 'result' => 'failure' ];
+            $order->update_meta_data( '_mpesa_checkout_request_id', sanitize_text_field( $body['CheckoutRequestID'] ) );
+            $order->update_meta_data( '_mpesa_merchant_request_id', sanitize_text_field( $body['MerchantRequestID'] ) );
+            $order->delete_meta_data( '_mpesa_pending_phone' ); // Clean up temp field.
+            $order->save();
+
+            return $body;
+        }
+
+        // -----------------------------------------------------------
+        // 6c. Manual STK push for an existing order — the admin order
+        // action. Covers pay-on-delivery (rider at the door: fire the
+        // push, customer enters PIN, the callback marks the order paid
+        // with the receipt) and retrying a failed checkout push. Never
+        // changes order status itself; only the callback does that.
+        // -----------------------------------------------------------
+        public function send_manual_stk_push( WC_Order $order ): void {
+            if ( $order->is_paid() ) {
+                $order->add_order_note( 'M-Pesa STK push not sent: order is already paid.' );
+                return;
+            }
+
+            $phone = $this->normalise_phone(
+                (string) ( $order->get_meta( '_mpesa_pending_phone' ) ?: $order->get_billing_phone() )
+            );
+
+            if ( ! preg_match( '/^254[71]\d{8}$/', $phone ) ) {
+                $order->add_order_note(
+                    'M-Pesa STK push not sent: no valid Safaricom number on the order (billing phone: "'
+                    . $order->get_billing_phone() . '").'
+                );
+                return;
+            }
+
+            $body = $this->initiate_stk( $order, $phone );
+
+            if ( is_wp_error( $body ) ) {
+                $order->add_order_note( 'M-Pesa STK push failed to send: ' . $body->get_error_message() );
+                return;
+            }
+
+            $order->add_order_note(
+                sprintf(
+                    'M-Pesa STK push sent to %s for KES %s (manual/pay-on-delivery). CheckoutRequestID: %s. Awaiting customer confirmation.',
+                    $phone,
+                    (int) ceil( $order->get_total() ),
+                    sanitize_text_field( $body['CheckoutRequestID'] )
+                )
+            );
+        }
+
+        /** Normalise Kenyan numbers to 2547XXXXXXXX / 2541XXXXXXXX (mirrors the frontend helper). */
+        private function normalise_phone( string $raw ): string {
+            $digits = preg_replace( '/\D/', '', $raw );
+            if ( str_starts_with( $digits, '254' ) && 12 === strlen( $digits ) ) {
+                return $digits;
+            }
+            if ( str_starts_with( $digits, '0' ) && 10 === strlen( $digits ) ) {
+                return '254' . substr( $digits, 1 );
+            }
+            if ( ( str_starts_with( $digits, '7' ) || str_starts_with( $digits, '1' ) ) && 9 === strlen( $digits ) ) {
+                return '254' . $digits;
+            }
+            return $digits;
         }
 
         // -----------------------------------------------------------
@@ -437,10 +510,21 @@ function wc_mpesa_stk_init() {
 
             } else {
                 $result_desc = sanitize_text_field( $callback->ResultDesc ?? 'Payment cancelled or failed.' );
-                $order->update_status(
-                    'failed',
-                    'M-Pesa payment failed/cancelled. Reason: ' . $result_desc . ' | CheckoutRequestID: ' . $checkout_req_id
-                );
+
+                // Only a checkout-flow push (this gateway, order still pending)
+                // may flip the order to failed. A manual / pay-on-delivery push
+                // that gets cancelled at the door must NOT fail the order — the
+                // rider can retry the push or take cash; just record it.
+                if ( 'wc_mpesa_stk' === $order->get_payment_method() && $order->has_status( 'pending' ) ) {
+                    $order->update_status(
+                        'failed',
+                        'M-Pesa payment failed/cancelled. Reason: ' . $result_desc . ' | CheckoutRequestID: ' . $checkout_req_id
+                    );
+                } else {
+                    $order->add_order_note(
+                        'M-Pesa STK push not completed (manual/pay-on-delivery). Reason: ' . $result_desc . ' | CheckoutRequestID: ' . $checkout_req_id
+                    );
+                }
 
                 $this->log->warning(
                     '[M-Pesa STK] Payment failed for Order #' . $order->get_id() . '. ResultCode: ' . $result_code . ' | ' . $result_desc,
@@ -543,4 +627,30 @@ function wc_mpesa_stk_init() {
             };
         }
     }
+
+    // ---------------------------------------------------------------
+    // 10. Admin order action: send an STK push for any unpaid order.
+    // This is the pay-on-delivery flow — the rider is at the door,
+    // the admin picks this action on the order screen, the customer
+    // pays on their phone, and the existing callback marks the order
+    // paid with the receipt. Also retries a failed checkout push.
+    // ---------------------------------------------------------------
+    add_filter( 'woocommerce_order_actions', function ( $actions, $order = null ) {
+        if ( ! $order instanceof WC_Order || ! $order->is_paid() ) {
+            $actions['wc_mpesa_stk_send_push'] = 'Send M-Pesa payment request (STK Push)';
+        }
+        return $actions;
+    }, 10, 2 );
+
+    add_action( 'woocommerce_order_action_wc_mpesa_stk_send_push', function ( WC_Order $order ) {
+        $gateways = WC()->payment_gateways()->payment_gateways();
+        $gateway  = $gateways['wc_mpesa_stk'] ?? null;
+
+        if ( ! $gateway instanceof WC_Gateway_Mpesa_STK ) {
+            $order->add_order_note( 'M-Pesa STK push not sent: the M-Pesa gateway is not available.' );
+            return;
+        }
+
+        $gateway->send_manual_stk_push( $order );
+    } );
 }
