@@ -51,8 +51,6 @@ const CATEGORY_MAP: Record<string, Category> = {
   architecture: "Architecture",
 };
 
-const DIFFICULTIES: Difficulty[] = ["Beginner", "Intermediate", "Advanced"];
-
 const NAME_CATEGORY_KEYWORDS: Array<{ pattern: RegExp; category: Category }> = [
   { pattern: /robot/i,                                          category: "Robots" },
   { pattern: /lunar|space|moon|rocket|satellite|asteroid/i,    category: "Space" },
@@ -63,24 +61,28 @@ const NAME_CATEGORY_KEYWORDS: Array<{ pattern: RegExp; category: Category }> = [
   { pattern: /fan/i,                                            category: "Machines" },
 ];
 
+// Real WooCommerce category names flow through as-is, so categories created in
+// the backend appear on the site without a code change. The known six are
+// normalised to canonical capitalisation; keyword inference only kicks in for
+// uncategorised products.
 function mapCategory(cats: WooCategory[], name?: string): Category {
   for (const c of cats) {
-    const byName = CATEGORY_MAP[c.name.toLowerCase()];
-    if (byName) return byName;
-    const bySlug = CATEGORY_MAP[c.slug];
-    if (bySlug) return bySlug;
+    const canonical = CATEGORY_MAP[c.name.toLowerCase()] ?? CATEGORY_MAP[c.slug];
+    if (canonical) return canonical;
+  }
+  for (const c of cats) {
+    if (c.slug !== "uncategorized") return c.name;
   }
   if (name) {
     for (const { pattern, category } of NAME_CATEGORY_KEYWORDS) {
       if (pattern.test(name)) return category;
     }
   }
-  return "Science";
+  return "Other";
 }
 
 function mapDifficulty(attrs: WooAttribute[]): Difficulty {
-  const val = getAttr(attrs, "Difficulty").find((v) => DIFFICULTIES.includes(v as Difficulty));
-  return (val as Difficulty) ?? "Beginner";
+  return getAttr(attrs, "Difficulty")[0] ?? "Beginner";
 }
 
 function mapAgeRange(attrs: WooAttribute[]): string {
@@ -126,10 +128,12 @@ export interface WooProductRaw extends Omit<Product, 'category' | 'ageRange' | '
 export function mapWooProductRaw(p: WooProduct): WooProductRaw {
   let category: Category | null = null;
   for (const c of p.categories) {
-    const byName = CATEGORY_MAP[c.name.toLowerCase()];
-    if (byName) { category = byName; break; }
-    const bySlug = CATEGORY_MAP[c.slug];
-    if (bySlug) { category = bySlug; break; }
+    const canonical = CATEGORY_MAP[c.name.toLowerCase()] ?? CATEGORY_MAP[c.slug];
+    if (canonical) { category = canonical; break; }
+  }
+  if (!category) {
+    const real = p.categories.find((c) => c.slug !== "uncategorized");
+    if (real) category = real.name;
   }
   if (!category) {
     for (const { pattern, category: cat } of NAME_CATEGORY_KEYWORDS) {
@@ -138,9 +142,7 @@ export function mapWooProductRaw(p: WooProduct): WooProductRaw {
   }
 
   const ageRaw  = getAttr(p.attributes, "Age Range")[0];
-  const diffRaw = getAttr(p.attributes, "Difficulty").find(
-    (v) => DIFFICULTIES.includes(v as Difficulty),
-  );
+  const diffRaw = getAttr(p.attributes, "Difficulty")[0];
 
   return {
     id:           String(p.id),
@@ -159,11 +161,7 @@ export function mapWooProductRaw(p: WooProduct): WooProductRaw {
 }
 
 export async function getRawWooProducts(params?: Record<string, string>): Promise<WooProductRaw[]> {
-  const raw = await wooFetch<WooProduct[]>("/products", {
-    per_page: "100",
-    status:   "publish",
-    ...params,
-  });
+  const raw = await wooFetchAllProducts(params);
   return raw.map(mapWooProductRaw);
 }
 
@@ -176,7 +174,10 @@ async function wooFetch<T>(path: string, params?: Record<string, string>): Promi
   const auth = Buffer.from(`${WOO_KEY}:${WOO_SECRET}`).toString("base64");
   const res  = await fetch(url.toString(), {
     headers: { Authorization: `Basic ${auth}` },
-    next:    { revalidate: 60 },
+    // Tagged so POST /api/revalidate (hit by WooCommerce webhooks) can purge
+    // every product read at once; the 60s TTL is the fallback when no webhook
+    // fires.
+    next:    { revalidate: 60, tags: ["woo-products"] },
   });
 
   if (!res.ok) {
@@ -186,14 +187,27 @@ async function wooFetch<T>(path: string, params?: Record<string, string>): Promi
   return res.json() as Promise<T>;
 }
 
+// wc/v3 caps per_page at 100, so a growing catalog must be walked page by
+// page — otherwise product #101 silently never reaches the site.
+async function wooFetchAllProducts(params?: Record<string, string>): Promise<WooProduct[]> {
+  const all: WooProduct[] = [];
+  for (let page = 1; ; page++) {
+    const batch = await wooFetch<WooProduct[]>("/products", {
+      per_page: "100",
+      status:   "publish",
+      page:     String(page),
+      ...params,
+    });
+    all.push(...batch);
+    if (batch.length < 100) break;
+  }
+  return all;
+}
+
 // ─── Public API ────────────────────────────────────────────────────────────
 
 export async function getProducts(params?: Record<string, string>): Promise<Product[]> {
-  const raw = await wooFetch<WooProduct[]>("/products", {
-    per_page: "100",
-    status:   "publish",
-    ...params,
-  });
+  const raw = await wooFetchAllProducts(params);
   return raw.map(mapWooProduct);
 }
 

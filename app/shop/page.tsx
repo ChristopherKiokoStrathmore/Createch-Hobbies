@@ -3,12 +3,8 @@
 import { Suspense, useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, ChevronDown, LayoutGrid, LayoutList } from "lucide-react";
-import { type Category, type Difficulty, type Product } from "@/data/products";
-
-const CATEGORIES: Category[] = ["Vehicles", "Machines", "Science", "Space", "Robots", "Architecture"];
+import { orderCategories, orderDifficulties, type Product } from "@/data/products";
 import ProductCard from "@/components/products/ProductCard";
-
-const difficulties: Difficulty[] = ["Beginner", "Intermediate", "Advanced"];
 
 type AgeGroup = "Under 7" | "Ages 7–9" | "Ages 10–12" | "Ages 12+";
 const ageGroups: AgeGroup[] = ["Under 7", "Ages 7–9", "Ages 10–12", "Ages 12+"];
@@ -34,8 +30,8 @@ function ShopContent() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState<Category | "All">("All");
-  const [activeDifficulty, setActiveDifficulty] = useState<Difficulty | "All">("All");
+  const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [activeDifficulty, setActiveDifficulty] = useState<string>("All");
   const [activeAge, setActiveAge] = useState<AgeGroup | "All">("All");
   const [sort, setSort] = useState<"default" | "price-asc" | "price-desc">("default");
   const [ageOpen, setAgeOpen]           = useState(false);
@@ -50,15 +46,20 @@ function ShopContent() {
       .catch(() => setLoadingProducts(false));
   }, []);
 
+  /* Filter options come from the live catalog, so a category or difficulty
+     created in WooCommerce shows up here without a code change. */
+  const categories   = useMemo(() => orderCategories(allProducts.map((p) => p.category)), [allProducts]);
+  const difficulties = useMemo(() => orderDifficulties(allProducts.map((p) => p.difficulty)), [allProducts]);
+
   /* Sync category filter from URL query param (?category=Science) */
   useEffect(() => {
     const cat = searchParams.get("category");
-    if (cat && (CATEGORIES as readonly string[]).includes(cat)) {
-      setActiveCategory(cat as Category);
+    if (cat && categories.includes(cat)) {
+      setActiveCategory(cat);
     } else {
       setActiveCategory("All");
     }
-  }, [searchParams]);
+  }, [searchParams, categories]);
 
   const filtered = useMemo(() => {
     let list = allProducts;
@@ -168,7 +169,7 @@ function ShopContent() {
                 {(["All", ...ageGroups] as const).map((age) => (
                   <button
                     key={age}
-                    onClick={() => setActiveAge(age as AgeGroup | "All")}
+                    onClick={() => setActiveAge(age)}
                     className={`px-4 py-3 rounded-full text-xs font-semibold border transition-all font-inter ${
                       activeAge === age
                         ? "border-brand-yellow text-brand-dark bg-brand-yellow"
@@ -200,7 +201,7 @@ function ShopContent() {
             </button>
             {categoryOpen && (
               <div className="flex flex-wrap gap-2 px-4 pb-4 pt-1">
-                {(["All", ...CATEGORIES] as const).map((cat) => (
+                {["All", ...categories].map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setActiveCategory(cat)}
@@ -235,7 +236,7 @@ function ShopContent() {
             </button>
             {difficultyOpen && (
               <div className="flex flex-wrap gap-2 px-4 pb-4 pt-1">
-                {(["All", ...difficulties] as const).map((d) => (
+                {["All", ...difficulties].map((d) => (
                   <button
                     key={d}
                     onClick={() => setActiveDifficulty(d)}

@@ -3,8 +3,8 @@
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
-import { Car, Cog, FlaskConical, Rocket, Bot, Building2, type LucideIcon } from "lucide-react";
-import type { Product } from "@/data/products";
+import { Car, Cog, FlaskConical, Rocket, Bot, Building2, Puzzle, type LucideIcon } from "lucide-react";
+import { orderCategories, type Product } from "@/data/products";
 
 const ICON_SIZE = "w-10 h-10 sm:w-12 sm:h-12";
 const SW = 1.5;
@@ -90,6 +90,28 @@ const categoryMeta: CategoryMeta[] = [
   },
 ];
 
+// Categories created in WooCommerce that have no bespoke card above still get
+// a home-page tile: a rotating generic palette with a puzzle icon.
+const genericPalettes = [
+  { gradient: "from-[#7a5fd0] to-[#452e91]", glowBase: "rgba(122,95,208,0.22)", glowHover: "rgba(122,95,208,0.60)" },
+  { gradient: "from-[#f0b93e] to-[#b3831a]", glowBase: "rgba(240,185,62,0.22)", glowHover: "rgba(240,185,62,0.60)" },
+  { gradient: "from-[#5cc48f] to-[#2b8f5c]", glowBase: "rgba(92,196,143,0.22)", glowHover: "rgba(92,196,143,0.60)" },
+];
+
+function genericMeta(name: string, i: number): CategoryMeta {
+  const palette = genericPalettes[i % genericPalettes.length];
+  const from    = categoryMeta[i % categoryMeta.length].from;
+  return {
+    name,
+    Icon:       Puzzle,
+    ...palette,
+    iconColor:  "text-white",
+    labelColor: "text-white",
+    countColor: "rgba(255,255,255,0.60)",
+    from,
+  };
+}
+
 function makeAnimate(from: { x: number; y: number; rotate: number }) {
   return {
     opacity: [0,         1,                1,                 1,                1],
@@ -117,11 +139,16 @@ export default function CategoryShowcase() {
     fetch("/api/products")
       .then((r) => r.json())
       .then((data: Product[]) => {
+        if (data.length === 0) return; // keep the placeholder cards
+        const counts = new Map<string, number>();
+        for (const p of data) counts.set(p.category, (counts.get(p.category) ?? 0) + 1);
+        let extra = 0;
         setCategories(
-          categoryMeta.map((meta) => ({
-            ...meta,
-            count: data.filter((p) => p.category === meta.name).length,
-          }))
+          orderCategories(counts.keys()).map((name) => {
+            const known = categoryMeta.find((m) => m.name === name);
+            const meta  = known ?? genericMeta(name, extra++);
+            return { ...meta, count: counts.get(name) ?? 0 };
+          })
         );
       })
       .catch(() => {});
