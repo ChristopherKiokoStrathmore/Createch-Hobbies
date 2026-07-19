@@ -7,7 +7,7 @@ import type { Product } from "@/data/products";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 
-const difficultyStyles = {
+const difficultyStyles: Record<string, string> = {
   Beginner:
     "bg-green-100 text-green-800 border-green-300",
   Intermediate:
@@ -15,6 +15,7 @@ const difficultyStyles = {
   Advanced:
     "bg-brand-purple/15 text-brand-purple border-brand-purple/30",
 };
+const defaultDifficultyStyle = "bg-gray-100 text-gray-800 border-gray-300";
 
 const categoryEmoji: Record<string, string> = {
   Vehicles: "🚗",
@@ -24,6 +25,7 @@ const categoryEmoji: Record<string, string> = {
   Robots: "🤖",
   Architecture: "🏗️",
 };
+const defaultCategoryEmoji = "🧩";
 
 interface Props {
   product:  Product;
@@ -33,8 +35,10 @@ interface Props {
 
 export default function ProductCard({ product, priority = false, compact = true }: Props) {
   const { dispatch } = useCart();
+  const soldOut = !product.inStock;
 
   function addToCart() {
+    if (soldOut) return;
     dispatch({
       type: "ADD_ITEM",
       item: {
@@ -58,7 +62,7 @@ export default function ProductCard({ product, priority = false, compact = true 
         {/* Fallback emoji */}
         <div className="absolute inset-0 flex items-center justify-center">
           <span className="text-4xl sm:text-7xl select-none opacity-30">
-            {categoryEmoji[product.category]}
+            {categoryEmoji[product.category] ?? defaultCategoryEmoji}
           </span>
         </div>
 
@@ -84,22 +88,33 @@ export default function ProductCard({ product, priority = false, compact = true 
               <span className="font-bold text-brand-yellow text-[10px] font-inter">
                 {formatPrice(product.price)}
               </span>
-              <button
-                onClick={(e) => { e.preventDefault(); addToCart(); }}
-                className="flex items-center gap-0.5 bg-brand-yellow/90 active:bg-brand-yellow text-brand-dark px-2 py-0.5 rounded-full text-[9px] font-bold font-inter active:scale-95 transition-transform"
-              >
-                <ShoppingCart size={8} />
-                Add
-              </button>
+              {soldOut ? (
+                <span className="bg-white/20 text-white/70 px-2 py-0.5 rounded-full text-[9px] font-bold font-inter">
+                  Sold out
+                </span>
+              ) : (
+                <button
+                  onClick={(e) => { e.preventDefault(); addToCart(); }}
+                  className="flex items-center gap-0.5 bg-brand-yellow/90 active:bg-brand-yellow text-brand-dark px-2 py-0.5 rounded-full text-[9px] font-bold font-inter active:scale-95 transition-transform"
+                >
+                  <ShoppingCart size={8} />
+                  Add
+                </button>
+              )}
             </div>
           </div>
         )}
 
         {/* Top badges */}
-        <div className="absolute top-1.5 left-1.5 sm:top-3 sm:left-3">
+        <div className="absolute top-1.5 left-1.5 sm:top-3 sm:left-3 flex flex-col items-start gap-1">
           <span className="bg-black/60 backdrop-blur-sm text-white text-[8px] sm:text-xs font-medium px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full border border-white/10 font-inter">
             {product.ageRange} yrs
           </span>
+          {soldOut && (
+            <span className="bg-red-600/80 backdrop-blur-sm text-white text-[8px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full border border-white/10 font-inter">
+              Out of stock
+            </span>
+          )}
         </div>
         {product.featured && (
           <div className="absolute top-1.5 right-1.5 sm:top-3 sm:right-3">
@@ -122,7 +137,7 @@ export default function ProductCard({ product, priority = false, compact = true 
           >
             {product.name}
           </Link>
-          <span className={`shrink-0 text-[10px] sm:text-xs font-semibold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border font-inter ${difficultyStyles[product.difficulty]}`}>
+          <span className={`shrink-0 text-[10px] sm:text-xs font-semibold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border font-inter ${difficultyStyles[product.difficulty] ?? defaultDifficultyStyle}`}>
             {product.difficulty}
           </span>
         </div>
@@ -137,12 +152,17 @@ export default function ProductCard({ product, priority = false, compact = true 
           </span>
           <button
             onClick={addToCart}
-            className="flex items-center gap-1 sm:gap-1.5 btn-yellow px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm active:scale-95 font-inter"
+            disabled={soldOut}
+            className={`flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-inter ${
+              soldOut
+                ? "bg-white/10 text-white/40 cursor-not-allowed"
+                : "btn-yellow active:scale-95"
+            }`}
           >
             <ShoppingCart size={11} className="sm:hidden" />
             <ShoppingCart size={13} className="hidden sm:block" />
-            <span className="hidden sm:inline">Add to Cart</span>
-            <span className="sm:hidden">Add</span>
+            <span className="hidden sm:inline">{soldOut ? "Sold Out" : "Add to Cart"}</span>
+            <span className="sm:hidden">{soldOut ? "Sold Out" : "Add"}</span>
           </button>
         </div>
       </div>

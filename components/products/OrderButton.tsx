@@ -9,6 +9,17 @@ export default function OrderButton({ product }: { product: Product }) {
   const { dispatch }  = useCart();
   const [added, setAdded] = useState(false);
 
+  if (!product.inStock) {
+    return (
+      <button
+        disabled
+        className="w-full flex items-center justify-center gap-3 font-bold text-lg px-8 py-4 rounded-full bg-white/10 text-white/40 cursor-not-allowed font-inter"
+      >
+        Out of Stock
+      </button>
+    );
+  }
+
   function handleClick() {
     dispatch({
       type: "ADD_ITEM",

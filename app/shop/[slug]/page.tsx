@@ -8,17 +8,20 @@ import ProductCard from "@/components/products/ProductCard";
 import ProductImageGallery from "@/components/products/ProductImageGallery";
 import OrderButton from "@/components/products/OrderButton";
 
-export const revalidate = 3600;
+// Short TTL + the "woo-products" fetch tag (purged by /api/revalidate when a
+// WooCommerce webhook fires) keep this page in step with backend edits.
+export const revalidate = 60;
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
-const difficultyStyles = {
+const difficultyStyles: Record<string, string> = {
   Beginner:     "bg-green-100 text-green-800 border-green-300",
   Intermediate: "bg-amber-100 text-amber-800 border-amber-300",
   Advanced:     "bg-brand-purple/15 text-brand-purple border-brand-purple/30",
 };
+const defaultDifficultyStyle = "bg-gray-100 text-gray-800 border-gray-300";
 
 const categoryEmoji: Record<string, string> = {
   Vehicles:     "🚗",
@@ -28,6 +31,7 @@ const categoryEmoji: Record<string, string> = {
   Robots:       "🤖",
   Architecture: "🏗️",
 };
+const defaultCategoryEmoji = "🧩";
 
 export async function generateStaticParams() {
   if (!wooConfigured) return [];
@@ -71,7 +75,7 @@ export default async function ProductPage({ params }: Props) {
           <ProductImageGallery
             images={product.images}
             productName={product.name}
-            fallbackEmoji={categoryEmoji[product.category]}
+            fallbackEmoji={categoryEmoji[product.category] ?? defaultCategoryEmoji}
           />
 
           {/* Info panel */}
@@ -84,9 +88,14 @@ export default async function ProductPage({ params }: Props) {
               <span className="bg-brand-dark/8 text-brand-dark/60 border border-brand-dark/15 text-xs font-semibold px-3 py-1 rounded-full font-inter">
                 Ages {product.ageRange}
               </span>
-              <span className={`text-xs font-semibold px-3 py-1 rounded-full border font-inter ${difficultyStyles[product.difficulty]}`}>
+              <span className={`text-xs font-semibold px-3 py-1 rounded-full border font-inter ${difficultyStyles[product.difficulty] ?? defaultDifficultyStyle}`}>
                 {product.difficulty}
               </span>
+              {!product.inStock && (
+                <span className="bg-red-500/15 text-red-400 border border-red-500/30 text-xs font-semibold px-3 py-1 rounded-full font-inter">
+                  Out of Stock
+                </span>
+              )}
             </div>
 
             <h1 className="font-playfair font-bold text-3xl md:text-4xl text-white mb-3 leading-tight">
