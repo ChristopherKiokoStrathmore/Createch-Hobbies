@@ -3,7 +3,7 @@
  * Plugin Name: Createch Order Alerts
  * Plugin URI:  https://createch-hobbies.co.ke
  * Description: Sends the store owner an instant alert when an order is PAID (status → processing; on-hold and completed are covered as safety nets). Two channels: a deliberately plain-text email — the host's outbound filter rejects WooCommerce's HTML order template, but accepts simple mail — and an optional WhatsApp message via CallMeBot. Each order alerts exactly once (guarded by order meta). Configure recipients and the optional CallMeBot number/key under Settings → Order Alerts.
- * Version:     1.0.0
+ * Version:     1.1.0
  * Author:      Createch Hobbies
  * License:     GPL-2.0+
  */
@@ -15,11 +15,28 @@ const CREATECH_ALERTS_META   = '_createch_alert_sent';
 
 function createch_alerts_settings() {
 	$defaults = array(
-		'emails'          => 'createch.hobbies@gmail.com, thechrisnguu@gmail.com',
-		'whatsapp_phone'  => '',
-		'callmebot_key'   => '',
+		'emails'   => 'createch.hobbies@gmail.com, thechrisnguu@gmail.com',
+		// One WhatsApp recipient per line as "<phone> <callmebot_key>". Each
+		// number needs its own CallMeBot key (from opting in on that phone).
+		'whatsapp' => '',
 	);
 	return wp_parse_args( get_option( CREATECH_ALERTS_OPTION, array() ), $defaults );
+}
+
+/**
+ * Parse the whatsapp textarea into [ ['phone' => ..., 'key' => ...], ... ].
+ * Accepts phone and key separated by whitespace or a comma; blank/short lines
+ * are skipped so a half-typed line can't fire a broken request.
+ */
+function createch_alerts_whatsapp_pairs( $settings ) {
+	$pairs = array();
+	foreach ( preg_split( '/\r\n|\r|\n/', (string) ( $settings['whatsapp'] ?? '' ) ) as $line ) {
+		$parts = preg_split( '/[\s,]+/', trim( $line ), -1, PREG_SPLIT_NO_EMPTY );
+		if ( count( $parts ) >= 2 && strlen( $parts[0] ) >= 9 ) {
+			$pairs[] = array( 'phone' => preg_replace( '/[^0-9+]/', '', $parts[0] ), 'key' => $parts[1] );
+		}
+	}
+	return $pairs;
 }
 
 /* ── Alert dispatch ────────────────────────────────────────────────────── */
@@ -72,9 +89,10 @@ function createch_alerts_dispatch( $order_id ) {
 		wp_mail( $emails, $subject, implode( "\n", $lines ) );
 	}
 
-	/* Optional WhatsApp ping via CallMeBot (unofficial, best-effort; email
-	 * above is the reliable channel). Dormant until phone + key are set. */
-	if ( $settings['whatsapp_phone'] && $settings['callmebot_key'] ) {
+	/* Optional WhatsApp ping(s) via CallMeBot (unofficial, best-effort; email
+	 * above is the reliable channel). Dormant until recipients are set. */
+	$pairs = createch_alerts_whatsapp_pairs( $settings );
+	foreach ( $pairs as $p ) {
 		$text = sprintf(
 			'Createch: %s order #%s %s via %s%s — %s %s',
 			$label, $order->get_order_number(), $total, $method,
@@ -82,21 +100,17 @@ function createch_alerts_dispatch( $order_id ) {
 			$name, $phone
 		);
 		$url = 'https://api.callmebot.com/whatsapp.php?' . http_build_query(
-			array(
-				'phone'  => $settings['whatsapp_phone'],
-				'text'   => $text,
-				'apikey' => $settings['callmebot_key'],
-			)
+			array( 'phone' => $p['phone'], 'text' => $text, 'apikey' => $p['key'] )
 		);
-		$response = wp_remote_get( $url, array( 'timeout' => 10 ) );
+		$response = wp_remote_get( $url, array( 'timeout' => 15 ) );
 		if ( is_wp_error( $response ) ) {
-			$order->add_order_note( 'WhatsApp alert failed: ' . $response->get_error_message() );
+			$order->add_order_note( 'WhatsApp alert to ' . $p['phone'] . ' failed: ' . $response->get_error_message() );
 		}
 	}
 
 	$order->add_order_note( 'Owner alert sent (' . implode( ' + ', array_filter( array(
 		$emails ? 'email' : '',
-		( $settings['whatsapp_phone'] && $settings['callmebot_key'] ) ? 'WhatsApp' : '',
+		$pairs ? 'WhatsApp x' . count( $pairs ) : '',
 	) ) ) . ').' );
 
 	// Mark as alerted only after the work above — so a failed send never
@@ -124,14 +138,14 @@ add_action( 'admin_post_createch_alerts_test', function () {
 		$sent[] = 'email(' . ( $ok ? 'queued' : 'wp_mail returned false' ) . ')';
 	}
 
-	if ( $settings['whatsapp_phone'] && $settings['callmebot_key'] ) {
+	foreach ( createch_alerts_whatsapp_pairs( $settings ) as $p ) {
 		$url = 'https://api.callmebot.com/whatsapp.php?' . http_build_query( array(
-			'phone'  => $settings['whatsapp_phone'],
+			'phone'  => $p['phone'],
 			'text'   => 'Createch Order Alerts test — WhatsApp alerts are working.',
-			'apikey' => $settings['callmebot_key'],
+			'apikey' => $p['key'],
 		) );
 		$resp   = wp_remote_get( $url, array( 'timeout' => 15 ) );
-		$sent[] = 'whatsapp(' . ( is_wp_error( $resp ) ? $resp->get_error_message() : wp_remote_retrieve_response_code( $resp ) ) . ')';
+		$sent[] = 'whatsapp ' . $p['phone'] . '(' . ( is_wp_error( $resp ) ? $resp->get_error_message() : wp_remote_retrieve_response_code( $resp ) ) . ')';
 	}
 
 	wp_safe_redirect( add_query_arg( 'ca_test', rawurlencode( implode( ', ', $sent ) ?: 'no recipients configured' ), admin_url( 'options-general.php?page=createch-order-alerts' ) ) );
@@ -149,9 +163,8 @@ add_action( 'admin_init', function () {
 		'type'              => 'array',
 		'sanitize_callback' => function ( $value ) {
 			return array(
-				'emails'         => sanitize_text_field( $value['emails'] ?? '' ),
-				'whatsapp_phone' => preg_replace( '/[^0-9+]/', '', $value['whatsapp_phone'] ?? '' ),
-				'callmebot_key'  => sanitize_text_field( $value['callmebot_key'] ?? '' ),
+				'emails'   => sanitize_text_field( $value['emails'] ?? '' ),
+				'whatsapp' => sanitize_textarea_field( $value['whatsapp'] ?? '' ),
 			);
 		},
 	) );
@@ -181,15 +194,10 @@ function createch_alerts_page() {
 					</td>
 				</tr>
 				<tr>
-					<th scope="row"><label for="ca-phone">WhatsApp number</label></th>
+					<th scope="row"><label for="ca-whatsapp">WhatsApp recipients</label></th>
 					<td>
-						<input type="text" class="regular-text" id="ca-phone" name="<?php echo esc_attr( CREATECH_ALERTS_OPTION ); ?>[whatsapp_phone]" value="<?php echo esc_attr( $s['whatsapp_phone'] ); ?>" placeholder="+2547XXXXXXXX">
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="ca-key">CallMeBot API key</label></th>
-					<td>
-						<input type="text" class="regular-text" id="ca-key" name="<?php echo esc_attr( CREATECH_ALERTS_OPTION ); ?>[callmebot_key]" value="<?php echo esc_attr( $s['callmebot_key'] ); ?>">
+						<textarea class="large-text code" id="ca-whatsapp" rows="4" name="<?php echo esc_attr( CREATECH_ALERTS_OPTION ); ?>[whatsapp]" placeholder="254785638462 9625862"><?php echo esc_textarea( $s['whatsapp'] ); ?></textarea>
+						<p class="description">One recipient per line: <code>&lt;phone&gt; &lt;CallMeBot key&gt;</code>. Each number must opt in on its own phone (message "I allow callmebot to send me messages" to CallMeBot) to get its key. Leave blank to disable WhatsApp.</p>
 					</td>
 				</tr>
 			</table>
