@@ -36,8 +36,6 @@ function createch_alerts_dispatch( $order_id ) {
 	if ( ! $order || $order->get_meta( CREATECH_ALERTS_META ) ) {
 		return;
 	}
-	$order->update_meta_data( CREATECH_ALERTS_META, current_time( 'mysql' ) );
-	$order->save();
 
 	$settings = createch_alerts_settings();
 	$status   = $order->get_status();
@@ -100,7 +98,45 @@ function createch_alerts_dispatch( $order_id ) {
 		$emails ? 'email' : '',
 		( $settings['whatsapp_phone'] && $settings['callmebot_key'] ) ? 'WhatsApp' : '',
 	) ) ) . ').' );
+
+	// Mark as alerted only after the work above — so a failed send never
+	// permanently suppresses a later retry for this order.
+	$order->update_meta_data( CREATECH_ALERTS_META, current_time( 'mysql' ) );
+	$order->save();
 }
+
+/* Fire a sample alert on demand (Settings → Order Alerts → "Send test alert").
+ * Deterministic verification that does not depend on an order transition. */
+add_action( 'admin_post_createch_alerts_test', function () {
+	if ( ! current_user_can( 'manage_woocommerce' ) || ! check_admin_referer( 'createch_alerts_test' ) ) {
+		wp_die( 'Not allowed.' );
+	}
+	$settings = createch_alerts_settings();
+	$emails   = array_filter( array_map( 'sanitize_email', array_map( 'trim', explode( ',', $settings['emails'] ) ) ) );
+	$sent     = array();
+
+	if ( $emails ) {
+		$ok = wp_mail(
+			$emails,
+			'Createch Order Alerts — test alert',
+			"This is a test alert from Createch Order Alerts.\n\nIf you can read this, owner email alerts are working. Real alerts fire automatically when an order is paid.\n\nSent: " . current_time( 'mysql' )
+		);
+		$sent[] = 'email(' . ( $ok ? 'queued' : 'wp_mail returned false' ) . ')';
+	}
+
+	if ( $settings['whatsapp_phone'] && $settings['callmebot_key'] ) {
+		$url = 'https://api.callmebot.com/whatsapp.php?' . http_build_query( array(
+			'phone'  => $settings['whatsapp_phone'],
+			'text'   => 'Createch Order Alerts test — WhatsApp alerts are working.',
+			'apikey' => $settings['callmebot_key'],
+		) );
+		$resp   = wp_remote_get( $url, array( 'timeout' => 15 ) );
+		$sent[] = 'whatsapp(' . ( is_wp_error( $resp ) ? $resp->get_error_message() : wp_remote_retrieve_response_code( $resp ) ) . ')';
+	}
+
+	wp_safe_redirect( add_query_arg( 'ca_test', rawurlencode( implode( ', ', $sent ) ?: 'no recipients configured' ), admin_url( 'options-general.php?page=createch-order-alerts' ) ) );
+	exit;
+} );
 
 /* ── Settings page (Settings → Order Alerts) ───────────────────────────── */
 
@@ -126,7 +162,14 @@ function createch_alerts_page() {
 	?>
 	<div class="wrap">
 		<h1>Createch Order Alerts</h1>
+		<?php if ( isset( $_GET['ca_test'] ) ) : ?>
+			<div class="notice notice-info is-dismissible"><p>Test alert dispatched: <code><?php echo esc_html( wp_unslash( $_GET['ca_test'] ) ); ?></code>. Check the recipient inbox / phone.</p></div>
+		<?php endif; ?>
 		<p>Fires once per order when it becomes paid (processing), needs review (on-hold), or completed. Email is always sent when recipients are set; WhatsApp needs the CallMeBot fields (send "I allow callmebot to send me messages" to CallMeBot's bot number from your WhatsApp to get an API key).</p>
+		<p>
+			<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=createch_alerts_test' ), 'createch_alerts_test' ) ); ?>" class="button">Send test alert now</a>
+			<span class="description">Uses the saved recipients below.</span>
+		</p>
 		<form method="post" action="options.php">
 			<?php settings_fields( 'createch_order_alerts' ); ?>
 			<table class="form-table">
