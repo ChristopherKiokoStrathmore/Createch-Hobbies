@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400;1,700&family=Inter:wght@300;400;500;600;700&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -33,12 +31,12 @@
   body {
     background-color: transparent;
     color: #0a0a0f;
-    font-family: "Inter", sans-serif;
+    font-family: var(--font-body, sans-serif);
     -webkit-font-smoothing: antialiased;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: "Playfair Display", Georgia, serif;
+    font-family: var(--font-heading, Georgia, serif);
     font-weight: 700;
   }
 }
@@ -128,6 +126,31 @@
   }
   .scrollbar-none::-webkit-scrollbar {
     display: none;
+  }
+
+  /*
+   * Hero entrance — pure CSS so above-the-fold content is NEVER blank.
+   * CSS animations run as soon as styles are parsed, with no dependency
+   * on React hydration. Content is fully visible after ~0.9s worst case.
+   */
+  .hero-fade-up {
+    animation: heroFadeUp 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  @keyframes heroFadeUp {
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Accessibility: honor prefers-reduced-motion globally */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   html.lenis, html.lenis body { height: auto; }
