@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
 import { useSiteConfig } from "@/context/SiteConfigContext";
 
 const stats = [
@@ -12,19 +11,12 @@ const stats = [
   { value: "4–12", label: "Years Age Range"},
 ];
 
-const fadeUp = (delay = 0) => ({
-  initial:     { opacity: 0, y: 28 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport:    { once: true, margin: "-60px" },
-  transition:  { duration: 0.65, delay, ease: [0.22, 1, 0.36, 1] },
-});
-
 function easeOutCubic(t: number) {
   return 1 - Math.pow(1 - t, 3);
 }
 
 function animateStat(raw: string, setter: (v: string) => void) {
-  const DURATION = 3500;
+  const DURATION = 1400;
   const start    = performance.now();
 
   if (raw.includes("–")) {
@@ -54,17 +46,17 @@ function animateStat(raw: string, setter: (v: string) => void) {
 }
 
 function CountUpStat({ value, label }: { value: string; label: string }) {
-  const [display, setDisplay] = useState(() => {
-    if (value.includes("–")) return value.replace(/\d+$/, "0");
-    if (value.endsWith("+"))  return "0+";
-    return value;
-  });
+  // Server-render the FINAL value so it's meaningful without JS;
+  // the count-up only kicks in client-side when the stat scrolls into view.
+  const [display, setDisplay] = useState(value);
   const ref          = useRef<HTMLDivElement>(null);
   const hasAnimated  = useRef(false);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // Respect users who prefer reduced motion — keep the static value.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !hasAnimated.current) {
@@ -106,41 +98,59 @@ export default function HeroContent() {
       <div className="relative max-w-4xl mx-auto text-center">
 
         {/* Badge */}
-        <motion.div {...fadeUp(0)}>
+        <div className="hero-fade-up" style={{ animationDelay: "0s" }}>
           <span className="inline-block mb-6 px-4 py-1.5 rounded-full border border-white/20 bg-white/10 text-white/75 text-xs font-semibold tracking-widest uppercase font-inter backdrop-blur-sm">
             🇰🇪 Make your dent in the universe
           </span>
-        </motion.div>
+        </div>
 
         {/* Headline */}
-        <motion.h1
-          className="font-playfair font-bold text-white leading-[1.08] tracking-tight"
-          style={{ fontSize: "clamp(2.4rem, 6vw, 4.5rem)" }}
-          {...fadeUp(0.08)}
+        <h1
+          className="hero-fade-up font-playfair font-bold text-white leading-[1.08] tracking-tight"
+          style={{ fontSize: "clamp(2.4rem, 6vw, 4.5rem)", animationDelay: "0.08s" }}
           data-editor-key="hero.headline"
         >
           {hero.headline}
-        </motion.h1>
+        </h1>
 
         {/* Description */}
-        <motion.p
-          className="mt-6 text-white/65 text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto font-inter"
-          {...fadeUp(0.16)}
+        <p
+          className="hero-fade-up mt-6 text-white/65 text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto font-inter"
+          style={{ animationDelay: "0.16s" }}
           data-editor-key="hero.subheadline"
           suppressHydrationWarning
         >
           {hero.subheadline}
-        </motion.p>
+        </p>
+
+        {/* CTAs — in the content flow so they're always reachable */}
+        <div
+          className="hero-fade-up mt-8 flex flex-wrap items-center justify-center gap-4"
+          style={{ animationDelay: "0.24s" }}
+        >
+          <Link
+            href={hero.ctaPrimaryHref}
+            className="btn-yellow px-7 py-3.5 rounded-full text-sm font-semibold active:scale-95 shadow-lg shadow-black/30"
+          >
+            {hero.ctaPrimaryLabel}
+          </Link>
+          <Link
+            href={hero.ctaSecondaryHref}
+            className="inline-flex items-center px-7 py-3.5 rounded-full border border-white/30 text-white text-sm font-semibold bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all active:scale-95"
+          >
+            {hero.ctaSecondaryLabel}
+          </Link>
+        </div>
 
         {/* Stats — count up on scroll into view */}
-        <motion.div
-          className="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-8"
-          {...fadeUp(0.32)}
+        <div
+          className="hero-fade-up mt-16 grid grid-cols-2 sm:grid-cols-4 gap-8"
+          style={{ animationDelay: "0.32s" }}
         >
           {stats.map((s) => (
             <CountUpStat key={s.label} value={s.value} label={s.label} />
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );
