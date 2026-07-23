@@ -131,6 +131,7 @@ export interface WooCartSnapshot {
   itemsTotal: number;
   discount:   number;
   shipping:   number;
+  fees:       { name: string; total: number }[];
   total:      number;
   coupons:    string[];
   shippingPackages: { packageId: number | string; rates: WooShippingRate[] }[];
@@ -150,6 +151,10 @@ export function parseCartSnapshot(data: unknown): WooCartSnapshot {
       total_discount?:      string;
     };
     coupons?:        { code: string }[];
+    fees?: {
+      name:    string;
+      totals?: { total?: string; currency_minor_unit?: number };
+    }[];
     shipping_rates?: {
       package_id:      number | string;
       shipping_rates?: {
@@ -169,6 +174,10 @@ export function parseCartSnapshot(data: unknown): WooCartSnapshot {
     itemsTotal: toMajorUnits(totals.total_items, minor),
     discount:   toMajorUnits(totals.total_discount, minor),
     shipping:   toMajorUnits(totals.total_shipping, minor),
+    fees: (cart.fees ?? []).map((f) => ({
+      name:  f.name,
+      total: toMajorUnits(f.totals?.total, f.totals?.currency_minor_unit ?? minor),
+    })),
     total:      toMajorUnits(totals.total_price, minor),
     coupons:    (cart.coupons ?? []).map((c) => c.code),
     shippingPackages: (cart.shipping_rates ?? []).map((pkg) => ({
@@ -237,6 +246,7 @@ export interface WooBillingAddress {
   email:      string;
   phone:      string;
   address_1:  string;
+  address_2?: string;
   city:       string;
   country:    string;
   state:      string;

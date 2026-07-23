@@ -10,6 +10,12 @@ import {
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/utils";
 import {
+  DELIVERY_ZONES,
+  zoneCounties,
+  zonesByRegion,
+  type DeliveryZone,
+} from "@/data/delivery-zones";
+import {
   initCart,
   syncCartItems,
   checkoutWoo,
@@ -47,16 +53,24 @@ const KIND_BY_GATEWAY: Record<string, MethodKind> = {
   cod:             "cod",
 };
 
+// Cards always read M-Pesa → Card → Pay on Delivery, whatever order
+// WooCommerce lists the gateways in.
+const KIND_ORDER: Record<MethodKind, number> = { mpesa: 0, card: 1, cod: 2 };
+
 const KIND_META: Record<MethodKind, { icon: ReactNode; sub: string }> = {
   mpesa: { icon: <Smartphone size={18} />, sub: "Safaricom STK Push" },
   card:  { icon: <CreditCard size={18} />, sub: "Visa / Mastercard" },
   cod:   { icon: <Banknote size={18} />,   sub: "Cash or M-Pesa at the door" },
 };
 
-// Shown until /api/payment-methods answers (and if it can't).
+// Shown until /api/payment-methods answers (and if it can't). Whether the
+// Pay-on-Delivery card actually appears is decided by WooCommerce: it only
+// shows once the "Cash on delivery" gateway is enabled in wp-admin
+// (Settings → Payments) — otherwise the lookup just returns M-Pesa + Card.
 const FALLBACK_METHODS: MethodOption[] = [
   { id: "wc_mpesa_stk",    kind: "mpesa", label: "M-Pesa" },
   { id: "woocommerce_dpo", kind: "card",  label: "Card" },
+  { id: "cod",             kind: "cod",   label: "Pay on Delivery" },
 ];
 
 // All deliveries are within Nairobi, so a placeholder address is enough for
@@ -74,6 +88,10 @@ const PLACEHOLDER_BILLING: WooBillingAddress = {
   postcode:   "00100",
 };
 
+// Dark-theme <select> with a custom chevron (native arrow can't be recoloured).
+const SELECT_CLASS =
+  "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-inter text-sm focus:outline-none focus:border-brand-yellow/60 transition-colors appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%23ffffff80%22%3E%3Cpath%20d%3D%22M5.5%207.5L10%2012l4.5-4.5z%22/%3E%3C/svg%3E')] bg-[length:20px] bg-[right_0.75rem_center] bg-no-repeat pr-10";
+
 export default function CheckoutPage() {
   const router                  = useRouter();
   const { state, totalPrice, dispatch } = useCart();
@@ -86,6 +104,8 @@ export default function CheckoutPage() {
   const [paidAmount, setPaidAmount] = useState(0);
 
   const [methods, setMethods] = useState<MethodOption[]>(FALLBACK_METHODS);
+  const [methodsLoaded, setMethodsLoaded] = useState(false);
+  const [zones, setZones]     = useState<DeliveryZone[]>(DELIVERY_ZONES);
   const [wooCart, setWooCart] = useState<WooCartSnapshot | null>(null);
   const [cartBusy, setCartBusy] = useState(false);
   const [couponInput, setCouponInput] = useState("");
@@ -97,6 +117,8 @@ export default function CheckoutPage() {
     name:           "",
     phone:          "",
     email:          "",
+    county:         "Nairobi",
+    neighbourhood:  "",
     address:        "",
     mpesa_phone:    "",
     payment_method: "wc_mpesa_stk",
@@ -109,7 +131,10 @@ export default function CheckoutPage() {
   }, [state.items.length, step, router]);
 
   // Offer whatever gateways are enabled in WooCommerce (of the kinds this
-  // checkout can drive). Falls back to M-Pesa + Card if the lookup fails.
+  // checkout can drive). Only the gateways actually enabled in wp-admin are
+  // shown; the fallback is used only if the lookup fails. We hold the cards
+  // behind `methodsLoaded` so a fallback method never flashes on screen and
+  // then vanishes when the real (shorter) list arrives.
   useEffect(() => {
     fetch("/api/payment-methods")
       .then((r) => r.json())
@@ -120,7 +145,8 @@ export default function CheckoutPage() {
             id:    g.id,
             kind:  KIND_BY_GATEWAY[g.id],
             label: g.title || FALLBACK_METHODS.find((m) => m.id === g.id)?.label || g.id,
-          }));
+          }))
+          .sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind]);
         if (options.length > 0) {
           setMethods(options);
           setForm((f) =>
@@ -130,13 +156,37 @@ export default function CheckoutPage() {
           );
         }
       })
+      .catch(() => {})
+      .finally(() => setMethodsLoaded(true));
+  }, []);
+
+  // Delivery zones (county → neighbourhood) come from the createch-delivery-fees
+  // plugin via /api/delivery-zones — the same table that prices the order. The
+  // bundled list is the initial value and the fallback if that fetch fails.
+  useEffect(() => {
+    fetch("/api/delivery-zones")
+      .then((r) => r.json())
+      .then((z: DeliveryZone[]) => {
+        if (Array.isArray(z) && z.length > 0) {
+          setZones(z);
+          const countyList = zoneCounties(z);
+          setForm((f) => (countyList.includes(f.county) ? f : { ...f, county: countyList[0] ?? f.county }));
+        }
+      })
       .catch(() => {});
   }, []);
 
+  // Keep the latest chosen neighbourhood reachable from the item-sync effect
+  // without making it a dependency (which would re-sync the whole cart on every
+  // area change). The area only needs to ride along so it survives a re-sync.
+  const neighbourhoodRef = useRef("");
+  neighbourhoodRef.current = form.neighbourhood;
+
   // Load server-side totals: sync the local cart into a WooCommerce cart
   // session and read back the real money — sale prices, coupon discounts and
-  // the delivery fee configured in WooCommerce shipping zones. If this fails,
-  // the page falls back to locally-computed totals and checkout still works.
+  // the per-neighbourhood delivery fee from the createch-delivery-fees plugin.
+  // If this fails, the page falls back to locally-computed totals and checkout
+  // still works.
   const itemsKey = JSON.stringify(state.items.map((i) => [i.id, i.quantity]));
   useEffect(() => {
     if (state.items.length === 0) return;
@@ -151,7 +201,11 @@ export default function CheckoutPage() {
           cartToken,
           nonce
         );
-        const res = await updateCartCustomer(PLACEHOLDER_BILLING, synced.cartToken, synced.nonce);
+        const res = await updateCartCustomer(
+          { ...PLACEHOLDER_BILLING, address_2: neighbourhoodRef.current },
+          synced.cartToken,
+          synced.nonce
+        );
         if (cancelled) return;
         sessionRef.current = { cartToken: res.cartToken, nonce: res.nonce };
         setWooCart(res.cart);
@@ -165,6 +219,29 @@ export default function CheckoutPage() {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemsKey]);
+
+  // Re-price delivery whenever the neighbourhood changes: push the chosen area
+  // to the WooCommerce cart (shipping address line 2) so the createch-delivery-
+  // fees plugin recomputes the fee, then show whatever it returns. This is the
+  // "calculated once a neighbourhood is provided" behaviour.
+  useEffect(() => {
+    if (!sessionRef.current || !form.neighbourhood) return;
+    let cancelled = false;
+    (async () => {
+      setCartBusy(true);
+      try {
+        await refreshCart((t, n) =>
+          updateCartCustomer({ ...PLACEHOLDER_BILLING, address_2: form.neighbourhood }, t, n)
+        );
+      } catch {
+        // keep the previous totals on failure
+      } finally {
+        if (!cancelled) setCartBusy(false);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.neighbourhood]);
 
   // While the STK prompt is open, poll WooCommerce (via /api/mpesa/status) for
   // the outcome. Safaricom's callback marks the order paid server-side whether
@@ -223,6 +300,15 @@ export default function CheckoutPage() {
   const selected      = methods.find((m) => m.id === form.payment_method) ?? methods[0];
   const displayTotal  = wooCart?.total ?? totalPrice;
   const shippingRates = wooCart?.shippingPackages[0]?.rates ?? [];
+
+  // Delivery is charged as a WooCommerce fee by the createch-delivery-fees
+  // plugin; fall back to any shipping-zone rate if no fee line is present.
+  const deliveryFee   =
+    wooCart?.fees.find((f) => /delivery/i.test(f.name))?.total ??
+    wooCart?.shipping ?? 0;
+
+  const counties      = zoneCounties(zones);
+  const regionGroups  = zonesByRegion(zones, form.county);
 
   async function refreshCart(fn: (token: string, nonce: string) => Promise<{ cart: WooCartSnapshot; cartToken: string; nonce: string }>) {
     if (!sessionRef.current) return;
@@ -305,6 +391,7 @@ export default function CheckoutPage() {
         email:      form.email.trim() || "orders@createch-hobbies.co.ke",
         phone:      form.phone.trim(),
         address_1:  form.address.trim(),
+        address_2:  form.neighbourhood,
         city:       "Nairobi",
         country:    "KE",
         state:      "KE47",
@@ -534,27 +621,37 @@ export default function CheckoutPage() {
               <h2 className="font-inter font-semibold text-white mb-4 text-sm uppercase tracking-widest">
                 Payment Method
               </h2>
-              <div className={`grid gap-3 ${methods.length >= 3 ? "grid-cols-3" : "grid-cols-2"}`}>
-                {methods.map((opt) => {
-                  const active = form.payment_method === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setForm({ ...form, payment_method: opt.id })}
-                      className={`flex flex-col items-center gap-1.5 rounded-xl px-3 py-4 border-2 transition-colors text-center ${
-                        active
-                          ? "border-black bg-black text-brand-yellow shadow-md"
-                          : "border-black/15 bg-white/60 text-black/70 hover:bg-white/80 hover:border-black/40 hover:text-black"
-                      }`}
-                    >
-                      {KIND_META[opt.kind].icon}
-                      <span className="font-inter font-semibold text-xs">{opt.label}</span>
-                      <span className="font-inter text-[10px] opacity-60 leading-tight">{KIND_META[opt.kind].sub}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              {!methodsLoaded ? (
+                // Hold the row until the real gateway list arrives, so a fallback
+                // card never shows and then disappears.
+                <div className="grid gap-3 grid-cols-2">
+                  {[0, 1].map((i) => (
+                    <div key={i} className="h-[86px] rounded-xl border-2 border-black/10 bg-white/40 animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                <div className={`grid gap-3 ${methods.length >= 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+                  {methods.map((opt) => {
+                    const active = form.payment_method === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setForm({ ...form, payment_method: opt.id })}
+                        className={`flex flex-col items-center gap-1.5 rounded-xl px-3 py-4 border-2 transition-colors text-center ${
+                          active
+                            ? "border-black bg-black text-brand-yellow shadow-md"
+                            : "border-black/15 bg-white/60 text-black/70 hover:bg-white/80 hover:border-black/40 hover:text-black"
+                        }`}
+                      >
+                        {KIND_META[opt.kind].icon}
+                        <span className="font-inter font-semibold text-xs">{opt.label}</span>
+                        <span className="font-inter text-[10px] opacity-60 leading-tight">{KIND_META[opt.kind].sub}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Delivery Details */}
@@ -598,14 +695,65 @@ export default function CheckoutPage() {
                   />
                 </div>
 
+                {/* City / County — shown only when we deliver to more than one */}
+                {counties.length > 1 && (
+                  <div>
+                    <label className="block text-white/50 text-xs font-inter mb-1.5">
+                      City / County <span className="text-brand-yellow">*</span>
+                    </label>
+                    <select
+                      required
+                      value={form.county}
+                      onChange={(e) => setForm({ ...form, county: e.target.value, neighbourhood: "" })}
+                      className={SELECT_CLASS}
+                    >
+                      {counties.map((c) => (
+                        <option key={c} value={c} className="bg-brand-dark text-white">
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div>
-                  <label className="block text-white/50 text-xs font-inter mb-1.5">Delivery Address</label>
+                  <label className="block text-white/50 text-xs font-inter mb-1.5">
+                    Delivery Area (Neighbourhood) <span className="text-brand-yellow">*</span>
+                  </label>
+                  <select
+                    required
+                    value={form.neighbourhood}
+                    onChange={(e) => setForm({ ...form, neighbourhood: e.target.value })}
+                    className={SELECT_CLASS}
+                  >
+                    <option value="" disabled className="bg-brand-dark text-white/50">
+                      Select a neighbourhood…
+                    </option>
+                    {regionGroups.map((group) => (
+                      <optgroup key={group.region} label={group.region} className="bg-brand-dark text-white">
+                        {group.items.map((z) => (
+                          <option key={z.neighbourhood} value={z.neighbourhood} className="bg-brand-dark text-white">
+                            {z.neighbourhood}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                  <p className="text-white/25 text-xs font-inter mt-1.5">
+                    Delivery is priced by distance from our Westlands (Sarit Centre) hub — shown in the order summary.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-white/50 text-xs font-inter mb-1.5">
+                    Street / House / Landmark
+                  </label>
                   <textarea
                     required
                     rows={3}
                     value={form.address}
                     onChange={(e) => setForm({ ...form, address: e.target.value })}
-                    placeholder="Estate / street, Nairobi. Any landmark or notes for our rider"
+                    placeholder="e.g. Kindaruma Rd, Apt 4B — opposite the Shell station"
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-inter text-sm placeholder:text-white/20 focus:outline-none focus:border-brand-yellow/60 transition-colors resize-none"
                   />
                 </div>
@@ -793,11 +941,12 @@ export default function CheckoutPage() {
               )}
               <div className="flex items-center justify-between text-sm font-inter">
                 <span className="text-white/50">Delivery</span>
-                <span className="text-white">
-                  {!wooCart || shippingRates.length === 0
-                    ? "Confirmed by our rider"
-                    : wooCart.shipping > 0
-                    ? formatPrice(wooCart.shipping)
+                <span className="text-white inline-flex items-center gap-2">
+                  {cartBusy && <Loader2 size={12} className="animate-spin text-white/30" />}
+                  {!form.neighbourhood
+                    ? "Select your area"
+                    : deliveryFee > 0
+                    ? formatPrice(deliveryFee)
                     : "Free"}
                 </span>
               </div>
