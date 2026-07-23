@@ -31,11 +31,19 @@ const nextConfig: NextConfig = {
     // the Next app router injects for hydration, but locks down object/base/form
     // targets and framing. Tighten script-src to nonces later via middleware if
     // you want to fully neutralise inline-script injection.
+    // Next.js dev (React Fast Refresh) evaluates code via eval(), which the
+    // production CSP rightly forbids. Allow 'unsafe-eval' in development only —
+    // production keeps the locked-down script-src below.
+    const isDev = process.env.NODE_ENV !== "production";
+    const scriptSrc = isDev
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+      : "script-src 'self' 'unsafe-inline'";
+
     const csp = [
       "default-src 'self'",
       "img-src 'self' data: https:",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "script-src 'self' 'unsafe-inline'",
+      scriptSrc,
       "font-src 'self' data: https://fonts.gstatic.com",
       "connect-src 'self' https:",
       "frame-ancestors 'self'",
