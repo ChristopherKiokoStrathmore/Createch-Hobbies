@@ -13,6 +13,7 @@ import {
   DELIVERY_ZONES,
   zoneCounties,
   zonesByRegion,
+  zoneFee,
   type DeliveryZone,
 } from "@/data/delivery-zones";
 import {
@@ -88,6 +89,14 @@ const PLACEHOLDER_BILLING: WooBillingAddress = {
   postcode:   "00100",
 };
 
+// A selectable payment tile (used for the top cards and the M-Pesa sub-options).
+const payTileClass = (active: boolean) =>
+  `flex flex-col items-center gap-1.5 rounded-xl px-3 py-4 border-2 transition-colors text-center ${
+    active
+      ? "border-black bg-black text-brand-yellow shadow-md"
+      : "border-black/15 bg-white/60 text-black/70 hover:bg-white/80 hover:border-black/40 hover:text-black"
+  }`;
+
 // Dark-theme <select> with a custom chevron (native arrow can't be recoloured).
 const SELECT_CLASS =
   "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-inter text-sm focus:outline-none focus:border-brand-yellow/60 transition-colors appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%23ffffff80%22%3E%3Cpath%20d%3D%22M5.5%207.5L10%2012l4.5-4.5z%22/%3E%3C/svg%3E')] bg-[length:20px] bg-[right_0.75rem_center] bg-no-repeat pr-10";
@@ -113,15 +122,20 @@ export default function CheckoutPage() {
   const [couponBusy, setCouponBusy] = useState(false);
   const sessionRef = useRef<{ cartToken: string; nonce: string } | null>(null);
 
+  // Payment selection is a two-level choice: the top card (M-Pesa or Card), and
+  // — under M-Pesa — whether to Pay Now (STK push) or Pay on Delivery (no charge
+  // now). These resolve to an actual WooCommerce gateway id below.
+  const [payGroup, setPayGroup]   = useState<"mpesa" | "card">("mpesa");
+  const [mpesaMode, setMpesaMode] = useState<"now" | "delivery">("now");
+
   const [form, setForm] = useState({
-    name:           "",
-    phone:          "",
-    email:          "",
-    county:         "Nairobi",
-    neighbourhood:  "",
-    address:        "",
-    mpesa_phone:    "",
-    payment_method: "wc_mpesa_stk",
+    name:          "",
+    phone:         "",
+    email:         "",
+    county:        "Nairobi",
+    neighbourhood: "",
+    address:       "",
+    mpesa_phone:   "",
   });
 
   useEffect(() => {
@@ -149,11 +163,12 @@ export default function CheckoutPage() {
           .sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind]);
         if (options.length > 0) {
           setMethods(options);
-          setForm((f) =>
-            options.some((o) => o.id === f.payment_method)
-              ? f
-              : { ...f, payment_method: options[0].id }
-          );
+          // Default to the M-Pesa card when either of its modes is available,
+          // otherwise Card. Within M-Pesa default to Pay Now when STK is on.
+          const hasStk = options.some((o) => o.kind === "mpesa");
+          const hasCod = options.some((o) => o.kind === "cod");
+          setPayGroup(hasStk || hasCod ? "mpesa" : "card");
+          setMpesaMode(hasStk ? "now" : "delivery");
         }
       })
       .catch(() => {})
@@ -220,28 +235,10 @@ export default function CheckoutPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemsKey]);
 
-  // Re-price delivery whenever the neighbourhood changes: push the chosen area
-  // to the WooCommerce cart (shipping address line 2) so the createch-delivery-
-  // fees plugin recomputes the fee, then show whatever it returns. This is the
-  // "calculated once a neighbourhood is provided" behaviour.
-  useEffect(() => {
-    if (!sessionRef.current || !form.neighbourhood) return;
-    let cancelled = false;
-    (async () => {
-      setCartBusy(true);
-      try {
-        await refreshCart((t, n) =>
-          updateCartCustomer({ ...PLACEHOLDER_BILLING, address_2: form.neighbourhood }, t, n)
-        );
-      } catch {
-        // keep the previous totals on failure
-      } finally {
-        if (!cancelled) setCartBusy(false);
-      }
-    })();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.neighbourhood]);
+  // The delivery fee is deterministic per neighbourhood (same distance formula
+  // the plugin uses), so it's read straight from the already-loaded zone list —
+  // no per-selection WooCommerce round-trip. The chosen area is sent on the
+  // checkout request, where the plugin re-prices and charges it server-side.
 
   // While the STK prompt is open, poll WooCommerce (via /api/mpesa/status) for
   // the outcome. Safaricom's callback marks the order paid server-side whether
@@ -297,18 +294,30 @@ export default function CheckoutPage() {
     };
   }, [step, pendingOrderId, pendingOrderKey, dispatch]);
 
-  const selected      = methods.find((m) => m.id === form.payment_method) ?? methods[0];
-  const displayTotal  = wooCart?.total ?? totalPrice;
+  const hasStk         = methods.some((m) => m.kind === "mpesa");
+  const hasCard        = methods.some((m) => m.kind === "card");
+  const hasCod         = methods.some((m) => m.kind === "cod");
+  const mpesaAvailable = hasStk || hasCod;
+
+  // Resolve the two-level choice (card vs M-Pesa → now/delivery) to the actual
+  // WooCommerce gateway that will process the order.
+  const resolved =
+    payGroup === "card"
+      ? methods.find((m) => m.kind === "card")
+      : mpesaMode === "now"
+      ? methods.find((m) => m.kind === "mpesa")
+      : methods.find((m) => m.kind === "cod");
+
   const shippingRates = wooCart?.shippingPackages[0]?.rates ?? [];
-
-  // Delivery is charged as a WooCommerce fee by the createch-delivery-fees
-  // plugin; fall back to any shipping-zone rate if no fee line is present.
-  const deliveryFee   =
-    wooCart?.fees.find((f) => /delivery/i.test(f.name))?.total ??
-    wooCart?.shipping ?? 0;
-
   const counties      = zoneCounties(zones);
   const regionGroups  = zonesByRegion(zones, form.county);
+
+  // Fee is read locally from the loaded zone list — instant, no round-trip. The
+  // order re-prices this server-side at checkout, so the charge matches.
+  const deliveryFee   = zoneFee(zones, form.county, form.neighbourhood);
+  const itemsSubtotal = wooCart?.itemsTotal ?? totalPrice;
+  const discount      = wooCart?.discount ?? 0;
+  const displayTotal  = Math.max(0, itemsSubtotal - discount + deliveryFee);
 
   async function refreshCart(fn: (token: string, nonce: string) => Promise<{ cart: WooCartSnapshot; cartToken: string; nonce: string }>) {
     if (!sessionRef.current) return;
@@ -358,7 +367,12 @@ export default function CheckoutPage() {
     if (isSubmitting) return;
     setError("");
 
-    if (selected?.kind === "mpesa") {
+    if (!resolved) {
+      setError("Please choose a payment option.");
+      return;
+    }
+
+    if (resolved.kind === "mpesa") {
       const normalised = normalisePhone(form.mpesa_phone);
       if (!isValidMpesaPhone(normalised)) {
         setError("Enter your M-Pesa number in the format 0712 345 678 or 2547XXXXXXXX.");
@@ -402,9 +416,9 @@ export default function CheckoutPage() {
       const result = await checkoutWoo(
         {
           billing,
-          paymentMethod: form.payment_method,
+          paymentMethod: resolved.id,
           paymentData:
-            selected?.kind === "mpesa"
+            resolved.kind === "mpesa"
               ? [{ key: "mpesa_phone", value: normalisePhone(form.mpesa_phone) }]
               : [],
         },
@@ -412,7 +426,7 @@ export default function CheckoutPage() {
         nonce2
       );
 
-      if (selected?.kind === "card") {
+      if (resolved.kind === "card") {
         if (!result.redirectUrl) {
           setError(
             "The card payment service could not be reached. Please try again shortly or pay via M-Pesa."
@@ -427,7 +441,7 @@ export default function CheckoutPage() {
         return;
       }
 
-      if (selected?.kind === "cod") {
+      if (resolved.kind === "cod") {
         // Order placed; payment happens at the door (cash, or an M-Pesa
         // prompt our rider triggers). Safe to clear the cart now.
         dispatch({ type: "CLEAR_CART" });
@@ -630,27 +644,66 @@ export default function CheckoutPage() {
                   ))}
                 </div>
               ) : (
-                <div className={`grid gap-3 ${methods.length >= 3 ? "grid-cols-3" : "grid-cols-2"}`}>
-                  {methods.map((opt) => {
-                    const active = form.payment_method === opt.id;
-                    return (
+                <>
+                  {/* Top choice: M-Pesa (first) or Card (second) */}
+                  <div className="grid gap-3 grid-cols-2">
+                    {mpesaAvailable && (
                       <button
-                        key={opt.id}
                         type="button"
-                        onClick={() => setForm({ ...form, payment_method: opt.id })}
-                        className={`flex flex-col items-center gap-1.5 rounded-xl px-3 py-4 border-2 transition-colors text-center ${
-                          active
-                            ? "border-black bg-black text-brand-yellow shadow-md"
-                            : "border-black/15 bg-white/60 text-black/70 hover:bg-white/80 hover:border-black/40 hover:text-black"
-                        }`}
+                        onClick={() => setPayGroup("mpesa")}
+                        className={payTileClass(payGroup === "mpesa")}
                       >
-                        {KIND_META[opt.kind].icon}
-                        <span className="font-inter font-semibold text-xs">{opt.label}</span>
-                        <span className="font-inter text-[10px] opacity-60 leading-tight">{KIND_META[opt.kind].sub}</span>
+                        <Smartphone size={18} />
+                        <span className="font-inter font-semibold text-xs">M-Pesa</span>
+                        <span className="font-inter text-[10px] opacity-60 leading-tight">Pay now or on delivery</span>
                       </button>
-                    );
-                  })}
-                </div>
+                    )}
+                    {hasCard && (
+                      <button
+                        type="button"
+                        onClick={() => setPayGroup("card")}
+                        className={payTileClass(payGroup === "card")}
+                      >
+                        <CreditCard size={18} />
+                        <span className="font-inter font-semibold text-xs">Card</span>
+                        <span className="font-inter text-[10px] opacity-60 leading-tight">Visa / Mastercard</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Selecting M-Pesa opens two options */}
+                  {payGroup === "mpesa" && (
+                    <div className="mt-4">
+                      <p className="text-white/50 font-inter text-[11px] uppercase tracking-widest mb-2">
+                        How would you like to pay?
+                      </p>
+                      <div className="grid gap-3 grid-cols-2">
+                        {hasStk && (
+                          <button
+                            type="button"
+                            onClick={() => setMpesaMode("now")}
+                            className={payTileClass(mpesaMode === "now")}
+                          >
+                            <Smartphone size={16} />
+                            <span className="font-inter font-semibold text-xs">Pay Now</span>
+                            <span className="font-inter text-[10px] opacity-60 leading-tight">M-Pesa STK push</span>
+                          </button>
+                        )}
+                        {hasCod && (
+                          <button
+                            type="button"
+                            onClick={() => setMpesaMode("delivery")}
+                            className={payTileClass(mpesaMode === "delivery")}
+                          >
+                            <Banknote size={16} />
+                            <span className="font-inter font-semibold text-xs">Pay on Delivery</span>
+                            <span className="font-inter text-[10px] opacity-60 leading-tight">Cash / M-Pesa at the door</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -758,8 +811,8 @@ export default function CheckoutPage() {
                   />
                 </div>
 
-                {/* M-Pesa phone field — only shown when M-Pesa is selected */}
-                {selected?.kind === "mpesa" && (
+                {/* M-Pesa phone field — only for Pay Now (STK push) */}
+                {resolved?.kind === "mpesa" && (
                   <div>
                     <label className="block text-white/50 text-xs font-inter mb-1.5">
                       M-Pesa Number <span className="text-brand-yellow">*</span>
@@ -797,23 +850,28 @@ export default function CheckoutPage() {
                   <Loader2 size={18} className="animate-spin" />
                   Processing…
                 </>
-              ) : selected?.kind === "cod" ? (
+              ) : resolved?.kind === "cod" ? (
                 <>
                   {KIND_META.cod.icon}
                   Place Order — {formatPrice(displayTotal)} on Delivery
                 </>
+              ) : resolved?.kind === "card" ? (
+                <>
+                  {KIND_META.card.icon}
+                  Pay {formatPrice(displayTotal)} by Card
+                </>
               ) : (
                 <>
-                  {selected && KIND_META[selected.kind].icon}
-                  Pay {formatPrice(displayTotal)} via {selected?.label}
+                  {KIND_META.mpesa.icon}
+                  Pay {formatPrice(displayTotal)} via M-Pesa
                 </>
               )}
             </button>
 
             <p className="text-white/25 text-xs text-center font-inter">
-              {selected?.kind === "mpesa"
+              {resolved?.kind === "mpesa"
                 ? "You will receive an M-Pesa STK push on your phone to confirm."
-                : selected?.kind === "card"
+                : resolved?.kind === "card"
                 ? "You will be redirected to DPO Pay's secure card payment page."
                 : "No payment now — pay cash or M-Pesa when your order arrives."}
             </p>
@@ -941,8 +999,7 @@ export default function CheckoutPage() {
               )}
               <div className="flex items-center justify-between text-sm font-inter">
                 <span className="text-white/50">Delivery</span>
-                <span className="text-white inline-flex items-center gap-2">
-                  {cartBusy && <Loader2 size={12} className="animate-spin text-white/30" />}
+                <span className="text-white">
                   {!form.neighbourhood
                     ? "Select your area"
                     : deliveryFee > 0
