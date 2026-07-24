@@ -11,7 +11,7 @@
  *                     the price shown and the price charged can never drift. The
  *                     chosen neighbourhood arrives on the order's shipping address
  *                     line 2.
- * Version:           2.0.0
+ * Version:           2.1.0
  * Author:            Createch Hobbies
  * Requires at least: 6.0
  * Requires PHP:      7.4
@@ -33,10 +33,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  * ───────────────────────────────────────────────────────────────────────── */
 define( 'CRTCH_ORIGIN_LAT',  -1.2585 );  // Westlands, Sarit Centre (reference/pickup)
 define( 'CRTCH_ORIGIN_LNG',  36.8030 );
-define( 'CRTCH_BASE_FARE',   100 );       // KES — flat handling/pickup component
-define( 'CRTCH_PER_KM',      28 );        // KES per road-km
+define( 'CRTCH_BASE_FARE',   50 );        // KES — flat handling/pickup component (boda)
+define( 'CRTCH_PER_KM',      15 );        // KES per road-km (boda)
 define( 'CRTCH_ROAD_FACTOR', 1.4 );       // straight-line → approx driving distance
-define( 'CRTCH_MIN_FEE',     150 );       // KES — nothing cheaper than this
+define( 'CRTCH_MIN_FEE',     80 );        // KES — nothing cheaper than this
 define( 'CRTCH_ROUND_TO',    10 );        // round the fee to the nearest N KES
 
 /**
@@ -46,7 +46,7 @@ define( 'CRTCH_ROUND_TO',    10 );        // round the fee to the nearest N KES
  * Shape: county => [ region label => [ neighbourhood => [ lat, lng ] ] ]
  *
  * Coordinates are approximate (good to ~1 km). A 1 km error moves the fee by
- * only ~CRTCH_PER_KM × road_factor ≈ 40 KES, and every value is tunable — nudge
+ * only ~CRTCH_PER_KM × road_factor ≈ 21 KES, and every value is tunable — nudge
  * a coordinate if a specific area's fee looks off.
  */
 function crtch_delivery_zones() {
