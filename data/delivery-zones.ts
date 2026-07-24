@@ -1,108 +1,173 @@
 // Delivery zones for the checkout neighbourhood dropdown.
 //
 // SOURCE OF TRUTH: the WooCommerce plugin `createch-delivery-fees`
-// (wordpress-plugin/createch-delivery-fees). It both prices the order at
-// checkout and serves this list at /wp-json/createch/v1/delivery-zones — the
+// (wordpress-plugin/createch-delivery-fees). It prices the order at checkout AND
+// serves this list (with fees) at /wp-json/createch/v1/delivery-zones — the
 // storefront fetches it through /api/delivery-zones.
 //
-// The list below is only a FALLBACK: it keeps checkout usable if that fetch
-// fails. Fees here are display-only (WooCommerce is authoritative for money),
-// so a mismatch never lets a customer underpay — the plugin re-prices the order
-// server-side regardless of what the fallback shows. Keep the two roughly in
-// sync when you add areas, but the plugin's numbers are the ones that bill.
+// The list below is a FALLBACK used if that fetch fails. The fees here are
+// generated from the SAME distance formula the plugin uses — boda rates:
+// fee = max(80, 50 + 15 × (haversine_km_from_Sarit × 1.4)), rounded to 10.
+// Regenerate with `node scripts/gen-delivery-zones.mjs` whenever you re-tune the
+// plugin's pricing knobs. WooCommerce still re-prices the order server-side at
+// checkout, so a stale fallback can never let a customer underpay.
 
 export interface DeliveryZone {
   county:        string;
   region:        string; // grouping label — becomes an <optgroup>
   neighbourhood: string;
-  fee:           number; // KES (display-only fallback)
+  fee:           number; // KES — distance-based, matches the plugin
 }
 
-const NAIROBI: { region: string; fee: number; areas: string[] }[] = [
+const NAIROBI: { region: string; areas: [string, number][] }[] = [
   {
     region: "CBD & Central",
-    fee: 200,
     areas: [
-      "CBD (Town)", "Upper Hill", "Community", "Ngara", "Pangani",
-      "Ziwani", "Kariokor", "Starehe",
+      ["CBD (Town)", 130],
+      ["Upper Hill", 140],
+      ["Community", 150],
+      ["Ngara", 120],
+      ["Pangani", 130],
+      ["Ziwani", 140],
+      ["Kariokor", 130],
+      ["Starehe", 120],
     ],
   },
   {
     region: "Westlands & Parklands",
-    fee: 250,
     areas: [
-      "Westlands", "Parklands", "Highridge", "Spring Valley", "Loresho",
-      "Kitisuru", "Mountain View", "Kangemi", "Riverside", "Muthaiga",
+      ["Westlands", 80],
+      ["Parklands", 90],
+      ["Highridge", 80],
+      ["Spring Valley", 90],
+      ["Loresho", 120],
+      ["Kitisuru", 120],
+      ["Mountain View", 140],
+      ["Kangemi", 180],
+      ["Riverside", 80],
+      ["Muthaiga", 120],
     ],
   },
   {
     region: "Kilimani, Kileleshwa & Lavington",
-    fee: 250,
     areas: [
-      "Kilimani", "Kileleshwa", "Lavington", "Hurlingham", "Woodley",
-      "Adams Arcade", "Ngong Road", "Dennis Pritt",
+      ["Kilimani", 130],
+      ["Kileleshwa", 120],
+      ["Lavington", 140],
+      ["Hurlingham", 130],
+      ["Woodley", 160],
+      ["Adams Arcade", 170],
+      ["Ngong Road", 170],
+      ["Dennis Pritt", 130],
     ],
   },
   {
     region: "South B, South C & Nairobi West",
-    fee: 250,
     areas: [
-      "South B", "South C", "Nairobi West", "Madaraka", "Mugoya",
-      "Nyayo Highrise", "Wilson Airport", "Mombasa Road",
-    ],
-  },
-  {
-    region: "Eastlands",
-    fee: 300,
-    areas: [
-      "Eastleigh", "Pumwani", "Shauri Moyo", "Makadara", "Buruburu",
-      "Jericho", "Jerusalem", "Maringo", "Umoja", "Donholm", "Greenfields",
-      "Savannah", "Tena", "Kariobangi", "Dandora", "Komarock", "Kayole",
-    ],
-  },
-  {
-    region: "Ruaraka, Mathare & Northern Estates",
-    fee: 300,
-    areas: [
-      "Ruaraka", "Baba Dogo", "Lucky Summer", "Mathare", "Huruma",
-      "Mlango Kubwa", "Thome", "Garden Estate", "Ridgeways", "Marurui",
-      "Kasarani Mwiki Road",
-    ],
-  },
-  {
-    region: "Kasarani & Roysambu",
-    fee: 350,
-    areas: [
-      "Kasarani", "Roysambu", "Zimmerman", "Githurai", "Mwiki",
-      "Kahawa West", "Kahawa Sukari", "Kahawa Wendani", "Clay City",
-      "Sunton", "Hunters", "Lumumba Drive",
+      ["South B", 200],
+      ["South C", 220],
+      ["Nairobi West", 190],
+      ["Madaraka", 180],
+      ["Mugoya", 210],
+      ["Nyayo Highrise", 180],
+      ["Wilson Airport", 200],
+      ["Mombasa Road", 260],
     ],
   },
   {
     region: "Langata & Karen",
-    fee: 350,
     areas: [
-      "Langata", "Karen", "Hardy", "Otiende", "Ngei", "Bomas",
-      "Southlands", "Uhuru Gardens",
+      ["Langata", 290],
+      ["Karen", 310],
+      ["Hardy", 340],
+      ["Otiende", 270],
+      ["Ngei", 260],
+      ["Bomas", 300],
+      ["Southlands", 270],
+      ["Uhuru Gardens", 230],
+    ],
+  },
+  {
+    region: "Eastlands",
+    areas: [
+      ["Eastleigh", 160],
+      ["Pumwani", 150],
+      ["Shauri Moyo", 160],
+      ["Makadara", 200],
+      ["Buruburu", 240],
+      ["Jericho", 190],
+      ["Jerusalem", 210],
+      ["Maringo", 200],
+      ["Umoja", 270],
+      ["Donholm", 280],
+      ["Greenfields", 290],
+      ["Savannah", 300],
+      ["Tena", 270],
+      ["Kariobangi", 220],
+      ["Dandora", 260],
+      ["Komarock", 310],
+      ["Kayole", 320],
+    ],
+  },
+  {
+    region: "Ruaraka, Mathare & Northern Estates",
+    areas: [
+      ["Ruaraka", 210],
+      ["Baba Dogo", 230],
+      ["Lucky Summer", 240],
+      ["Mathare", 180],
+      ["Huruma", 200],
+      ["Mlango Kubwa", 160],
+      ["Thome", 240],
+      ["Garden Estate", 210],
+      ["Ridgeways", 170],
+      ["Marurui", 180],
+      ["Kasarani Mwiki Road", 280],
+    ],
+  },
+  {
+    region: "Kasarani & Roysambu",
+    areas: [
+      ["Kasarani", 290],
+      ["Roysambu", 270],
+      ["Zimmerman", 290],
+      ["Githurai", 350],
+      ["Mwiki", 350],
+      ["Kahawa West", 370],
+      ["Kahawa Sukari", 400],
+      ["Kahawa Wendani", 380],
+      ["Clay City", 310],
+      ["Sunton", 320],
+      ["Hunters", 340],
+      ["Lumumba Drive", 260],
     ],
   },
   {
     region: "Embakasi & Airport",
-    fee: 400,
     areas: [
-      "Embakasi", "Pipeline", "Tassia", "Fedha", "Nyayo Estate",
-      "Imara Daima", "Mihango", "Utawala", "Njiru", "Ruai", "Saika",
-      "Kware", "Kwa Njenga",
+      ["Embakasi", 310],
+      ["Pipeline", 310],
+      ["Tassia", 320],
+      ["Fedha", 330],
+      ["Nyayo Estate", 290],
+      ["Imara Daima", 300],
+      ["Mihango", 390],
+      ["Utawala", 430],
+      ["Njiru", 400],
+      ["Ruai", 510],
+      ["Saika", 350],
+      ["Kware", 330],
+      ["Kwa Njenga", 330],
     ],
   },
 ];
 
 export const DELIVERY_ZONES: DeliveryZone[] = NAIROBI.flatMap((r) =>
-  r.areas.map((neighbourhood) => ({
+  r.areas.map(([neighbourhood, fee]) => ({
     county: "Nairobi",
     region: r.region,
     neighbourhood,
-    fee:    r.fee,
+    fee,
   }))
 );
 
@@ -124,4 +189,10 @@ export function zonesByRegion(
     else groups.push({ region: z.region, items: [z] });
   }
   return groups;
+}
+
+/** The delivery fee for a chosen neighbourhood, or 0 if none/unknown. */
+export function zoneFee(zones: DeliveryZone[], county: string, neighbourhood: string): number {
+  if (!neighbourhood) return 0;
+  return zones.find((z) => z.county === county && z.neighbourhood === neighbourhood)?.fee ?? 0;
 }
