@@ -257,6 +257,8 @@ export interface WooCheckoutPayload {
   billing:       WooBillingAddress;
   paymentMethod: string;
   paymentData?:  { key: string; value: string }[];
+  /** Shown on the order in wp-admin — used to mark WhatsApp-completed orders. */
+  customerNote?: string;
 }
 
 export interface WooCheckoutResult {
@@ -281,6 +283,7 @@ export async function checkoutWoo(
       shipping_address: shippingAddress,
       payment_method:   payload.paymentMethod,
       payment_data:     payload.paymentData ?? [],
+      ...(payload.customerNote ? { customer_note: payload.customerNote } : {}),
     },
     cartToken,
     nonce,

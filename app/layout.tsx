@@ -10,14 +10,10 @@ export async function generateMetadata(): Promise<Metadata> {
     title:       cfg.seo.title,
     description: cfg.seo.description,
     keywords:    "DIY kits, kids, STEM, toys, Nairobi, Kenya, educational toys, robotics, science kits",
-    icons: {
-      icon:             [
-        { url: "/images/logo.png",  sizes: "any",   type: "image/png"    },
-        { url: "/favicon.svg",      sizes: "any",   type: "image/svg+xml" },
-      ],
-      shortcut:         "/images/logo.png",
-      apple:            "/images/logo.png",
-    },
+    // No `icons` key on purpose: app/favicon.ico, app/icon.png and
+    // app/apple-icon.png are picked up by Next's file conventions, and an
+    // explicit `icons` here would override them. The wordmark logo.png is
+    // 2083px/239KB — far too heavy to serve as a 16px favicon.
     openGraph: {
       title:       cfg.seo.ogTitle || cfg.seo.title,
       description: cfg.seo.ogDescription || cfg.seo.description,

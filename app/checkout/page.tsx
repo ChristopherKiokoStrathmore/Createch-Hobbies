@@ -5,10 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ShoppingBag, Smartphone, Loader2, AlertCircle,
-  ChevronLeft, CreditCard, CheckCircle2, Banknote, Tag, X,
+  ChevronLeft, CreditCard, CheckCircle2, Banknote, Tag, X, MessageCircle,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { useCustomerAuth } from "@/context/CustomerAuthContext";
 import { formatPrice } from "@/lib/utils";
+import { whatsappOrderLink } from "@/lib/whatsapp";
+import { SELECT_CLASS } from "@/lib/form-classes";
 import {
   DELIVERY_ZONES,
   zoneCounties,
@@ -30,7 +33,7 @@ import {
   type WooCartSnapshot,
 } from "@/lib/woo-store";
 
-type Step = "form" | "pending" | "paid" | "failed" | "cod-placed";
+type Step = "form" | "pending" | "paid" | "failed" | "cod-placed" | "whatsapp-placed";
 
 // M-Pesa confirmation polling. The STK prompt itself lives ~60s on the phone;
 // poll a little past that so a slow PIN entry still resolves on-screen.
@@ -97,13 +100,11 @@ const payTileClass = (active: boolean) =>
       : "border-black/15 bg-white/60 text-black/70 hover:bg-white/80 hover:border-black/40 hover:text-black"
   }`;
 
-// Dark-theme <select> with a custom chevron (native arrow can't be recoloured).
-const SELECT_CLASS =
-  "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-inter text-sm focus:outline-none focus:border-brand-yellow/60 transition-colors appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%23ffffff80%22%3E%3Cpath%20d%3D%22M5.5%207.5L10%2012l4.5-4.5z%22/%3E%3C/svg%3E')] bg-[length:20px] bg-[right_0.75rem_center] bg-no-repeat pr-10";
 
 export default function CheckoutPage() {
   const router                  = useRouter();
   const { state, totalPrice, dispatch } = useCart();
+  const { customer } = useCustomerAuth();
   const [step, setStep]         = useState<Step>("form");
   const [error, setError]       = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -122,11 +123,16 @@ export default function CheckoutPage() {
   const [couponBusy, setCouponBusy] = useState(false);
   const sessionRef = useRef<{ cartToken: string; nonce: string } | null>(null);
 
-  // Payment selection is a two-level choice: the top card (M-Pesa or Card), and
-  // — under M-Pesa — whether to Pay Now (STK push) or Pay on Delivery (no charge
-  // now). These resolve to an actual WooCommerce gateway id below.
-  const [payGroup, setPayGroup]   = useState<"mpesa" | "card">("mpesa");
+  // Payment selection is a two-level choice: the top card (M-Pesa, Card or
+  // WhatsApp), and — under M-Pesa — whether to Pay Now (STK push) or Pay on
+  // Delivery (no charge now). These resolve to an actual WooCommerce gateway id
+  // below.
+  const [payGroup, setPayGroup]   = useState<"mpesa" | "card" | "whatsapp">("mpesa");
   const [mpesaMode, setMpesaMode] = useState<"now" | "delivery">("now");
+
+  // Set once a WhatsApp order has been created, so the confirmation screen can
+  // offer the pre-filled chat draft.
+  const [whatsappUrl, setWhatsappUrl] = useState("");
 
   const [form, setForm] = useState({
     name:          "",
@@ -143,6 +149,32 @@ export default function CheckoutPage() {
       router.replace("/shop");
     }
   }, [state.items.length, step, router]);
+
+  // Pre-fill from the signed-in customer's saved address. This runs once, when
+  // the session first resolves: filling on every change would fight the
+  // customer for the keyboard if they edit a field for this order only.
+  const prefilledRef = useRef(false);
+  useEffect(() => {
+    if (!customer || prefilledRef.current) return;
+    prefilledRef.current = true;
+
+    const b        = customer.billing;
+    const fullName = [b.first_name || customer.first_name, b.last_name || customer.last_name]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+
+    setForm((f) => ({
+      ...f,
+      name:          f.name          || fullName,
+      phone:         f.phone         || b.phone      || "",
+      email:         f.email         || customer.email,
+      county:        b.city          || f.county,
+      neighbourhood: f.neighbourhood || b.address_2  || "",
+      address:       f.address       || b.address_1  || "",
+      mpesa_phone:   f.mpesa_phone   || b.phone      || "",
+    }));
+  }, [customer]);
 
   // Offer whatever gateways are enabled in WooCommerce (of the kinds this
   // checkout can drive). Only the gateways actually enabled in wp-admin are
@@ -299,11 +331,16 @@ export default function CheckoutPage() {
   const hasCod         = methods.some((m) => m.kind === "cod");
   const mpesaAvailable = hasStk || hasCod;
 
-  // Resolve the two-level choice (card vs M-Pesa → now/delivery) to the actual
-  // WooCommerce gateway that will process the order.
+  // Resolve the top-level choice to the WooCommerce gateway that will record
+  // the order. WhatsApp is not a gateway of its own: the order is still created
+  // in WooCommerce before the chat starts, so it rides on Cash on Delivery —
+  // the one gateway that books an order without taking money. That is why the
+  // WhatsApp tile only appears when COD is enabled in wp-admin.
   const resolved =
     payGroup === "card"
       ? methods.find((m) => m.kind === "card")
+      : payGroup === "whatsapp"
+      ? methods.find((m) => m.kind === "cod")
       : mpesaMode === "now"
       ? methods.find((m) => m.kind === "mpesa")
       : methods.find((m) => m.kind === "cod");
@@ -421,10 +458,56 @@ export default function CheckoutPage() {
             resolved.kind === "mpesa"
               ? [{ key: "mpesa_phone", value: normalisePhone(form.mpesa_phone) }]
               : [],
+          // A WhatsApp order books through the COD gateway, so without this the
+          // order would be indistinguishable from a genuine pay-at-the-door one
+          // in wp-admin and in the createch-order-alerts notification.
+          ...(payGroup === "whatsapp"
+            ? { customerNote: "Placed via WhatsApp — payment to be arranged in chat." }
+            : {}),
         },
         token2,
         nonce2
       );
+
+      // The Store API cart runs as a guest, so the order is created with no
+      // customer attached. Adopt it now so it shows up under My Orders. Failure
+      // here must never block the payment flow — the order exists either way.
+      if (customer) {
+        void fetch("/api/account/claim-order", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ orderId: result.orderId, orderKey: result.orderKey }),
+        }).catch(() => {});
+      }
+
+      if (payGroup === "whatsapp") {
+        // The order exists in WooCommerce now, so the cart is safe to clear.
+        // The chat draft is only a hand-off: if the customer never opens
+        // WhatsApp the order is still on the books and can be chased.
+        setWhatsappUrl(
+          whatsappOrderLink({
+            orderId:       result.orderId,
+            lines: state.items.map((i) => ({
+              name:     i.name,
+              quantity: i.quantity,
+              total:    i.price * i.quantity,
+            })),
+            itemsSubtotal: itemsSubtotal,
+            discount,
+            deliveryFee,
+            total:         displayTotal,
+            customerName:  form.name.trim(),
+            phone:         form.phone.trim(),
+            area:          form.neighbourhood,
+            address:       form.address.trim(),
+          })
+        );
+        dispatch({ type: "CLEAR_CART" });
+        setPaidAmount(displayTotal);
+        setPendingOrderId(result.orderId);
+        setStep("whatsapp-placed");
+        return;
+      }
 
       if (resolved.kind === "card") {
         if (!result.redirectUrl) {
@@ -555,6 +638,61 @@ export default function CheckoutPage() {
     );
   }
 
+  /* ─── WhatsApp hand-off screen ─── */
+  if (step === "whatsapp-placed") {
+    return (
+      <main className="min-h-screen bg-brand-dark flex items-center justify-center px-4 pt-24 pb-16">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="mx-auto w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
+            <CheckCircle2 size={32} className="text-green-400" />
+          </div>
+          <h2 className="font-playfair font-bold text-3xl text-white">Order Placed!</h2>
+          <p className="text-white/60 font-inter text-sm leading-relaxed">
+            Your order is saved and we can already see it. Tap below to open
+            WhatsApp — the message is written for you, so just hit send and we
+            will confirm delivery and payment in the chat.
+          </p>
+
+          <div className="section-card rounded-2xl p-5 border border-white/5 text-left space-y-2">
+            {pendingOrderId && (
+              <div className="flex items-center justify-between">
+                <span className="text-white/50 font-inter text-xs uppercase tracking-widest">Order</span>
+                <span className="text-white font-inter font-semibold text-sm">#{pendingOrderId}</span>
+              </div>
+            )}
+            {paidAmount > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-white/50 font-inter text-xs uppercase tracking-widest">Total</span>
+                <span className="text-white font-inter font-semibold text-sm">{formatPrice(paidAmount)}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Deliberately a link the customer taps rather than an automatic
+              window.open — the await above breaks the click gesture, so a popup
+              blocker would eat it, and navigating away would hide the order
+              number they may still need. */}
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-full font-inter font-bold text-base active:scale-[0.98] transition-all"
+          >
+            <MessageCircle size={18} />
+            Open WhatsApp
+          </a>
+
+          <Link
+            href="/shop"
+            className="block text-center text-white/30 hover:text-white font-inter text-sm underline underline-offset-4 transition-colors"
+          >
+            Continue Shopping
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   /* ─── M-Pesa pending screen ─── */
   if (step === "pending") {
     return (
@@ -630,6 +768,22 @@ export default function CheckoutPage() {
           {/* ── Form ── */}
           <form onSubmit={handleSubmit} className="space-y-5">
 
+            {/* Guests only — signing in fills the delivery details below and
+                files the order under My Orders. Checkout still works without it. */}
+            {!customer && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-5 py-4">
+                <p className="text-white/50 font-inter text-sm">
+                  Have an account? Sign in to use your saved details.
+                </p>
+                <Link
+                  href="/account/login?next=/checkout"
+                  className="font-inter text-sm font-semibold text-brand-yellow hover:underline underline-offset-4 whitespace-nowrap"
+                >
+                  Sign in
+                </Link>
+              </div>
+            )}
+
             {/* Payment Method */}
             <div className="section-card rounded-2xl p-6 border border-white/5">
               <h2 className="font-inter font-semibold text-white mb-4 text-sm uppercase tracking-widest">
@@ -702,6 +856,23 @@ export default function CheckoutPage() {
                         )}
                       </div>
                     </div>
+                  )}
+
+                  {/* Complete on WhatsApp — books the order through the same
+                      COD gateway, then hands off to chat, so it only shows when
+                      Cash on Delivery is enabled in wp-admin. */}
+                  {hasCod && (
+                    <button
+                      type="button"
+                      onClick={() => setPayGroup("whatsapp")}
+                      className={`${payTileClass(payGroup === "whatsapp")} mt-3 w-full`}
+                    >
+                      <MessageCircle size={18} />
+                      <span className="font-inter font-semibold text-xs">Complete on WhatsApp</span>
+                      <span className="font-inter text-[10px] opacity-60 leading-tight">
+                        We confirm your order and payment in chat
+                      </span>
+                    </button>
                   )}
                 </>
               )}
@@ -850,6 +1021,13 @@ export default function CheckoutPage() {
                   <Loader2 size={18} className="animate-spin" />
                   Processing…
                 </>
+              ) : payGroup === "whatsapp" ? (
+                // Checked before `kind`, because a WhatsApp order resolves to
+                // the COD gateway and would otherwise read "on Delivery".
+                <>
+                  <MessageCircle size={18} />
+                  Place Order — {formatPrice(displayTotal)}
+                </>
               ) : resolved?.kind === "cod" ? (
                 <>
                   {KIND_META.cod.icon}
@@ -869,7 +1047,9 @@ export default function CheckoutPage() {
             </button>
 
             <p className="text-white/25 text-xs text-center font-inter">
-              {resolved?.kind === "mpesa"
+              {payGroup === "whatsapp"
+                ? "We will save your order, then open WhatsApp with the details ready to send."
+                : resolved?.kind === "mpesa"
                 ? "You will receive an M-Pesa STK push on your phone to confirm."
                 : resolved?.kind === "card"
                 ? "You will be redirected to DPO Pay's secure card payment page."
