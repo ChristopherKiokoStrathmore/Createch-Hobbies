@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X, ShoppingCart } from "lucide-react";
+import { Menu, X, ShoppingCart, User } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useSiteConfig } from "@/context/SiteConfigContext";
+import { useCustomerAuth } from "@/context/CustomerAuthContext";
 
 function Logo({ scrolled }: { scrolled: boolean }) {
   const [imgFailed, setImgFailed] = useState(false);
@@ -40,6 +41,7 @@ export default function Navbar() {
   const [isPortrait, setIsPortrait] = useState(false);
   const { totalItems, dispatch } = useCart();
   const { nav } = useSiteConfig();
+  const { customer } = useCustomerAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -72,12 +74,14 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-8" data-editor-key="nav">
+          {/* gap tightens below xl so the account + cart icons don't squeeze a
+              two-word link onto two lines at mid widths. */}
+          <nav className="hidden md:flex items-center gap-5 xl:gap-8" data-editor-key="nav">
             {nav.links.map((link) => (
               <Link
                 key={link.id}
                 href={link.href}
-                className={`font-medium transition-colors text-sm tracking-wide ${
+                className={`font-medium transition-colors text-sm tracking-wide whitespace-nowrap ${
                   scrolled
                     ? "text-brand-dark/70 hover:text-brand-dark"
                     : "text-white/90 hover:text-white drop-shadow-sm"
@@ -90,6 +94,23 @@ export default function Navbar() {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-3">
+            {/* /account bounces to the sign-in page when there is no session,
+                so one link serves both states. */}
+            <Link
+              href="/account"
+              aria-label={customer ? "Your account" : "Sign in"}
+              title={customer ? "Your account" : "Sign in"}
+              className={`relative flex items-center justify-center w-10 h-10 rounded-full border transition-all ${
+                scrolled
+                  ? "border-brand-dark/20 text-brand-dark/70 hover:border-brand-dark/50 hover:text-brand-dark"
+                  : "border-white/30 text-white/80 hover:border-white/60 hover:text-white"
+              }`}
+            >
+              <User size={18} />
+              {customer && (
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 border-2 border-brand-dark rounded-full" />
+              )}
+            </Link>
             <button
               onClick={() => dispatch({ type: "OPEN_CART" })}
               aria-label="Open cart"
@@ -178,6 +199,14 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
+          <Link
+            href="/account"
+            className="flex items-center gap-2 py-3 text-brand-dark/70 hover:text-brand-dark font-medium border-b border-brand-dark/10 transition-colors"
+            onClick={() => setMenuOpen(false)}
+          >
+            <User size={16} />
+            {customer ? "My Account" : "Sign In"}
+          </Link>
           <Link
             href="/checkout"
             className="mt-4 block text-center btn-yellow px-5 py-3 rounded-full text-sm"
