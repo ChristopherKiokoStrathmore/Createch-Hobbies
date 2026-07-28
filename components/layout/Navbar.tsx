@@ -64,6 +64,7 @@ export default function Navbar() {
           ? "bg-[#f5be4d]/95 backdrop-blur-xl shadow-lg shadow-brand-dark/10 border-b border-brand-dark/10"
           : "bg-transparent"
       }`}
+      role="banner"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
@@ -76,7 +77,7 @@ export default function Navbar() {
           {/* Desktop nav */}
           {/* gap tightens below xl so the account + cart icons don't squeeze a
               two-word link onto two lines at mid widths. */}
-          <nav className="hidden md:flex items-center gap-5 xl:gap-8" data-editor-key="nav">
+          <nav className="hidden md:flex items-center gap-5 xl:gap-8" data-editor-key="nav" aria-label="Main navigation">
             {nav.links.map((link) => (
               <Link
                 key={link.id}
@@ -100,7 +101,7 @@ export default function Navbar() {
               href="/account"
               aria-label={customer ? "Your account" : "Sign in"}
               title={customer ? "Your account" : "Sign in"}
-              className={`relative flex items-center justify-center w-10 h-10 rounded-full border transition-all ${
+              className={`relative flex items-center justify-center w-11 h-11 rounded-full border transition-all hover:scale-105 active:scale-95 ${
                 scrolled
                   ? "border-brand-dark/20 text-brand-dark/70 hover:border-brand-dark/50 hover:text-brand-dark"
                   : "border-white/30 text-white/80 hover:border-white/60 hover:text-white"
@@ -114,7 +115,7 @@ export default function Navbar() {
             <button
               onClick={() => dispatch({ type: "OPEN_CART" })}
               aria-label="Open cart"
-              className={`relative flex items-center justify-center w-10 h-10 rounded-full border transition-all ${
+              className={`relative flex items-center justify-center w-11 h-11 rounded-full border transition-all hover:scale-105 active:scale-95 ${
                 scrolled
                   ? "border-brand-dark/20 text-brand-dark/70 hover:border-brand-dark/50 hover:text-brand-dark"
                   : "border-white/30 text-white/80 hover:border-white/60 hover:text-white"
@@ -129,30 +130,30 @@ export default function Navbar() {
             </button>
             <Link
               href="/checkout"
-              className="btn-yellow px-5 py-2.5 rounded-full text-sm active:scale-95"
+              className="btn-yellow px-6 py-2.5 rounded-full text-sm font-medium active:scale-95 hover:shadow-lg transition-all"
             >
               Checkout
             </Link>
           </div>
 
           {/* Mobile: cart icon + hamburger */}
-          <div className="md:hidden flex items-center gap-2">
+          <div className="md:hidden flex items-center gap-1">
             <button
               onClick={() => dispatch({ type: "OPEN_CART" })}
               aria-label="Open cart"
-              className={`relative flex items-center justify-center w-9 h-9 transition-colors ${
-                scrolled ? "text-brand-dark/70" : "text-white/80"
+              className={`relative flex items-center justify-center w-11 h-11 rounded-lg transition-all active:scale-95 ${
+                scrolled ? "text-brand-dark/70 hover:text-brand-dark hover:bg-brand-dark/5" : "text-white/80 hover:text-white hover:bg-white/10"
               }`}
             >
               <ShoppingCart size={20} />
               {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-brand-yellow text-brand-dark text-[9px] font-bold rounded-full flex items-center justify-center font-inter">
+                <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-brand-yellow text-brand-dark text-[10px] font-bold rounded-full flex items-center justify-center font-inter border border-white/30">
                   {totalItems > 9 ? "9+" : totalItems}
                 </span>
               )}
             </button>
             <button
-              className={`p-2 transition-colors ${scrolled ? "text-brand-dark/70 hover:text-brand-dark" : "text-white/80 hover:text-white"}`}
+              className={`p-2.5 rounded-lg transition-all active:scale-95 ${scrolled ? "text-brand-dark/70 hover:text-brand-dark hover:bg-brand-dark/5" : "text-white/80 hover:text-white hover:bg-white/10"}`}
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label="Toggle menu"
             >
@@ -164,8 +165,8 @@ export default function Navbar() {
 
       {/* Portrait-only nav strip — skip "Home" (logo handles it), fit all in one row */}
       {isPortrait && (
-        <div className="border-t border-black/10">
-          <div className="flex items-center justify-around px-2 py-1.5">
+        <div className="border-t border-black/8 bg-[#f5be4d]/50 backdrop-blur-sm">
+          <div className="flex items-center justify-around px-2 py-1.5 overflow-x-auto">
             {nav.links
               .filter((link) => link.href !== "/")
               .map((link) => (
@@ -173,7 +174,7 @@ export default function Navbar() {
                   key={link.id}
                   href={link.href}
                   onClick={() => setMenuOpen(false)}
-                  className="px-2 py-1 rounded-full text-[10px] font-medium font-inter transition-colors text-brand-dark/75 hover:text-brand-dark hover:bg-black/10 whitespace-nowrap"
+                  className="px-2.5 py-1.5 rounded-full text-[11px] font-medium font-inter transition-colors text-brand-dark/70 active:text-brand-dark active:bg-black/10 hover:text-brand-dark whitespace-nowrap flex-shrink-0"
                 >
                   {link.label}
                 </Link>

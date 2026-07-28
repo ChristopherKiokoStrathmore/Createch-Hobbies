@@ -18,10 +18,13 @@ export default function HeroVideo() {
 
   return (
     <section
-      className="sticky top-0 h-screen flex flex-col overflow-hidden"
+      className="sticky top-0 h-screen md:h-screen flex flex-col overflow-hidden bg-gradient-to-b from-brand-yellow via-brand-yellow to-brand-yellow/90"
       style={{ zIndex: 1 }}
     >
-      {/* Very light vignette */}
+      {/* Desktop video background — hidden on mobile/tablet */}
+      <div className="hidden md:block absolute inset-0 w-full h-full" id="hero-video-container" />
+
+      {/* Vignette overlay */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{

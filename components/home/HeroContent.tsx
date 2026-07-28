@@ -80,10 +80,10 @@ function CountUpStat({ value, label }: { value: string; label: string }) {
 
   return (
     <div ref={ref} className="flex flex-col items-center">
-      <span className="font-playfair font-bold text-brand-yellow text-3xl sm:text-4xl leading-none tabular-nums">
+      <span className="font-playfair font-bold text-brand-yellow text-2xl sm:text-3xl md:text-4xl leading-none tabular-nums">
         {display}
       </span>
-      <span className="mt-1.5 text-white/50 text-xs tracking-wide font-inter uppercase">
+      <span className="mt-1 md:mt-1.5 text-white/50 text-[10px] sm:text-xs tracking-wide font-inter uppercase">
         {label}
       </span>
     </div>
@@ -94,7 +94,7 @@ export default function HeroContent() {
   const { hero } = useSiteConfig();
 
   return (
-    <section className="relative overflow-hidden py-28 sm:py-36 px-4 sm:px-6 lg:px-8">
+    <section className="relative overflow-hidden py-20 md:py-28 lg:py-36 px-4 sm:px-6 lg:px-8">
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -107,15 +107,15 @@ export default function HeroContent() {
 
         {/* Badge */}
         <motion.div {...fadeUp(0)}>
-          <span className="inline-block mb-6 px-4 py-1.5 rounded-full border border-white/20 bg-white/10 text-white/75 text-xs font-semibold tracking-widest uppercase font-inter backdrop-blur-sm">
+          <span className="inline-block mb-4 md:mb-6 px-3 md:px-4 py-1 md:py-1.5 rounded-full border border-white/20 bg-white/10 text-white/75 text-[11px] md:text-xs font-semibold tracking-widest uppercase font-inter backdrop-blur-sm">
             🇰🇪 Make your dent in the universe
           </span>
         </motion.div>
 
         {/* Headline */}
         <motion.h1
-          className="font-playfair font-bold text-white leading-[1.08] tracking-tight"
-          style={{ fontSize: "clamp(2.4rem, 6vw, 4.5rem)" }}
+          className="font-playfair font-bold text-white leading-[1.1] md:leading-[1.08] tracking-tight"
+          style={{ fontSize: "clamp(1.75rem, 5vw, 4.5rem)" }}
           {...fadeUp(0.08)}
           data-editor-key="hero.headline"
         >
@@ -124,7 +124,7 @@ export default function HeroContent() {
 
         {/* Description */}
         <motion.p
-          className="mt-6 text-white/65 text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto font-inter"
+          className="mt-4 md:mt-6 text-white/65 text-base sm:text-lg md:text-xl leading-relaxed max-w-2xl mx-auto font-inter"
           {...fadeUp(0.16)}
           data-editor-key="hero.subheadline"
           suppressHydrationWarning
@@ -134,7 +134,7 @@ export default function HeroContent() {
 
         {/* Stats — count up on scroll into view */}
         <motion.div
-          className="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-8"
+          className="mt-12 md:mt-16 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 md:gap-8"
           {...fadeUp(0.32)}
         >
           {stats.map((s) => (
