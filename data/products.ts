@@ -48,6 +48,13 @@ export interface Product {
   onSale: boolean;
   description: string;
   whatYouLearn: string[];
+  /**
+   * Per-product box contents, from the WooCommerce "What's in the Box"
+   * attribute. Empty means the product has not set one, and the product page
+   * falls back to the editable default in site config — so a kit that says
+   * nothing specific still shows sensible copy rather than a blank section.
+   */
+  whatsInTheBox: string[];
   images: string[];
   inStock: boolean;
   featured: boolean;
