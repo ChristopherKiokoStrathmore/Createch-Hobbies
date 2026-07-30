@@ -5,13 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useSiteConfig } from "@/context/SiteConfigContext";
 
-const stats = [
-  { value: "17+",  label: "Kit Designs"    },
-  { value: "500+", label: "Happy Builders" },
-  { value: "1–2",  label: "Day Delivery"   },
-  { value: "4–12", label: "Years Age Range"},
-];
-
 const fadeUp = (delay = 0) => ({
   initial:     { opacity: 0, y: 28 },
   whileInView: { opacity: 1, y: 0 },
@@ -91,7 +84,7 @@ function CountUpStat({ value, label }: { value: string; label: string }) {
 }
 
 export default function HeroContent() {
-  const { hero } = useSiteConfig();
+  const { hero, heroStats } = useSiteConfig();
 
   return (
     <section className="relative overflow-hidden py-28 sm:py-36 px-4 sm:px-6 lg:px-8">
@@ -135,10 +128,13 @@ export default function HeroContent() {
         {/* Stats — count up on scroll into view */}
         <motion.div
           className="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-8"
+          data-editor-key="heroStats"
           {...fadeUp(0.32)}
         >
-          {stats.map((s) => (
-            <CountUpStat key={s.label} value={s.value} label={s.label} />
+          {heroStats.map((s, i) => (
+            // Keyed by position: labels are editable and two can briefly match
+            // while one is being retyped in the editor.
+            <CountUpStat key={`${i}-${s.label}`} value={s.value} label={s.label} />
           ))}
         </motion.div>
       </div>

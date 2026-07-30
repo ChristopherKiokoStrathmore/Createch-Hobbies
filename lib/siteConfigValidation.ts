@@ -1,4 +1,4 @@
-import type { SiteConfig } from "@/types/site-config";
+import type { SiteConfig, AgeBracket } from "@/types/site-config";
 import { DEFAULT_CONFIG } from "./siteConfigDefaults";
 
 // Server-side hardening for the site-config editor. The PUT handler is admin-
@@ -74,6 +74,59 @@ export function safeDeepMerge(
   return result;
 }
 
+// Age brackets drive filtering, so a malformed one silently hides products
+// rather than just reading oddly. Coerce to whole years, drop any bracket whose
+// min exceeds its max or that has no label, and fall back to the defaults if
+// that leaves nothing usable — an empty bracket list would render a filter with
+// no options at all.
+export function safeAgeBrackets(v: unknown, fallback: AgeBracket[]): AgeBracket[] {
+  if (!Array.isArray(v)) return fallback;
+
+  const cleaned = v.flatMap((raw): AgeBracket[] => {
+    if (!raw || typeof raw !== "object") return [];
+    const b = raw as Partial<AgeBracket>;
+    const label = typeof b.label === "string" ? b.label.trim() : "";
+    const min = Math.round(Number(b.min));
+    const max = Math.round(Number(b.max));
+    if (!label) return [];
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return [];
+    if (min < 0 || max < 0 || min > max) return [];
+    return [{
+      id: typeof b.id === "string" && b.id.trim() ? b.id.trim() : label.toLowerCase().replace(/\s+/g, "-"),
+      label,
+      min,
+      max,
+    }];
+  });
+
+  return cleaned.length > 0 ? cleaned : fallback;
+}
+
+/**
+ * Report brackets that overlap so heavily they cannot discriminate — the state
+ * the shop was in, where every bracket matched every product. Advisory only:
+ * the config still saves, because a deliberate overlap is legitimate.
+ */
+export function ageBracketWarnings(brackets: AgeBracket[]): string[] {
+  const warnings: string[] = [];
+
+  const sorted = [...brackets].sort((a, b) => a.min - b.min);
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = sorted[i - 1];
+    const cur  = sorted[i];
+    if (cur.min > prev.max + 1) {
+      warnings.push(`Ages ${prev.max + 1}–${cur.min - 1} fall between "${prev.label}" and "${cur.label}", so kits for those ages appear in neither.`);
+    }
+  }
+
+  const spanAll = brackets.filter((b) => b.max - b.min >= 11);
+  if (spanAll.length > 1) {
+    warnings.push(`"${spanAll.map((b) => b.label).join('", "')}" each cover 12 years or more, so most kits will match all of them and the filter will not narrow anything.`);
+  }
+
+  return warnings;
+}
+
 // Scrub every field that reaches a CSS or href sink. Assumes `c` has already
 // been merged over DEFAULT_CONFIG so every branch exists.
 export function sanitizeSiteConfig(c: SiteConfig): SiteConfig {
@@ -114,6 +167,10 @@ export function sanitizeSiteConfig(c: SiteConfig): SiteConfig {
       ...c.cardStyle,
       bgColor: safeColor(c.cardStyle?.bgColor, D.cardStyle.bgColor),
       borderColor: safeColor(c.cardStyle?.borderColor, D.cardStyle.borderColor),
+    },
+    shop: {
+      ...c.shop,
+      ageBrackets: safeAgeBrackets(c.shop?.ageBrackets, D.shop.ageBrackets),
     },
   };
 }

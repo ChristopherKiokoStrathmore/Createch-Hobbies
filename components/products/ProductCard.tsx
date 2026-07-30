@@ -6,6 +6,15 @@ import { ShoppingCart } from "lucide-react";
 import type { Product } from "@/data/products";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
+import { useSiteConfig } from "@/context/SiteConfigContext";
+
+// Cards show a one-line teaser. Only add an ellipsis when text was actually cut —
+// appending it unconditionally made every short description read
+// "STEM Focused DIY KIT..." with nothing missing.
+const TEASER_MAX = 85;
+function teaser(text: string): string {
+  return text.length > TEASER_MAX ? `${text.slice(0, TEASER_MAX).trimEnd()}…` : text;
+}
 
 const difficultyStyles: Record<string, string> = {
   Beginner:
@@ -35,6 +44,7 @@ interface Props {
 
 export default function ProductCard({ product, priority = false, compact = true }: Props) {
   const { dispatch } = useCart();
+  const { productCard: label } = useSiteConfig();
   const soldOut = !product.inStock;
 
   function addToCart() {
@@ -53,7 +63,10 @@ export default function ProductCard({ product, priority = false, compact = true 
   }
 
   return (
-    <div className="group section-card rounded-xl sm:rounded-2xl overflow-hidden border border-white/5 hover:border-brand-yellow/20 transition-all duration-300 sm:hover:-translate-y-1 card-glow flex flex-col">
+    <div
+      data-product-id={product.id}
+      className="group section-card rounded-xl sm:rounded-2xl overflow-hidden border border-white/5 hover:border-brand-yellow/20 transition-all duration-300 sm:hover:-translate-y-1 card-glow flex flex-col"
+    >
       {/* Image */}
       <Link
         href={`/shop/${product.slug}`}
@@ -94,16 +107,20 @@ export default function ProductCard({ product, priority = false, compact = true 
                 )}
               </span>
               {soldOut ? (
-                <span className="bg-white/20 text-white/70 px-2 py-0.5 rounded-full text-[9px] font-bold font-inter">
-                  Sold out
+                <span
+                  data-editor-key="productCard"
+                  className="bg-white/20 text-white/70 px-2 py-0.5 rounded-full text-[9px] font-bold font-inter"
+                >
+                  {label.soldOutLabel}
                 </span>
               ) : (
                 <button
                   onClick={(e) => { e.preventDefault(); addToCart(); }}
+                  data-editor-key="productCard"
                   className="flex items-center gap-0.5 bg-brand-yellow/90 active:bg-brand-yellow text-brand-dark px-2 py-0.5 rounded-full text-[9px] font-bold font-inter active:scale-95 transition-transform"
                 >
                   <ShoppingCart size={8} />
-                  Add
+                  {label.addToCartShort}
                 </button>
               )}
             </div>
@@ -112,27 +129,37 @@ export default function ProductCard({ product, priority = false, compact = true 
 
         {/* Top badges */}
         <div className="absolute top-1.5 left-1.5 sm:top-3 sm:left-3 flex flex-col items-start gap-1">
-          <span className="bg-black/60 backdrop-blur-sm text-white text-[8px] sm:text-xs font-medium px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full border border-white/10 font-inter">
-            {product.ageRange} yrs
+          <span
+            data-editor-key="product.ageRange"
+            className="bg-black/60 backdrop-blur-sm text-white text-[8px] sm:text-xs font-medium px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full border border-white/10 font-inter"
+          >
+            {product.ageRange}{label.ageSuffix ? ` ${label.ageSuffix}` : ""}
           </span>
           {soldOut && (
-            <span className="bg-red-600/80 backdrop-blur-sm text-white text-[8px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full border border-white/10 font-inter">
-              Out of stock
+            <span
+              data-editor-key="product.stock"
+              className="bg-red-600/80 backdrop-blur-sm text-white text-[8px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full border border-white/10 font-inter"
+            >
+              {label.outOfStockBadge}
             </span>
           )}
           {product.onSale && (
-            <span className="bg-brand-yellow text-brand-dark text-[8px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full font-inter">
-              Sale
+            <span
+              data-editor-key="product.price"
+              className="bg-brand-yellow text-brand-dark text-[8px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full font-inter"
+            >
+              {label.saleBadge}
             </span>
           )}
         </div>
         {product.featured && (
           <div className="absolute top-1.5 right-1.5 sm:top-3 sm:right-3">
             <span
+              data-editor-key="product.featured"
               className="text-[8px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full font-inter"
               style={{ background: "linear-gradient(135deg, #f5be4d, #d4a030)", color: "#0a0a0f" }}
             >
-              Popular
+              {label.featuredBadge}
             </span>
           </div>
         )}
@@ -147,17 +174,23 @@ export default function ProductCard({ product, priority = false, compact = true 
           >
             {product.name}
           </Link>
-          <span className={`shrink-0 text-[10px] sm:text-xs font-semibold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border font-inter ${difficultyStyles[product.difficulty] ?? defaultDifficultyStyle}`}>
+          <span
+            data-editor-key="product.difficulty"
+            className={`shrink-0 text-[10px] sm:text-xs font-semibold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border font-inter ${difficultyStyles[product.difficulty] ?? defaultDifficultyStyle}`}
+          >
             {product.difficulty}
           </span>
         </div>
 
-        <p className="hidden sm:block text-white/40 text-sm leading-relaxed mb-4 flex-1 font-inter">
-          {product.description.slice(0, 85)}...
+        <p
+          data-editor-key="product.description"
+          className="hidden sm:block text-white/40 text-sm leading-relaxed mb-4 flex-1 font-inter"
+        >
+          {teaser(product.description)}
         </p>
 
         <div className="flex items-center justify-between gap-2 mt-auto">
-          <span className="font-playfair font-bold text-lg sm:text-2xl text-white">
+          <span data-editor-key="product.price" className="font-playfair font-bold text-lg sm:text-2xl text-white">
             {formatPrice(product.price)}
             {product.onSale && (
               <span className="ml-2 text-white/30 line-through text-sm font-inter font-medium align-middle">
@@ -168,6 +201,7 @@ export default function ProductCard({ product, priority = false, compact = true 
           <button
             onClick={addToCart}
             disabled={soldOut}
+            data-editor-key="productCard"
             className={`flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-inter ${
               soldOut
                 ? "bg-white/10 text-white/40 cursor-not-allowed"
@@ -176,8 +210,8 @@ export default function ProductCard({ product, priority = false, compact = true 
           >
             <ShoppingCart size={11} className="sm:hidden" />
             <ShoppingCart size={13} className="hidden sm:block" />
-            <span className="hidden sm:inline">{soldOut ? "Sold Out" : "Add to Cart"}</span>
-            <span className="sm:hidden">{soldOut ? "Sold Out" : "Add"}</span>
+            <span className="hidden sm:inline">{soldOut ? label.soldOutLabel : label.addToCartLabel}</span>
+            <span className="sm:hidden">{soldOut ? label.soldOutLabel : label.addToCartShort}</span>
           </button>
         </div>
       </div>

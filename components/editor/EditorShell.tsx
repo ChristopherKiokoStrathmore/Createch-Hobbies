@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Monitor, Tablet, Smartphone, Eye, Check, RotateCcw,
   Palette, Type, FileText, Layers, Search, Megaphone, Sliders,
-  ChevronLeft, Loader2, Save, MousePointerClick,
+  ChevronLeft, Loader2, Save, MousePointerClick, ShoppingBag,
 } from "lucide-react";
 import type { SiteConfig } from "@/types/site-config";
 import { DEFAULT_CONFIG } from "@/lib/siteConfigDefaults";
@@ -16,9 +16,16 @@ import SectionManager  from "./panels/SectionManager";
 import SeoPanel        from "./panels/SeoPanel";
 import BannerPanel     from "./panels/BannerPanel";
 import ComponentStylePanel from "./panels/ComponentStylePanel";
+import ShopPanel from "./panels/ShopPanel";
 
 type PreviewMode = "desktop" | "tablet" | "mobile";
-type PanelId = "colours" | "typography" | "content" | "sections" | "seo" | "banner" | "style";
+type PanelId = "colours" | "typography" | "content" | "sections" | "seo" | "banner" | "style" | "shop";
+
+// Where "Edit in WooCommerce" sends you. The bare path also works thanks to the
+// /wp-admin redirect in next.config.ts, but the explicit origin avoids relying on
+// a redirect chain in a popup-blocked new tab.
+const WP_ADMIN_BASE =
+  (process.env.NEXT_PUBLIC_WOO_STORE_URL ?? "https://wp.createch-hobbies.co.ke").replace(/\/+$/, "");
 
 const PREVIEW_WIDTHS: Record<PreviewMode, string> = {
   desktop: "100%",
@@ -34,6 +41,7 @@ const PANELS: { id: PanelId; label: string; Icon: React.ElementType }[] = [
   { id: "seo",        label: "SEO",        Icon: Search    },
   { id: "banner",     label: "Banner",     Icon: Megaphone },
   { id: "style",      label: "Style",      Icon: Sliders   },
+  { id: "shop",       label: "Shop",       Icon: ShoppingBag },
 ];
 
 export default function EditorShell() {
@@ -45,6 +53,7 @@ export default function EditorShell() {
   const [saveError, setSaveError]       = useState("");
   const [activePanel, setActivePanel]       = useState<PanelId>("colours");
   const [contentFocusTab, setContentFocusTab] = useState<string>("hero");
+  const [shopFocusTab, setShopFocusTab]     = useState<string>("shop");
   const [previewMode, setPreviewMode]       = useState<PreviewMode>("desktop");
   const [inspectEnabled, setInspectEnabled] = useState(false);
   const [history, setHistory]           = useState<SiteConfig[]>([]);
@@ -72,6 +81,46 @@ export default function EditorShell() {
     "seo":              "seo",
     "colours":          "colours",
     "cardStyle":        "style",
+    "heroStats":                  "shop",
+    "shop.eyebrow":               "shop",
+    "shop.title":                 "shop",
+    "shop.count":                 "shop",
+    "shop.searchPlaceholder":     "shop",
+    "shop.emptyMessage":          "shop",
+    "shop.clearLabel":            "shop",
+    "shop.ageBrackets":           "shop",
+    "shop.categoryFilterLabel":   "shop",
+    "shop.difficultyFilterLabel": "shop",
+    "productPage.learnTitle":     "shop",
+    "productPage.whatsInTheBox":  "shop",
+    "productPage.priceLabel":     "shop",
+    "productPage.onSaleFormat":   "shop",
+    "productPage.delivery":       "shop",
+    "productPage.orderHint":      "shop",
+    "productPage.relatedTitle":   "shop",
+    "productCard":                "shop",
+  };
+
+  // Which tab inside the Shop panel a clicked element opens.
+  const KEY_TO_SHOP_TAB: Record<string, string> = {
+    "heroStats":                  "stats",
+    "shop.eyebrow":               "shop",
+    "shop.title":                 "shop",
+    "shop.count":                 "shop",
+    "shop.searchPlaceholder":     "shop",
+    "shop.emptyMessage":          "shop",
+    "shop.clearLabel":            "shop",
+    "shop.categoryFilterLabel":   "shop",
+    "shop.difficultyFilterLabel": "shop",
+    "shop.ageBrackets":           "ages",
+    "productPage.learnTitle":     "product",
+    "productPage.whatsInTheBox":  "product",
+    "productPage.priceLabel":     "product",
+    "productPage.onSaleFormat":   "product",
+    "productPage.delivery":       "product",
+    "productPage.orderHint":      "product",
+    "productPage.relatedTitle":   "product",
+    "productCard":                "badges",
   };
   const KEY_TO_TAB: Record<string, string> = {
     "hero.headline":    "hero",
@@ -172,11 +221,27 @@ export default function EditorShell() {
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       if (e.data?.type !== "INSPECT_ELEMENT") return;
-      const key   = e.data.key as string;
+      const key = e.data.key as string;
+
+      // Product data is owned by WooCommerce, so these are not editable here —
+      // clicking one opens that product in the store instead. Keeping a single
+      // source of truth is the whole reason this branch exists.
+      if (key.startsWith("product.")) {
+        const id = e.data.productId as string | undefined;
+        if (id) {
+          window.open(
+            `${WP_ADMIN_BASE}/wp-admin/post.php?post=${encodeURIComponent(id)}&action=edit`,
+            "_blank",
+            "noopener,noreferrer",
+          );
+        }
+        return;
+      }
+
       const panel = KEY_TO_PANEL[key] ?? "content";
-      const tab   = KEY_TO_TAB[key]   ?? "hero";
       setActivePanel(panel);
-      if (panel === "content") setContentFocusTab(tab);
+      if (panel === "content") setContentFocusTab(KEY_TO_TAB[key] ?? "hero");
+      if (panel === "shop")    setShopFocusTab(KEY_TO_SHOP_TAB[key] ?? "shop");
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
@@ -398,6 +463,7 @@ export default function EditorShell() {
             {activePanel === "seo"        && <SeoPanel        config={config} onChange={updateConfig} />}
             {activePanel === "banner"     && <BannerPanel     config={config} onChange={updateConfig} />}
             {activePanel === "style"      && <ComponentStylePanel config={config} onChange={updateConfig} />}
+            {activePanel === "shop"       && <ShopPanel       config={config} onChange={updateConfig} focusTab={shopFocusTab} />}
           </div>
 
           {/* Dirty indicator */}

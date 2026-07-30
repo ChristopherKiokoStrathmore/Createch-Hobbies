@@ -96,6 +96,16 @@ function mapWhatYouLearn(attrs: WooAttribute[]): string[] {
   return learn.length ? learn : getAttr(attrs, "Skills");
 }
 
+// Per-product box contents. Returning [] when the attribute is absent is
+// deliberate: the product page then falls back to the editable default in site
+// config, so adding this attribute is opt-in per product and no kit is left with
+// an empty section. The apostrophe is a common source of mismatch, so the
+// straight and curly spellings are both accepted.
+function mapWhatsInTheBox(attrs: WooAttribute[]): string[] {
+  const box = getAttr(attrs, "What's in the Box");
+  return box.length ? box : getAttr(attrs, "What’s in the Box");
+}
+
 function mapPricing(p: WooProduct): { price: number; regularPrice: number; onSale: boolean } {
   const price   = parseFloat(p.price) || 0;
   const regular = parseFloat(p.regular_price) || price;
@@ -111,11 +121,12 @@ export function mapWooProduct(p: WooProduct): Product {
     ageRange:     mapAgeRange(p.attributes),
     difficulty:   mapDifficulty(p.attributes),
     ...mapPricing(p),
-    description:  stripHtml(p.short_description || p.description),
-    whatYouLearn: mapWhatYouLearn(p.attributes),
-    images:       p.images.map((img) => img.src),
-    inStock:      p.stock_status === "instock",
-    featured:     p.featured,
+    description:   stripHtml(p.short_description || p.description),
+    whatYouLearn:  mapWhatYouLearn(p.attributes),
+    whatsInTheBox: mapWhatsInTheBox(p.attributes),
+    images:        p.images.map((img) => img.src),
+    inStock:       p.stock_status === "instock",
+    featured:      p.featured,
   };
 }
 
@@ -160,11 +171,12 @@ export function mapWooProductRaw(p: WooProduct): WooProductRaw {
     ageRange:     ageRaw  ?? null,
     difficulty:   (diffRaw as Difficulty) ?? null,
     ...mapPricing(p),
-    description:  stripHtml(p.short_description || p.description),
-    whatYouLearn: mapWhatYouLearn(p.attributes),
-    images:       p.images.map((img) => img.src),
-    inStock:      p.stock_status === "instock",
-    featured:     p.featured,
+    description:   stripHtml(p.short_description || p.description),
+    whatYouLearn:  mapWhatYouLearn(p.attributes),
+    whatsInTheBox: mapWhatsInTheBox(p.attributes),
+    images:        p.images.map((img) => img.src),
+    inStock:       p.stock_status === "instock",
+    featured:      p.featured,
   };
 }
 

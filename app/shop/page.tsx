@@ -5,34 +5,42 @@ import { useSearchParams } from "next/navigation";
 import { Search, ChevronDown, LayoutGrid, LayoutList } from "lucide-react";
 import { orderCategories, orderDifficulties, type Product } from "@/data/products";
 import ProductCard from "@/components/products/ProductCard";
+import { useSiteConfig } from "@/context/SiteConfigContext";
+import type { AgeBracket } from "@/types/site-config";
 
-type AgeGroup = "Under 7" | "Ages 7–9" | "Ages 10–12" | "Ages 12+";
-const ageGroups: AgeGroup[] = ["Under 7", "Ages 7–9", "Ages 10–12", "Ages 12+"];
-
+// Accepts "8–12" (en dash), "8-12" (hyphen) and a bare "8". A range we cannot
+// read is treated as spanning every age, so a typo in WooCommerce makes a kit
+// over-visible rather than invisible — a customer seeing one extra kit is a much
+// cheaper mistake than a kit nobody can find.
 function parseAgeRange(range: string): { min: number; max: number } {
-  const parts = range.split("–");
-  return { min: parseInt(parts[0]), max: parseInt(parts[1] ?? parts[0]) };
+  const parts = String(range).split(/[–—-]/);
+  const min = parseInt(parts[0], 10);
+  const max = parseInt(parts[1] ?? parts[0], 10);
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return { min: 0, max: 99 };
+  return min <= max ? { min, max } : { min: max, max: min };
 }
 
-function matchesAgeGroup(product: Product, group: AgeGroup): boolean {
+// A kit belongs in a bracket when the two ranges overlap — the ordinary meaning
+// of "suitable for this age". The previous rules were looser and asymmetric, so
+// a 6–12 kit satisfied all four brackets at once and the filter never narrowed
+// anything.
+function matchesAgeBracket(product: Product, bracket: AgeBracket): boolean {
   const { min, max } = parseAgeRange(product.ageRange);
-  switch (group) {
-    case "Under 7":    return min <= 7;
-    case "Ages 7–9":   return min <= 9 && max >= 7;
-    case "Ages 10–12": return min <= 12 && max >= 10;
-    case "Ages 12+":   return max >= 12;
-  }
+  return min <= bracket.max && max >= bracket.min;
 }
 
 function ShopContent() {
   const searchParams = useSearchParams();
+  const { shop } = useSiteConfig();
 
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [activeDifficulty, setActiveDifficulty] = useState<string>("All");
-  const [activeAge, setActiveAge] = useState<AgeGroup | "All">("All");
+  // Held as a bracket id rather than a label so renaming a bracket in the editor
+  // does not silently deselect the customer's current filter.
+  const [activeAge, setActiveAge] = useState<string>("All");
   const [sort, setSort] = useState<"default" | "price-asc" | "price-desc">("default");
   const [ageOpen, setAgeOpen]           = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
@@ -74,11 +82,19 @@ function ShopContent() {
     }
     if (activeCategory !== "All") list = list.filter((p) => p.category === activeCategory);
     if (activeDifficulty !== "All") list = list.filter((p) => p.difficulty === activeDifficulty);
-    if (activeAge !== "All") list = list.filter((p) => matchesAgeGroup(p, activeAge));
+    if (activeAge !== "All") {
+      const bracket = shop.ageBrackets.find((b) => b.id === activeAge);
+      if (bracket) list = list.filter((p) => matchesAgeBracket(p, bracket));
+    }
     if (sort === "price-asc") list = [...list].sort((a, b) => a.price - b.price);
     if (sort === "price-desc") list = [...list].sort((a, b) => b.price - a.price);
     return list;
-  }, [allProducts, search, activeCategory, activeDifficulty, activeAge, sort]);
+  }, [allProducts, search, activeCategory, activeDifficulty, activeAge, sort, shop.ageBrackets]);
+
+  const activeAgeLabel =
+    shop.ageBrackets.find((b) => b.id === activeAge)?.label ?? "";
+  const countText = (filtered.length === 1 ? shop.countOne : shop.countMany)
+    .replace("{n}", String(filtered.length));
 
   const clearAll = () => {
     setSearch("");
@@ -92,15 +108,21 @@ function ShopContent() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-3 sm:mb-10">
-          <span className="text-brand-purple-light font-inter font-semibold text-xs uppercase tracking-[0.2em]">
-            Our Collection
+          <span
+            data-editor-key="shop.eyebrow"
+            className="text-brand-purple-light font-inter font-semibold text-xs uppercase tracking-[0.2em]"
+          >
+            {shop.eyebrow}
           </span>
-          <h1 className="font-playfair font-bold text-2xl sm:text-4xl md:text-5xl text-white mt-1 sm:mt-4">
-            All DIY Kits
+          <h1
+            data-editor-key="shop.title"
+            className="font-playfair font-bold text-2xl sm:text-4xl md:text-5xl text-white mt-1 sm:mt-4"
+          >
+            {shop.title}
           </h1>
           <div className="flex items-center justify-between mt-1 sm:mt-3">
-            <p className="text-white/40 font-inter text-xs sm:text-sm">
-              {loadingProducts ? "Loading…" : `${filtered.length} kit${filtered.length !== 1 ? "s" : ""} found`}
+            <p data-editor-key="shop.count" className="text-white/40 font-inter text-xs sm:text-sm">
+              {loadingProducts ? "Loading…" : countText}
             </p>
             {/* View toggle — portrait only */}
             <div className="flex sm:hidden items-center gap-1 p-1 rounded-lg" style={{ background: "rgba(255,255,255,0.07)" }}>
@@ -128,7 +150,8 @@ function ShopContent() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" size={14} />
             <input
               type="text"
-              placeholder="Search kits..."
+              placeholder={shop.searchPlaceholder}
+              data-editor-key="shop.searchPlaceholder"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full section-card border border-white/8 rounded-xl pl-8 pr-3 py-2 sm:py-3 text-white placeholder:text-brand-dark/40 focus:outline-none focus:border-brand-purple/50 transition-colors text-xs sm:text-sm font-inter"
@@ -154,11 +177,14 @@ function ShopContent() {
               onClick={() => setAgeOpen(!ageOpen)}
               className="w-full flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 text-left hover:bg-white/5 transition-colors"
             >
-              <span className="flex items-center gap-2 text-xs font-semibold font-inter text-white/60 uppercase tracking-widest">
-                Sort by Age Group
+              <span
+                data-editor-key="shop.ageBrackets"
+                className="flex items-center gap-2 text-xs font-semibold font-inter text-white/60 uppercase tracking-widest"
+              >
+                {shop.ageFilterLabel}
                 {activeAge !== "All" && (
                   <span className="px-2 py-0.5 rounded-full bg-brand-yellow text-brand-dark text-[10px] font-bold normal-case tracking-normal">
-                    {activeAge}
+                    {activeAgeLabel}
                   </span>
                 )}
               </span>
@@ -166,17 +192,17 @@ function ShopContent() {
             </button>
             {ageOpen && (
               <div className="flex flex-wrap gap-2 px-4 pb-4 pt-1">
-                {(["All", ...ageGroups] as const).map((age) => (
+                {[{ id: "All", label: shop.allLabel }, ...shop.ageBrackets].map((age) => (
                   <button
-                    key={age}
-                    onClick={() => setActiveAge(age)}
+                    key={age.id}
+                    onClick={() => setActiveAge(age.id)}
                     className={`px-4 py-3 rounded-full text-xs font-semibold border transition-all font-inter ${
-                      activeAge === age
+                      activeAge === age.id
                         ? "border-brand-yellow text-brand-dark bg-brand-yellow"
                         : "border-white/15 text-white/50 hover:border-white/35 hover:text-white"
                     }`}
                   >
-                    {age}
+                    {age.label}
                   </button>
                 ))}
               </div>
@@ -189,8 +215,11 @@ function ShopContent() {
               onClick={() => setCategoryOpen(!categoryOpen)}
               className="w-full flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 text-left hover:bg-white/5 transition-colors"
             >
-              <span className="flex items-center gap-2 text-xs font-semibold font-inter text-white/60 uppercase tracking-widest">
-                Sort by Category
+              <span
+                data-editor-key="shop.categoryFilterLabel"
+                className="flex items-center gap-2 text-xs font-semibold font-inter text-white/60 uppercase tracking-widest"
+              >
+                {shop.categoryFilterLabel}
                 {activeCategory !== "All" && (
                   <span className="px-2 py-0.5 rounded-full bg-brand-yellow text-brand-dark text-[10px] font-bold normal-case tracking-normal">
                     {activeCategory}
@@ -211,7 +240,7 @@ function ShopContent() {
                         : "border-white/15 text-white/50 hover:border-white/35 hover:text-white"
                     }`}
                   >
-                    {cat}
+                    {cat === "All" ? shop.allLabel : cat}
                   </button>
                 ))}
               </div>
@@ -224,8 +253,11 @@ function ShopContent() {
               onClick={() => setDifficultyOpen(!difficultyOpen)}
               className="w-full flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 text-left hover:bg-white/5 transition-colors"
             >
-              <span className="flex items-center gap-2 text-xs font-semibold font-inter text-white/60 uppercase tracking-widest">
-                Sort by Difficulty
+              <span
+                data-editor-key="shop.difficultyFilterLabel"
+                className="flex items-center gap-2 text-xs font-semibold font-inter text-white/60 uppercase tracking-widest"
+              >
+                {shop.difficultyFilterLabel}
                 {activeDifficulty !== "All" && (
                   <span className="px-2 py-0.5 rounded-full bg-brand-purple text-white text-[10px] font-bold normal-case tracking-normal">
                     {activeDifficulty}
@@ -246,7 +278,7 @@ function ShopContent() {
                         : "border-white/10 text-white/35 hover:border-white/30 hover:text-white"
                     }`}
                   >
-                    {d}
+                    {d === "All" ? shop.allLabel : d}
                   </button>
                 ))}
               </div>
@@ -265,12 +297,15 @@ function ShopContent() {
         ) : filtered.length === 0 ? (
           <div className="text-center py-24 text-white/30">
             <Search className="w-14 h-14 text-white/20 mx-auto mb-4" strokeWidth={1.5} />
-            <p className="text-lg font-playfair font-bold text-white/50">No kits match your filters.</p>
+            <p data-editor-key="shop.emptyMessage" className="text-lg font-playfair font-bold text-white/50">
+              {shop.emptyMessage}
+            </p>
             <button
               onClick={clearAll}
+              data-editor-key="shop.clearLabel"
               className="mt-4 text-brand-purple underline text-sm font-inter font-semibold"
             >
-              Clear all filters
+              {shop.clearLabel}
             </button>
           </div>
         ) : (

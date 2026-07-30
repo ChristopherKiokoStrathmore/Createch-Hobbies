@@ -125,4 +125,64 @@ export const DEFAULT_CONFIG: SiteConfig = {
     bgColor:      "rgba(230,160,20,0.22)",
     borderColor:  "rgba(245,190,77,0.45)",
   },
+
+  // NOTE: "17+" was hardcoded and is wrong — the catalogue has 16 products. It is
+  // left as-is here so shipping this change alters nothing on screen; correct it
+  // in the editor (Shop & Product → Hero stats) rather than in code.
+  heroStats: [
+    { value: "17+",  label: "Kit Designs"     },
+    { value: "500+", label: "Happy Builders"  },
+    { value: "1–2",  label: "Day Delivery"    },
+    { value: "4–12", label: "Years Age Range" },
+  ],
+
+  shop: {
+    eyebrow:           "Our Collection",
+    title:             "All DIY Kits",
+    searchPlaceholder: "Search kits...",
+    countOne:          "{n} kit found",
+    countMany:         "{n} kits found",
+    emptyMessage:      "No kits match those filters.",
+    ageFilterLabel:        "Sort by Age Group",
+    categoryFilterLabel:   "Sort by Category",
+    difficultyFilterLabel: "Sort by Difficulty",
+    allLabel:          "All",
+    clearLabel:        "Clear all",
+    // Inclusive year ranges. A product matches when its own range overlaps the
+    // bracket. These reproduce the previous labels; the previous *rules* were
+    // looser (every bracket matched a 6–12 kit), so filtering is now tighter.
+    ageBrackets: [
+      { id: "under7", label: "Under 7",    min: 0,  max: 6  },
+      { id: "7to9",   label: "Ages 7–9",   min: 7,  max: 9  },
+      { id: "10to12", label: "Ages 10–12", min: 10, max: 12 },
+      { id: "12plus", label: "Ages 12+",   min: 12, max: 99 },
+    ],
+  },
+
+  productPage: {
+    whatsInTheBoxTitle: "What's in the Box",
+    whatsInTheBoxItems: [
+      "All kit parts (pre-cut, snap-fit, no glue)",
+      "Step-by-step illustrated instructions",
+      "Science guide explaining how it works",
+      "Quality checked before shipping",
+    ],
+    learnTitle:    "What Your Child Will Learn",
+    priceLabel:    "Price",
+    deliveryLine1: "Delivery across Nairobi",
+    deliveryLine2: "usually 1–2 days",
+    orderHint:     "Review your cart, then send to us on WhatsApp",
+    relatedTitle:  "You Might Also Like",
+    onSaleFormat:  "On sale — save {amount}",
+  },
+
+  productCard: {
+    featuredBadge:   "Popular",
+    saleBadge:       "Sale",
+    outOfStockBadge: "Out of stock",
+    soldOutLabel:    "Sold Out",
+    addToCartLabel:  "Add to Cart",
+    addToCartShort:  "Add",
+    ageSuffix:       "yrs",
+  },
 };
