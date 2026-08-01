@@ -17,12 +17,10 @@ export default function PublicShell({ children }: { children: React.ReactNode })
   const pathname = usePathname();
 
   if (pathname?.startsWith("/admin")) {
-    return (
-      <>
-        <VideoBackground />
-        {children}
-      </>
-    );
+    // No VideoBackground on /admin: the admin shell paints its own opaque
+    // background over it, so the hero video was invisible here yet still
+    // played and unmuted on first click. Drop it entirely.
+    return <>{children}</>;
   }
 
   return (
