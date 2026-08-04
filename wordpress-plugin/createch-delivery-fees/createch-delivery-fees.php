@@ -36,7 +36,7 @@ define( 'CRTCH_ORIGIN_LNG',  36.8030 );
 define( 'CRTCH_BASE_FARE',   50 );        // KES — flat handling/pickup component (boda)
 define( 'CRTCH_PER_KM',      15 );        // KES per road-km (boda)
 define( 'CRTCH_ROAD_FACTOR', 1.4 );       // straight-line → approx driving distance
-define( 'CRTCH_MIN_FEE',     80 );        // KES — nothing cheaper than this
+define( 'CRTCH_MIN_FEE',     150 );       // KES — nothing cheaper than this
 define( 'CRTCH_ROUND_TO',    10 );        // round the fee to the nearest N KES
 
 /**

@@ -7,7 +7,7 @@
 //
 // The list below is a FALLBACK used if that fetch fails. The fees here are
 // generated from the SAME distance formula the plugin uses — boda rates:
-// fee = max(80, 50 + 15 × (haversine_km_from_Sarit × 1.4)), rounded to 10.
+// fee = max(150, 50 + 15 × (haversine_km_from_Sarit × 1.4)), rounded to 10.
 // Regenerate with `node scripts/gen-delivery-zones.mjs` whenever you re-tune the
 // plugin's pricing knobs. WooCommerce still re-prices the order server-side at
 // checkout, so a stale fallback can never let a customer underpay.
@@ -23,42 +23,42 @@ const NAIROBI: { region: string; areas: [string, number][] }[] = [
   {
     region: "CBD & Central",
     areas: [
-      ["CBD (Town)", 130],
-      ["Upper Hill", 140],
+      ["CBD (Town)", 150],
+      ["Upper Hill", 150],
       ["Community", 150],
-      ["Ngara", 120],
-      ["Pangani", 130],
-      ["Ziwani", 140],
-      ["Kariokor", 130],
-      ["Starehe", 120],
+      ["Ngara", 150],
+      ["Pangani", 150],
+      ["Ziwani", 150],
+      ["Kariokor", 150],
+      ["Starehe", 150],
     ],
   },
   {
     region: "Westlands & Parklands",
     areas: [
-      ["Westlands", 80],
-      ["Parklands", 90],
-      ["Highridge", 80],
-      ["Spring Valley", 90],
-      ["Loresho", 120],
-      ["Kitisuru", 120],
-      ["Mountain View", 140],
+      ["Westlands", 150],
+      ["Parklands", 150],
+      ["Highridge", 150],
+      ["Spring Valley", 150],
+      ["Loresho", 150],
+      ["Kitisuru", 150],
+      ["Mountain View", 150],
       ["Kangemi", 180],
-      ["Riverside", 80],
-      ["Muthaiga", 120],
+      ["Riverside", 150],
+      ["Muthaiga", 150],
     ],
   },
   {
     region: "Kilimani, Kileleshwa & Lavington",
     areas: [
-      ["Kilimani", 130],
-      ["Kileleshwa", 120],
-      ["Lavington", 140],
-      ["Hurlingham", 130],
+      ["Kilimani", 150],
+      ["Kileleshwa", 150],
+      ["Lavington", 150],
+      ["Hurlingham", 150],
       ["Woodley", 160],
       ["Adams Arcade", 170],
       ["Ngong Road", 170],
-      ["Dennis Pritt", 130],
+      ["Dennis Pritt", 150],
     ],
   },
   {
@@ -191,8 +191,16 @@ export function zonesByRegion(
   return groups;
 }
 
-/** The delivery fee for a chosen neighbourhood, or 0 if none/unknown. */
+/** Floor price — no delivery is ever charged below this, wherever the order comes from. */
+export const DELIVERY_MIN_FEE = 150;
+
+/**
+ * The delivery fee for a chosen neighbourhood. Returns 0 only while nothing is
+ * selected yet (so checkout shows no fee line). Once an area IS chosen the floor
+ * always applies — an area missing from a drifted zone list must never deliver free.
+ */
 export function zoneFee(zones: DeliveryZone[], county: string, neighbourhood: string): number {
   if (!neighbourhood) return 0;
-  return zones.find((z) => z.county === county && z.neighbourhood === neighbourhood)?.fee ?? 0;
+  const fee = zones.find((z) => z.county === county && z.neighbourhood === neighbourhood)?.fee;
+  return Math.max(DELIVERY_MIN_FEE, fee ?? 0);
 }

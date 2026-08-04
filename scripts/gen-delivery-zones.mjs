@@ -18,7 +18,7 @@ const ORIGIN_LNG  = 36.8030;
 const BASE_FARE   = 50;        // KES — flat handling/pickup component (boda)
 const PER_KM      = 15;        // KES per road-km (boda)
 const ROAD_FACTOR = 1.4;       // straight-line → approx driving distance
-const MIN_FEE     = 80;        // KES — nothing cheaper than this
+const MIN_FEE     = 150;       // KES — nothing cheaper than this
 const ROUND_TO    = 10;        // round the fee to the nearest N KES
 
 // ── Coordinates — mirror crtch_delivery_zones() in the plugin exactly ──
@@ -216,10 +216,18 @@ export function zonesByRegion(
   return groups;
 }
 
-/** The delivery fee for a chosen neighbourhood, or 0 if none/unknown. */
+/** Floor price — no delivery is ever charged below this, wherever the order comes from. */
+export const DELIVERY_MIN_FEE = ${MIN_FEE};
+
+/**
+ * The delivery fee for a chosen neighbourhood. Returns 0 only while nothing is
+ * selected yet (so checkout shows no fee line). Once an area IS chosen the floor
+ * always applies — an area missing from a drifted zone list must never deliver free.
+ */
 export function zoneFee(zones: DeliveryZone[], county: string, neighbourhood: string): number {
   if (!neighbourhood) return 0;
-  return zones.find((z) => z.county === county && z.neighbourhood === neighbourhood)?.fee ?? 0;
+  const fee = zones.find((z) => z.county === county && z.neighbourhood === neighbourhood)?.fee;
+  return Math.max(DELIVERY_MIN_FEE, fee ?? 0);
 }
 `;
 

@@ -30,19 +30,24 @@ at the top of `createch-delivery-fees.php`:
 | Knob | Default | Meaning |
 |------|---------|---------|
 | `CRTCH_ORIGIN_LAT/LNG` | -1.2585, 36.8030 | Sarit Centre pickup point |
-| `CRTCH_BASE_FARE` | 100 | Flat handling/pickup component (KES) |
-| `CRTCH_PER_KM` | 28 | KES per road-km |
+| `CRTCH_BASE_FARE` | 50 | Flat handling/pickup component (KES) |
+| `CRTCH_PER_KM` | 15 | KES per road-km (boda) |
 | `CRTCH_ROAD_FACTOR` | 1.4 | Straight-line → approx driving distance |
-| `CRTCH_MIN_FEE` | 150 | Floor price (KES) |
+| `CRTCH_MIN_FEE` | 150 | Floor price (KES) — nothing is ever cheaper |
 | `CRTCH_ROUND_TO` | 10 | Round fee to nearest N KES |
 
-Rough resulting fees: Westlands ~150, CBD/Kilimani ~240–250, South B ~300,
-Eastlands ~350–450, Karen/Embakasi ~580–600, Ruai ~950. **Tune the knobs** to hit
-your real economics — raise `PER_KM` to punish distance harder, raise `BASE_FARE`
-to lift the whole curve.
+Rough resulting fees: Westlands/CBD/Kilimani/Lavington **150** (the floor), South B
+~200, South C ~220, Buruburu ~240, Umoja ~270, Karen ~310, Kayole ~320, Githurai
+~350, Utawala ~430, Ruai ~510. **Tune the knobs** to hit your real economics — raise
+`PER_KM` to punish distance harder, raise `BASE_FARE` to lift the whole curve.
+
+Note the floor does real work at these rates: `BASE_FARE + PER_KM × ROAD_FACTOR`
+only reaches 150 at about **4.8 km** straight-line from Sarit, so every
+neighbourhood inside that radius — most of central and western Nairobi — pays
+exactly `CRTCH_MIN_FEE`. Distance only starts to matter beyond it.
 
 Neighbourhood coordinates are approximate (~1 km). A 1 km error only moves a fee by
-~`PER_KM × ROAD_FACTOR` ≈ 40 KES, and every coordinate is editable — nudge one if a
+~`PER_KM × ROAD_FACTOR` ≈ 21 KES, and every coordinate is editable — nudge one if a
 specific area looks mispriced.
 
 > **Want real driving distance/time (exact Uber emulation)?** Swap
