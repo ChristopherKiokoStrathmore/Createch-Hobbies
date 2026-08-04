@@ -8,10 +8,19 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const WOO_URL    = "https://wp.createch-hobbies.co.ke";
-const WOO_KEY    = "ck_3dcf017629df7919029c817d1f0c65a1fb3d0edb";
-const WOO_SECRET = "cs_8ece198ac001c93465ba1ec9cfccebab3f6734e4";
-const SITE_URL   = "https://createch-hobbies.co.ke";
+// Credentials come from the environment — NEVER hardcode them here. This file is
+// tracked in a public repo, so a literal key is published the moment it is
+// committed. Load them from .env.local (which is gitignored):
+//   WOO_URL=... WOO_KEY=... WOO_SECRET=... node scripts/upload-product-images.mjs
+const WOO_URL    = process.env.WOO_URL    ?? "https://wp.createch-hobbies.co.ke";
+const WOO_KEY    = process.env.WOO_KEY    ?? "";
+const WOO_SECRET = process.env.WOO_SECRET ?? "";
+const SITE_URL   = process.env.SITE_URL   ?? "https://createch-hobbies.co.ke";
+
+if (!WOO_KEY || !WOO_SECRET) {
+  console.error("Missing WOO_KEY / WOO_SECRET. Set them in the environment before running.");
+  process.exit(1);
+}
 
 const IMAGES_DIR = path.join(__dirname, "..", "public", "images", "products");
 
