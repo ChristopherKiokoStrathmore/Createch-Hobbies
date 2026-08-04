@@ -40,8 +40,49 @@ function stripHtml(html: string): string {
     .trim();
 }
 
-function getAttr(attrs: WooAttribute[], name: string): string[] {
-  return attrs.find((a) => a.name.toLowerCase() === name.toLowerCase())?.options ?? [];
+// Accepts aliases: the first name that actually carries options wins. Renaming
+// an attribute in the Woo admin (e.g. "Difficulty" → "Level") then never blanks
+// the storefront, and old and new products can coexist mid-migration.
+function getAttr(attrs: WooAttribute[], ...names: string[]): string[] {
+  for (const name of names) {
+    const options = attrs.find((a) => a.name.toLowerCase() === name.toLowerCase())?.options;
+    if (options?.length) return options;
+  }
+  return [];
+}
+
+// ─── Editorial taxonomy: Level and Age Group ───────────────────────────────
+//
+// Both are editable from the WooCommerce admin with no deploy. WooCommerce
+// offers two places to model them, so we read both: ATTRIBUTES first (the
+// correct home — that is what filtering and variations expect), then CATEGORY
+// terms as a fallback for a store that modelled them as categories instead.
+
+const LEVEL_ATTR_NAMES = ["Level", "Difficulty", "Skill Level"];
+const AGE_ATTR_NAMES   = ["Age Group", "Age Range", "Age"];
+
+// Category terms that DESCRIBE a product rather than group it. These must never
+// win mapCategory(), or a race car also filed under "Beginner" would show up in
+// the shop under the category "Beginner" instead of "Vehicles".
+const LEVEL_TERMS = new Set(["beginner", "intermediate", "advanced", "expert"]);
+const AGE_TERM    = /^\s*(?:ages?\s*)?\d{1,2}\s*(?:[–—-]|\+|to)\s*\d{0,2}\s*(?:yrs?|years?)?\s*$/i;
+
+const isLevelTerm       = (name: string) => LEVEL_TERMS.has(name.trim().toLowerCase());
+const isAgeTerm         = (name: string) => AGE_TERM.test(name);
+const isDescriptiveTerm = (name: string) => isLevelTerm(name) || isAgeTerm(name);
+
+/** Level from attributes, else from a descriptive category term, else null. */
+function rawDifficulty(p: WooProduct): Difficulty | null {
+  const fromAttr = getAttr(p.attributes, ...LEVEL_ATTR_NAMES)[0];
+  if (fromAttr) return fromAttr;
+  return p.categories.find((c) => isLevelTerm(c.name))?.name ?? null;
+}
+
+/** Age group from attributes, else from a descriptive category term, else null. */
+function rawAgeRange(p: WooProduct): string | null {
+  const fromAttr = getAttr(p.attributes, ...AGE_ATTR_NAMES)[0];
+  if (fromAttr) return fromAttr;
+  return p.categories.find((c) => isAgeTerm(c.name))?.name ?? null;
 }
 
 const CATEGORY_MAP: Record<string, Category> = {
@@ -68,11 +109,13 @@ const NAME_CATEGORY_KEYWORDS: Array<{ pattern: RegExp; category: Category }> = [
 // normalised to canonical capitalisation; keyword inference only kicks in for
 // uncategorised products.
 function mapCategory(cats: WooCategory[], name?: string): Category {
-  for (const c of cats) {
+  // Level/age terms are read as editorial fields, never as the browse category.
+  const browsable = cats.filter((c) => !isDescriptiveTerm(c.name));
+  for (const c of browsable) {
     const canonical = CATEGORY_MAP[c.name.toLowerCase()] ?? CATEGORY_MAP[c.slug];
     if (canonical) return canonical;
   }
-  for (const c of cats) {
+  for (const c of browsable) {
     if (c.slug !== "uncategorized") return c.name;
   }
   if (name) {
@@ -83,17 +126,16 @@ function mapCategory(cats: WooCategory[], name?: string): Category {
   return "Other";
 }
 
-function mapDifficulty(attrs: WooAttribute[]): Difficulty {
-  return getAttr(attrs, "Difficulty")[0] ?? "Beginner";
+function mapDifficulty(p: WooProduct): Difficulty {
+  return rawDifficulty(p) ?? "Beginner";
 }
 
-function mapAgeRange(attrs: WooAttribute[]): string {
-  return getAttr(attrs, "Age Range")[0] ?? "6–12";
+function mapAgeRange(p: WooProduct): string {
+  return rawAgeRange(p) ?? "6–12";
 }
 
 function mapWhatYouLearn(attrs: WooAttribute[]): string[] {
-  const learn = getAttr(attrs, "What You Learn");
-  return learn.length ? learn : getAttr(attrs, "Skills");
+  return getAttr(attrs, "What You Learn", "Skills");
 }
 
 function mapPricing(p: WooProduct): { price: number; regularPrice: number; onSale: boolean } {
@@ -108,8 +150,8 @@ export function mapWooProduct(p: WooProduct): Product {
     name:         p.name,
     slug:         p.slug,
     category:     mapCategory(p.categories, p.name),
-    ageRange:     mapAgeRange(p.attributes),
-    difficulty:   mapDifficulty(p.attributes),
+    ageRange:     mapAgeRange(p),
+    difficulty:   mapDifficulty(p),
     ...mapPricing(p),
     description:  stripHtml(p.short_description || p.description),
     whatYouLearn: mapWhatYouLearn(p.attributes),
@@ -135,12 +177,13 @@ export interface WooProductRaw extends Omit<Product, 'category' | 'ageRange' | '
 
 export function mapWooProductRaw(p: WooProduct): WooProductRaw {
   let category: Category | null = null;
-  for (const c of p.categories) {
+  const browsable = p.categories.filter((c) => !isDescriptiveTerm(c.name));
+  for (const c of browsable) {
     const canonical = CATEGORY_MAP[c.name.toLowerCase()] ?? CATEGORY_MAP[c.slug];
     if (canonical) { category = canonical; break; }
   }
   if (!category) {
-    const real = p.categories.find((c) => c.slug !== "uncategorized");
+    const real = browsable.find((c) => c.slug !== "uncategorized");
     if (real) category = real.name;
   }
   if (!category) {
@@ -149,16 +192,13 @@ export function mapWooProductRaw(p: WooProduct): WooProductRaw {
     }
   }
 
-  const ageRaw  = getAttr(p.attributes, "Age Range")[0];
-  const diffRaw = getAttr(p.attributes, "Difficulty")[0];
-
   return {
     id:           String(p.id),
     name:         p.name,
     slug:         p.slug,
     category,
-    ageRange:     ageRaw  ?? null,
-    difficulty:   (diffRaw as Difficulty) ?? null,
+    ageRange:     rawAgeRange(p),
+    difficulty:   rawDifficulty(p),
     ...mapPricing(p),
     description:  stripHtml(p.short_description || p.description),
     whatYouLearn: mapWhatYouLearn(p.attributes),
