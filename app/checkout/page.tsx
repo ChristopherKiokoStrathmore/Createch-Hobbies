@@ -5,12 +5,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ShoppingBag, Smartphone, Loader2, AlertCircle,
-  ChevronLeft, CreditCard, CheckCircle2, Banknote, Tag, X, MessageCircle,
+  ChevronLeft, CreditCard, CheckCircle2, Banknote, Tag, X,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useCustomerAuth } from "@/context/CustomerAuthContext";
 import { formatPrice } from "@/lib/utils";
-import { whatsappOrderLink } from "@/lib/whatsapp";
 import { SELECT_CLASS } from "@/lib/form-classes";
 import {
   DELIVERY_ZONES,
@@ -33,7 +32,7 @@ import {
   type WooCartSnapshot,
 } from "@/lib/woo-store";
 
-type Step = "form" | "pending" | "paid" | "failed" | "cod-placed" | "whatsapp-placed";
+type Step = "form" | "pending" | "paid" | "failed" | "cod-placed";
 
 // M-Pesa confirmation polling. The STK prompt itself lives ~60s on the phone;
 // poll a little past that so a slow PIN entry still resolves on-screen.
@@ -123,16 +122,11 @@ export default function CheckoutPage() {
   const [couponBusy, setCouponBusy] = useState(false);
   const sessionRef = useRef<{ cartToken: string; nonce: string } | null>(null);
 
-  // Payment selection is a two-level choice: the top card (M-Pesa, Card or
-  // WhatsApp), and — under M-Pesa — whether to Pay Now (STK push) or Pay on
-  // Delivery (no charge now). These resolve to an actual WooCommerce gateway id
-  // below.
-  const [payGroup, setPayGroup]   = useState<"mpesa" | "card" | "whatsapp">("mpesa");
+  // Payment selection is a two-level choice: the top card (M-Pesa or Card),
+  // and — under M-Pesa — whether to Pay Now (STK push) or Pay on Delivery (no
+  // charge now). These resolve to an actual WooCommerce gateway id below.
+  const [payGroup, setPayGroup]   = useState<"mpesa" | "card">("mpesa");
   const [mpesaMode, setMpesaMode] = useState<"now" | "delivery">("now");
-
-  // Set once a WhatsApp order has been created, so the confirmation screen can
-  // offer the pre-filled chat draft.
-  const [whatsappUrl, setWhatsappUrl] = useState("");
 
   const [form, setForm] = useState({
     name:          "",
@@ -332,15 +326,10 @@ export default function CheckoutPage() {
   const mpesaAvailable = hasStk || hasCod;
 
   // Resolve the top-level choice to the WooCommerce gateway that will record
-  // the order. WhatsApp is not a gateway of its own: the order is still created
-  // in WooCommerce before the chat starts, so it rides on Cash on Delivery —
-  // the one gateway that books an order without taking money. That is why the
-  // WhatsApp tile only appears when COD is enabled in wp-admin.
+  // the order.
   const resolved =
     payGroup === "card"
       ? methods.find((m) => m.kind === "card")
-      : payGroup === "whatsapp"
-      ? methods.find((m) => m.kind === "cod")
       : mpesaMode === "now"
       ? methods.find((m) => m.kind === "mpesa")
       : methods.find((m) => m.kind === "cod");
@@ -458,12 +447,6 @@ export default function CheckoutPage() {
             resolved.kind === "mpesa"
               ? [{ key: "mpesa_phone", value: normalisePhone(form.mpesa_phone) }]
               : [],
-          // A WhatsApp order books through the COD gateway, so without this the
-          // order would be indistinguishable from a genuine pay-at-the-door one
-          // in wp-admin and in the createch-order-alerts notification.
-          ...(payGroup === "whatsapp"
-            ? { customerNote: "Placed via WhatsApp — payment to be arranged in chat." }
-            : {}),
         },
         token2,
         nonce2
@@ -478,35 +461,6 @@ export default function CheckoutPage() {
           headers: { "Content-Type": "application/json" },
           body:    JSON.stringify({ orderId: result.orderId, orderKey: result.orderKey }),
         }).catch(() => {});
-      }
-
-      if (payGroup === "whatsapp") {
-        // The order exists in WooCommerce now, so the cart is safe to clear.
-        // The chat draft is only a hand-off: if the customer never opens
-        // WhatsApp the order is still on the books and can be chased.
-        setWhatsappUrl(
-          whatsappOrderLink({
-            orderId:       result.orderId,
-            lines: state.items.map((i) => ({
-              name:     i.name,
-              quantity: i.quantity,
-              total:    i.price * i.quantity,
-            })),
-            itemsSubtotal: itemsSubtotal,
-            discount,
-            deliveryFee,
-            total:         displayTotal,
-            customerName:  form.name.trim(),
-            phone:         form.phone.trim(),
-            area:          form.neighbourhood,
-            address:       form.address.trim(),
-          })
-        );
-        dispatch({ type: "CLEAR_CART" });
-        setPaidAmount(displayTotal);
-        setPendingOrderId(result.orderId);
-        setStep("whatsapp-placed");
-        return;
       }
 
       if (resolved.kind === "card") {
@@ -638,60 +592,6 @@ export default function CheckoutPage() {
     );
   }
 
-  /* ─── WhatsApp hand-off screen ─── */
-  if (step === "whatsapp-placed") {
-    return (
-      <main className="min-h-screen bg-brand-dark flex items-center justify-center px-4 pt-24 pb-16">
-        <div className="max-w-md w-full text-center space-y-6">
-          <div className="mx-auto w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
-            <CheckCircle2 size={32} className="text-green-400" />
-          </div>
-          <h2 className="font-playfair font-bold text-3xl text-white">Order Placed!</h2>
-          <p className="text-white/60 font-inter text-sm leading-relaxed">
-            Your order is saved and we can already see it. Tap below to open
-            WhatsApp — the message is written for you, so just hit send and we
-            will confirm delivery and payment in the chat.
-          </p>
-
-          <div className="section-card rounded-2xl p-5 border border-white/5 text-left space-y-2">
-            {pendingOrderId && (
-              <div className="flex items-center justify-between">
-                <span className="text-white/50 font-inter text-xs uppercase tracking-widest">Order</span>
-                <span className="text-white font-inter font-semibold text-sm">#{pendingOrderId}</span>
-              </div>
-            )}
-            {paidAmount > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-white/50 font-inter text-xs uppercase tracking-widest">Total</span>
-                <span className="text-white font-inter font-semibold text-sm">{formatPrice(paidAmount)}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Deliberately a link the customer taps rather than an automatic
-              window.open — the await above breaks the click gesture, so a popup
-              blocker would eat it, and navigating away would hide the order
-              number they may still need. */}
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-full font-inter font-bold text-base active:scale-[0.98] transition-all"
-          >
-            <MessageCircle size={18} />
-            Open WhatsApp
-          </a>
-
-          <Link
-            href="/shop"
-            className="block text-center text-white/30 hover:text-white font-inter text-sm underline underline-offset-4 transition-colors"
-          >
-            Continue Shopping
-          </Link>
-        </div>
-      </main>
-    );
-  }
 
   /* ─── M-Pesa pending screen ─── */
   if (step === "pending") {
@@ -771,13 +671,16 @@ export default function CheckoutPage() {
             {/* Guests only — signing in fills the delivery details below and
                 files the order under My Orders. Checkout still works without it. */}
             {!customer && (
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-5 py-4">
-                <p className="text-white/50 font-inter text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-yellow/30 bg-brand-dark/80 backdrop-blur-sm px-5 py-4">
+                {/* Solid dark panel rather than bg-white/5: this sits over the
+                    background video, and a translucent panel left the text
+                    unreadable whenever a light frame was showing. */}
+                <p className="text-white font-playfair font-semibold text-base">
                   Have an account? Sign in to use your saved details.
                 </p>
                 <Link
                   href="/account/login?next=/checkout"
-                  className="font-inter text-sm font-semibold text-brand-yellow hover:underline underline-offset-4 whitespace-nowrap"
+                  className="font-inter text-sm font-bold bg-brand-yellow text-brand-dark px-5 py-2 rounded-full hover:brightness-110 active:scale-[0.98] transition-all whitespace-nowrap"
                 >
                   Sign in
                 </Link>
@@ -858,22 +761,6 @@ export default function CheckoutPage() {
                     </div>
                   )}
 
-                  {/* Complete on WhatsApp — books the order through the same
-                      COD gateway, then hands off to chat, so it only shows when
-                      Cash on Delivery is enabled in wp-admin. */}
-                  {hasCod && (
-                    <button
-                      type="button"
-                      onClick={() => setPayGroup("whatsapp")}
-                      className={`${payTileClass(payGroup === "whatsapp")} mt-3 w-full`}
-                    >
-                      <MessageCircle size={18} />
-                      <span className="font-inter font-semibold text-xs">Complete on WhatsApp</span>
-                      <span className="font-inter text-[10px] opacity-60 leading-tight">
-                        We confirm your order and payment in chat
-                      </span>
-                    </button>
-                  )}
                 </>
               )}
             </div>
@@ -964,7 +851,7 @@ export default function CheckoutPage() {
                     ))}
                   </select>
                   <p className="text-white/25 text-xs font-inter mt-1.5">
-                    Delivery is priced by distance from our Westlands (Sarit Centre) hub — shown in the order summary.
+                    Delivery is priced by distance from our Westlands hub and shown in the order summary.
                   </p>
                 </div>
 
@@ -1021,13 +908,6 @@ export default function CheckoutPage() {
                   <Loader2 size={18} className="animate-spin" />
                   Processing…
                 </>
-              ) : payGroup === "whatsapp" ? (
-                // Checked before `kind`, because a WhatsApp order resolves to
-                // the COD gateway and would otherwise read "on Delivery".
-                <>
-                  <MessageCircle size={18} />
-                  Place Order — {formatPrice(displayTotal)}
-                </>
               ) : resolved?.kind === "cod" ? (
                 <>
                   {KIND_META.cod.icon}
@@ -1047,9 +927,7 @@ export default function CheckoutPage() {
             </button>
 
             <p className="text-white/25 text-xs text-center font-inter">
-              {payGroup === "whatsapp"
-                ? "We will save your order, then open WhatsApp with the details ready to send."
-                : resolved?.kind === "mpesa"
+              {resolved?.kind === "mpesa"
                 ? "You will receive an M-Pesa STK push on your phone to confirm."
                 : resolved?.kind === "card"
                 ? "You will be redirected to DPO Pay's secure card payment page."
