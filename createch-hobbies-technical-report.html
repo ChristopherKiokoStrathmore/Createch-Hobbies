@@ -1153,7 +1153,7 @@
     <li>Write 1–3 sentences in the <strong>Short Description</strong> box (not the main description)</li>
     <li>Under <strong>Product Data → General</strong>, set <strong>Regular Price</strong> in KES (numbers only)</li>
     <li>Under <strong>Product Data → Inventory</strong>, set Stock Status to <strong>In Stock</strong></li>
-    <li>Under <strong>Product Data → Attributes</strong>, add <code>Age Range</code>, <code>Difficulty</code>, and <code>What You Learn</code></li>
+    <li>Under <strong>Product Data → Attributes</strong>, add <code>Level</code>, <code>Age Group</code>, and <code>What You Learn</code> (see <em>Editing Product Tags</em> below)</li>
     <li>In the right sidebar under <strong>Product Categories</strong>, assign the correct category</li>
     <li>Upload images under <strong>Product Gallery</strong> in the right sidebar (square, 800×800px+)</li>
     <li>Tick <strong>Featured</strong> if it should appear on the homepage</li>
@@ -1167,6 +1167,145 @@
     <li>To change stock: go to <strong>Product Data → Inventory</strong>, set Stock Status</li>
     <li>Click <strong>Update</strong>. Changes are live on the store within 1 minute</li>
   </ol>
+
+  <h3>Editing Product Tags — Level and Age Group</h3>
+  <p>
+    <strong>Level</strong> (Beginner / Intermediate / Advanced) and <strong>Age Group</strong>
+    (e.g. <code>8–12</code>) are the two badges shown on every product card and on the product
+    page. Both are fully editable from WooCommerce with no developer involvement. Level also
+    drives the <em>Difficulty</em> filter on the shop page.
+  </p>
+
+  <p><strong>Step 1 — create each tag once (global attribute):</strong></p>
+  <ol class="steps">
+    <li>Go to <strong>Products → Attributes</strong></li>
+    <li>In <strong>Name</strong>, type <code>Level</code>, then click <strong>Add attribute</strong></li>
+    <li>Click <strong>Configure terms</strong> next to Level, and add the values you want:
+        <code>Beginner</code>, <code>Intermediate</code>, <code>Advanced</code></li>
+    <li>Repeat for a second attribute named <code>Age Group</code>, with terms like
+        <code>4–7</code>, <code>6–12</code>, <code>8–12</code>, <code>10–14</code></li>
+  </ol>
+
+  <p><strong>Step 2 — apply them to a product:</strong></p>
+  <ol class="steps">
+    <li>Open the product, then <strong>Product Data → Attributes</strong></li>
+    <li>Choose <code>Level</code> from the dropdown and click <strong>Add</strong></li>
+    <li>Pick the value (e.g. <strong>Beginner</strong>) in the <strong>Value(s)</strong> box</li>
+    <li>Tick <strong>Visible on the product page</strong></li>
+    <li>Repeat for <code>Age Group</code>, then click <strong>Save attributes</strong> and <strong>Update</strong></li>
+    <li>The new badges appear on the store within 1 minute</li>
+  </ol>
+
+  <div class="note">
+    <strong>You can rename these safely.</strong> The store accepts several names for the same
+    tag, so nothing breaks mid-migration:
+    <ul style="margin: 8px 0 0 16px; color:#2c5282;">
+      <li style="margin-bottom:3px;"><strong>Level</strong> also reads from <code>Difficulty</code> or <code>Skill Level</code></li>
+      <li style="margin-bottom:3px;"><strong>Age Group</strong> also reads from <code>Age Range</code> or <code>Age</code></li>
+      <li>If a product has none set, the store falls back to <strong>Beginner</strong> and <strong>6–12</strong></li>
+    </ul>
+  </div>
+
+  <div class="note">
+    <strong>Attributes, not categories.</strong> You may also assign Level or Age Group as
+    <em>categories</em> (e.g. a "Beginner" category) and the store will still read them — but
+    attributes are the correct place. Categories are for <em>grouping</em> (Vehicles, Robots);
+    the store deliberately ignores level/age category terms when deciding which shop category a
+    product belongs to, so a race car tagged "Beginner" still files under Vehicles.
+  </div>
+
+  <h3>Delivery Fees and the Floor Price</h3>
+  <p>
+    Delivery is priced by distance from the Sarit Centre pickup point, boda rates, and is
+    calculated by the <code>createch-delivery-fees</code> plugin — the single source of truth.
+    The customer's browser only ever sends a neighbourhood <em>name</em>, never a price, so
+    delivery cannot be zeroed out from the client.
+  </p>
+  <table>
+    <thead><tr><th>Setting</th><th>Current value</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>CRTCH_BASE_FARE</td><td>50</td><td>Flat pickup/handling component (KES)</td></tr>
+      <tr><td>CRTCH_PER_KM</td><td>15</td><td>KES per road-kilometre</td></tr>
+      <tr><td>CRTCH_ROAD_FACTOR</td><td>1.4</td><td>Straight-line distance → approximate driving distance</td></tr>
+      <tr><td>CRTCH_MIN_FEE</td><td><strong>150</strong></td><td><strong>Floor price — no delivery is ever cheaper, anywhere</strong></td></tr>
+      <tr><td>CRTCH_ROUND_TO</td><td>10</td><td>Round the fee to the nearest 10 KES</td></tr>
+    </tbody>
+  </table>
+  <p>
+    At these rates the floor does real work: the distance formula only reaches 150 KES at about
+    <strong>4.8 km</strong> from Sarit Centre, so every neighbourhood inside that radius — most of
+    central and western Nairobi — pays exactly 150. Beyond it, distance takes over: South B ~200,
+    Buruburu ~240, Karen ~310, Githurai ~350, Utawala ~430, Ruai ~510.
+  </p>
+  <div class="note">
+    <strong>Changing the floor price later requires all three files to change together</strong>,
+    or checkout and WooCommerce will quote different amounts for the same order:
+    <ul style="margin: 8px 0 0 16px; color:#2c5282;">
+      <li style="margin-bottom:3px;"><code>wordpress-plugin/createch-delivery-fees/createch-delivery-fees.php</code> — <code>CRTCH_MIN_FEE</code></li>
+      <li style="margin-bottom:3px;"><code>scripts/gen-delivery-zones.mjs</code> — <code>MIN_FEE</code></li>
+      <li><code>data/delivery-zones.ts</code> — regenerate with <code>node scripts/gen-delivery-zones.mjs</code>, never hand-edit</li>
+    </ul>
+  </div>
+
+  <h3>Product Web Addresses (Slugs) and Instant Updates</h3>
+  <p>
+    Every product page lives at <span class="url">createch-hobbies.co.ke/shop/&lt;slug&gt;</span>,
+    where the slug comes straight from WooCommerce's <strong>Permalink</strong> field. Change it in
+    WooCommerce and the store follows — no code change.
+  </p>
+  <ol class="steps">
+    <li>Open the product in WooCommerce</li>
+    <li>Under the product title click <strong>Edit</strong> next to the permalink</li>
+    <li>Use lowercase words separated by hyphens (e.g. <code>solar-powered-fan</code>)</li>
+    <li>Click <strong>Update</strong></li>
+  </ol>
+  <div class="note">
+    <strong>Changing a slug breaks the old link.</strong> Anyone holding the previous address
+    (a shared WhatsApp link, a Google result) will get a "not found" page. Avoid renaming slugs
+    for products you have already advertised.
+  </div>
+
+  <p><strong>Making edits appear instantly instead of within a minute:</strong></p>
+  <ol class="steps">
+    <li>Pick a long random password — this is the webhook secret</li>
+    <li>In Vercel → <strong>Settings → Environment Variables</strong>, add
+        <code>WC_WEBHOOK_SECRET</code> with that value, then redeploy</li>
+    <li>In WooCommerce go to <strong>Settings → Advanced → Webhooks → Add webhook</strong></li>
+    <li>Set <strong>Status</strong> Active, <strong>Topic</strong> <code>Product updated</code>,
+        <strong>Delivery URL</strong> <span class="url">https://createch-hobbies.co.ke/api/revalidate</span>,
+        and <strong>Secret</strong> to the same value</li>
+    <li>Save, then repeat for the <code>Product created</code>, <code>Product deleted</code>, and
+        <code>Product restored</code> topics</li>
+  </ol>
+  <div class="note">
+    Until <code>WC_WEBHOOK_SECRET</code> is set, the store still updates — just on its normal
+    60-second refresh instead of instantly. The webhook is a speed improvement, not a requirement.
+  </div>
+
+  <h3>Why the Store Feels Slower After Signing In</h3>
+  <p>
+    Signed-out pages are pre-rendered and served from Vercel's edge cache, so they are fast
+    everywhere. The moment a customer signs in, every full page load additionally asks WordPress
+    "who is this?" — an authenticated request that <em>cannot</em> be cached, because the answer
+    differs per customer. That request boots WordPress from scratch each time, which is where the
+    delay comes from. It is the sign-in check that is slow, not the shop.
+  </p>
+  <table>
+    <thead><tr><th>Option</th><th>Effect</th><th>Effort</th></tr></thead>
+    <tbody>
+      <tr><td>Enable object caching on the WordPress host (Redis or Memcached)</td><td>Largest single win — cuts WordPress boot time on every authenticated request</td><td>Hosting change, no code</td></tr>
+      <tr><td>Move WordPress to a faster PHP tier / better host</td><td>Proportional improvement to every request</td><td>Hosting change, no code</td></tr>
+      <tr><td>Remember the signed-in name in the browser for instant navbar render</td><td>Removes the visible "flash" on load; the underlying request still happens</td><td>Small code change</td></tr>
+      <tr><td>Upgrade PHP to 8.2+ if the host is on an older version</td><td>Typically 20–40% faster WordPress boot</td><td>Hosting change, no code</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <strong>Measure before spending money.</strong> Open the browser's
+    <strong>Network</strong> tab while signed in and look at the timing for the
+    <code>/api/account</code> request. If it is consistently above ~400&nbsp;ms, the WordPress host
+    is the bottleneck and object caching is the fix. If it is fast, the slowness is elsewhere and
+    a hosting upgrade would be wasted money.
+  </div>
 
   <hr />
 
@@ -1186,7 +1325,7 @@
     </div>
     <div class="qa-item">
       <div class="q">Can I add a completely new category that does not currently exist?</div>
-      <div class="a">Not without a developer. Adding a brand new category requires a small code change to register the new name. It takes less than 30 minutes. Assigning products to the six existing categories is fully self-service.</div>
+      <div class="a">Yes, self-service — no developer needed. Create it under Products → Categories and assign products to it. The new category name flows straight through to the shop and appears as its own filter. The original six (Vehicles, Machines, Science, Space, Robots, Architecture) are listed first in that fixed order; any category you add appears after them, alphabetically.</div>
     </div>
     <div class="qa-item">
       <div class="q">The website is down. What do I check first?</div>
@@ -1208,6 +1347,8 @@
       <tr><td>NEXT_PUBLIC_API_URL</td><td>Vercel</td><td>Django backend URL on Railway</td></tr>
       <tr><td>IPAY_VENDOR_ID</td><td>Vercel</td><td>iPay Africa vendor ID from dashboard</td></tr>
       <tr><td>IPAY_DATAKEY</td><td>Vercel</td><td>iPay Africa datakey (secret); used to sign the MD5 hash. Never share this</td></tr>
+      <tr><td>NEXT_PUBLIC_WOO_STORE_URL</td><td>Vercel</td><td>Public WooCommerce store URL used in customer-facing links</td></tr>
+      <tr><td>WC_WEBHOOK_SECRET</td><td>Vercel</td><td>Shared secret for WooCommerce webhooks hitting /api/revalidate. Optional — without it the store refreshes on its normal 60-second cycle instead of instantly</td></tr>
     </tbody>
   </table>
 
@@ -1216,7 +1357,9 @@
     <ul class="checklist">
       <li>Never share the ADMIN_PIN or any API keys publicly or over WhatsApp</li>
       <li>Always enter prices as plain numbers; no KES symbol or commas</li>
-      <li>Attribute names in WooCommerce are case-sensitive (Age Range, Difficulty, What You Learn)</li>
+      <li>Product tag attributes are Level, Age Group, and What You Learn (the older names Difficulty and Age Range still work)</li>
+      <li>Minimum delivery charge is 150 KES anywhere; changing it means updating all three files listed above</li>
+      <li>Never put an API key directly in a code file — the GitHub repository is public. Keys belong in Vercel environment variables only</li>
       <li>Payment methods at checkout: M-Pesa, Airtel Money, Visa/Mastercard</li>
       <li>M-Pesa till number: 3434039 (Business Short Code: 4575237)</li>
       <li>A backup of the original WordPress files is at <code>/createch-hobbies.co.ke/</code> on cPanel</li>
