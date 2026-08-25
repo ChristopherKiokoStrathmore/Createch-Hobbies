@@ -49,7 +49,7 @@ export default function WhyCreatech() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.08 }}
-              className="section-card rounded-2xl p-3 sm:p-7 border border-white/5 hover:border-brand-purple/20 transition-all duration-300 group card-glow"
+              className="feedback-card rounded-2xl p-3 sm:p-7 border hover:border-brand-purple/30 transition-all duration-300 group card-glow"
             >
               <div className="mb-2 sm:mb-5">{ITEM_ICONS[i]}</div>
               <h3 className="font-playfair font-bold text-white text-xs sm:text-lg mb-1 sm:mb-3">{item.title}</h3>

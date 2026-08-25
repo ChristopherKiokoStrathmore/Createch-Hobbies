@@ -1,12 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo, type ReactNode } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import {
-  Sprout, Zap, Rocket,
-  Tag, Car, Cog, FlaskConical, Bot, Building2, Gift, Puzzle,
-} from "lucide-react";
-import { orderCategories, type Product } from "@/data/products";
+import { Sprout, Zap, Rocket, Tag, Gift } from "lucide-react";
+import { orderCategories, productCategories, type Product } from "@/data/products";
+import { categoryVisual } from "@/lib/category-visuals";
 import { formatPrice } from "@/lib/utils";
 import { whatsappGeneralLink } from "@/lib/whatsapp";
 
@@ -39,17 +37,6 @@ const budgetGroups = [
   { label: "KES 1,000 – 1,500",  icon: <Tag className={GRP_ICON} strokeWidth={SW} />, minPrice: 1000, maxPrice: 1500 },
   { label: "KES 1,500+",         icon: <Tag className={GRP_ICON} strokeWidth={SW} />, minPrice: 1501 },
 ];
-
-// Bespoke icons for the known categories; anything new from WooCommerce gets
-// the puzzle icon so it still shows up here without a code change.
-const interestIcons: Record<string, ReactNode> = {
-  Vehicles:     <Car          className={GRP_ICON} strokeWidth={SW} />,
-  Machines:     <Cog          className={GRP_ICON} strokeWidth={SW} />,
-  Science:      <FlaskConical className={GRP_ICON} strokeWidth={SW} />,
-  Space:        <Rocket       className={GRP_ICON} strokeWidth={SW} />,
-  Robots:       <Bot          className={GRP_ICON} strokeWidth={SW} />,
-  Architecture: <Building2    className={GRP_ICON} strokeWidth={SW} />,
-};
 
 const cardStyle = {
   background: "rgba(255,255,255,0.82)",
@@ -87,11 +74,14 @@ export default function GiftGuidePage() {
 
   const interestGroups = useMemo(
     () =>
-      orderCategories(products.map((p) => p.category)).map((category) => ({
-        label:    category,
-        category,
-        icon:     interestIcons[category] ?? <Puzzle className={GRP_ICON} strokeWidth={SW} />,
-      })),
+      orderCategories(products.flatMap((p) => productCategories(p))).map((category, i) => {
+        const { Icon } = categoryVisual(category, i);
+        return {
+          label:    category,
+          category,
+          icon:     <Icon className={GRP_ICON} strokeWidth={SW} />,
+        };
+      }),
     [products],
   );
 
@@ -151,7 +141,7 @@ export default function GiftGuidePage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {interestGroups.map((group) => {
-              const kits = products.filter((p) => p.category === group.category);
+              const kits = products.filter((p) => productCategories(p).includes(group.category));
               if (kits.length === 0) return null;
               return (
                 <div key={group.label} className="rounded-2xl p-6 transition-colors" style={cardStyle}>

@@ -112,6 +112,15 @@
     border-color: rgba(245, 190, 77, 0.45);
   }
 
+  /* Cream card used by the testimonial ("feedback") boxes. Kept as its own
+     utility so any section that wants that lighter, higher-contrast card can
+     opt in without changing .section-card everywhere. */
+  .feedback-card {
+    background-color: rgba(255, 246, 220, 0.70);
+    border-color: rgba(245, 190, 77, 0.40);
+    box-shadow: 0 2px 24px rgba(10, 10, 15, 0.06);
+  }
+
   .border-subtle {
     border-color: rgba(10, 10, 15, 0.12);
   }

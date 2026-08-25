@@ -11,6 +11,7 @@ export const wooConfigured = Boolean(WOO_URL && WOO_KEY && WOO_SECRET);
 interface WooImage      { src: string; alt: string }
 interface WooAttribute  { name: string; options: string[] }
 interface WooCategory   { id: number; name: string; slug: string }
+interface WooCategoryTerm extends WooCategory { parent: number; count: number }
 interface WooProduct {
   id:                number;
   name:              string;
@@ -71,6 +72,31 @@ const isLevelTerm       = (name: string) => LEVEL_TERMS.has(name.trim().toLowerC
 const isAgeTerm         = (name: string) => AGE_TERM.test(name);
 const isDescriptiveTerm = (name: string) => isLevelTerm(name) || isAgeTerm(name);
 
+// ─── Facet containers vs browse categories ─────────────────────────────────
+//
+// This store models its facets as category trees: "Level" → Beginner/…,
+// "Age Group" → 4-6/…, "Size" → Small/Mid/Large. Those describe a kit; they are
+// not aisles to browse. The rule is structural, not a hardcoded name list: a
+// top-level category that HAS CHILDREN is a facet container, so neither it nor
+// its children are browse categories. Everything else in the Woo tree is one —
+// so a new category created in the admin shows up on the site with no deploy.
+function facetSlugs(tree: WooCategoryTerm[]): Set<string> {
+  const parents = new Set(tree.map((c) => c.parent).filter((id) => id !== 0));
+  const facets  = new Set<string>();
+  for (const c of tree) {
+    if (c.parent === 0 && parents.has(c.id)) {
+      facets.add(c.slug);
+      for (const child of tree) if (child.parent === c.id) facets.add(child.slug);
+    }
+  }
+  return facets;
+}
+
+/** True when a Woo term is a facet value / descriptor rather than a browse aisle. */
+function isFacetTerm(c: WooCategory, facets: Set<string>): boolean {
+  return facets.has(c.slug) || isDescriptiveTerm(c.name) || c.slug === "uncategorized";
+}
+
 /** Level from attributes, else from a descriptive category term, else null. */
 function rawDifficulty(p: WooProduct): Difficulty | null {
   const fromAttr = getAttr(p.attributes, ...LEVEL_ATTR_NAMES)[0];
@@ -85,45 +111,30 @@ function rawAgeRange(p: WooProduct): string | null {
   return p.categories.find((c) => isAgeTerm(c.name))?.name ?? null;
 }
 
-const CATEGORY_MAP: Record<string, Category> = {
-  vehicles:     "Vehicles",
-  machines:     "Machines",
-  science:      "Science",
-  space:        "Space",
-  robots:       "Robots",
-  architecture: "Architecture",
-};
+const EMPTY_FACETS: Set<string> = new Set();
 
-const NAME_CATEGORY_KEYWORDS: Array<{ pattern: RegExp; category: Category }> = [
-  { pattern: /robot/i,                                          category: "Robots" },
-  { pattern: /lunar|space|moon|rocket|satellite|asteroid/i,    category: "Space" },
-  { pattern: /house|building|bridge|tower|architectural/i,     category: "Architecture" },
-  { pattern: /solar|optical|illusion|marble|science|lab/i,     category: "Science" },
-  { pattern: /windmill|ferris|elevator|pulley|crank|gear/i,    category: "Machines" },
-  { pattern: /car|train|tank|rover|glider|digger|cable car|bus|truck|boat|plane/i, category: "Vehicles" },
-  { pattern: /fan/i,                                            category: "Machines" },
-];
+// WooCommerce category names flow through exactly as typed in the admin. There
+// is no list of expected categories anywhere in the frontend and no guessing
+// from the product name: a kit with no browse category simply has none, rather
+// than being filed under an aisle that does not exist in the store.
 
-// Real WooCommerce category names flow through as-is, so categories created in
-// the backend appear on the site without a code change. The known six are
-// normalised to canonical capitalisation; keyword inference only kicks in for
-// uncategorised products.
-function mapCategory(cats: WooCategory[], name?: string): Category {
-  // Level/age terms are read as editorial fields, never as the browse category.
-  const browsable = cats.filter((c) => !isDescriptiveTerm(c.name));
-  for (const c of browsable) {
-    const canonical = CATEGORY_MAP[c.name.toLowerCase()] ?? CATEGORY_MAP[c.slug];
-    if (canonical) return canonical;
+/** Every browse category a product belongs to, in WooCommerce order. */
+function mapCategories(cats: WooCategory[], facets: Set<string>): Category[] {
+  const out: Category[] = [];
+  for (const c of cats) {
+    if (isFacetTerm(c, facets)) continue;
+    if (!out.includes(c.name)) out.push(c.name);
   }
-  for (const c of browsable) {
-    if (c.slug !== "uncategorized") return c.name;
-  }
-  if (name) {
-    for (const { pattern, category } of NAME_CATEGORY_KEYWORDS) {
-      if (pattern.test(name)) return category;
-    }
-  }
-  return "Other";
+  return out;
+}
+
+/**
+ * The primary category — the badge on a product card and the label on the
+ * product page. WooCommerce has no notion of a primary category, so this is
+ * simply the first one it returns; "" when the kit has no browse category.
+ */
+function mapCategory(cats: WooCategory[], facets = EMPTY_FACETS): Category {
+  return mapCategories(cats, facets)[0] ?? "";
 }
 
 function mapDifficulty(p: WooProduct): Difficulty {
@@ -144,12 +155,13 @@ function mapPricing(p: WooProduct): { price: number; regularPrice: number; onSal
   return { price, regularPrice: regular, onSale: Boolean(p.on_sale) && regular > price };
 }
 
-export function mapWooProduct(p: WooProduct): Product {
+export function mapWooProduct(p: WooProduct, facets = EMPTY_FACETS): Product {
   return {
     id:           String(p.id),
     name:         p.name,
     slug:         p.slug,
-    category:     mapCategory(p.categories, p.name),
+    category:     mapCategory(p.categories, facets),
+    categories:   mapCategories(p.categories, facets),
     ageRange:     mapAgeRange(p),
     difficulty:   mapDifficulty(p),
     ...mapPricing(p),
@@ -163,7 +175,7 @@ export function mapWooProduct(p: WooProduct): Product {
 
 // ─── Raw mapping (nullable editorial fields — used by the smart merge) ────────
 //
-// The regular mapWooProduct fills defaults ("Science", "Beginner", "6–12") when
+// The regular mapWooProduct fills defaults ("Beginner", "6–12") when the
 // attributes are missing. That makes it impossible for the merge to tell whether
 // WooCommerce actually provided a value. This variant returns null for any
 // editorial field the client has not yet filled in, so the merge can fall back
@@ -175,28 +187,15 @@ export interface WooProductRaw extends Omit<Product, 'category' | 'ageRange' | '
   difficulty: Difficulty | null;
 }
 
-export function mapWooProductRaw(p: WooProduct): WooProductRaw {
-  let category: Category | null = null;
-  const browsable = p.categories.filter((c) => !isDescriptiveTerm(c.name));
-  for (const c of browsable) {
-    const canonical = CATEGORY_MAP[c.name.toLowerCase()] ?? CATEGORY_MAP[c.slug];
-    if (canonical) { category = canonical; break; }
-  }
-  if (!category) {
-    const real = browsable.find((c) => c.slug !== "uncategorized");
-    if (real) category = real.name;
-  }
-  if (!category) {
-    for (const { pattern, category: cat } of NAME_CATEGORY_KEYWORDS) {
-      if (pattern.test(p.name)) { category = cat; break; }
-    }
-  }
+export function mapWooProductRaw(p: WooProduct, facets = EMPTY_FACETS): WooProductRaw {
+  const browsable = mapCategories(p.categories, facets);
 
   return {
+    category:     browsable[0] ?? null,
     id:           String(p.id),
     name:         p.name,
     slug:         p.slug,
-    category,
+    categories:   browsable,
     ageRange:     rawAgeRange(p),
     difficulty:   rawDifficulty(p),
     ...mapPricing(p),
@@ -209,8 +208,8 @@ export function mapWooProductRaw(p: WooProduct): WooProductRaw {
 }
 
 export async function getRawWooProducts(params?: Record<string, string>): Promise<WooProductRaw[]> {
-  const raw = await wooFetchAllProducts(params);
-  return raw.map(mapWooProductRaw);
+  const [raw, facets] = await Promise.all([wooFetchAllProducts(params), getFacetSlugs()]);
+  return raw.map((p) => mapWooProductRaw(p, facets));
 }
 
 // ─── Fetch ─────────────────────────────────────────────────────────────────
@@ -252,16 +251,69 @@ async function wooFetchAllProducts(params?: Record<string, string>): Promise<Woo
   return all;
 }
 
+// The category tree is a handful of terms, so one un-paginated read is enough
+// for any realistic store; `hide_empty` stays off so a freshly created (still
+// empty) category is still recognised as part of a facet tree.
+async function wooFetchCategoryTree(): Promise<WooCategoryTerm[]> {
+  const all: WooCategoryTerm[] = [];
+  for (let page = 1; ; page++) {
+    const batch = await wooFetch<WooCategoryTerm[]>("/products/categories", {
+      per_page: "100",
+      page:     String(page),
+    });
+    all.push(...batch);
+    if (batch.length < 100) break;
+  }
+  return all;
+}
+
+/**
+ * Slugs that must never be treated as browse categories. Falls back to an empty
+ * set if Woo is unreachable — mapping then degrades to the name-based heuristics
+ * rather than failing the whole product read.
+ */
+async function getFacetSlugs(): Promise<Set<string>> {
+  try {
+    return facetSlugs(await wooFetchCategoryTree());
+  } catch (err) {
+    console.error("[woo] category tree unavailable", err);
+    return EMPTY_FACETS;
+  }
+}
+
 // ─── Public API ────────────────────────────────────────────────────────────
 
+export interface BrowseCategory {
+  name:  string;
+  slug:  string;
+  count: number;
+}
+
+/**
+ * The categories the storefront browses by: every non-empty WooCommerce
+ * category that is not a facet container or facet value. Straight from Woo —
+ * nothing here is hardcoded, so creating a category in the admin adds a tile.
+ */
+export async function getBrowseCategories(): Promise<BrowseCategory[]> {
+  const tree   = await wooFetchCategoryTree();
+  const facets = facetSlugs(tree);
+  return tree
+    .filter((c) => !isFacetTerm(c, facets) && c.count > 0)
+    .map((c) => ({ name: c.name, slug: c.slug, count: c.count }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
 export async function getProducts(params?: Record<string, string>): Promise<Product[]> {
-  const raw = await wooFetchAllProducts(params);
-  return raw.map(mapWooProduct);
+  const [raw, facets] = await Promise.all([wooFetchAllProducts(params), getFacetSlugs()]);
+  return raw.map((p) => mapWooProduct(p, facets));
 }
 
 export async function getProduct(slug: string): Promise<Product | null> {
-  const raw = await wooFetch<WooProduct[]>("/products", { slug });
-  return raw.length ? mapWooProduct(raw[0]) : null;
+  const [raw, facets] = await Promise.all([
+    wooFetch<WooProduct[]>("/products", { slug }),
+    getFacetSlugs(),
+  ]);
+  return raw.length ? mapWooProduct(raw[0], facets) : null;
 }
 
 // ─── Payment gateways ──────────────────────────────────────────────────────
