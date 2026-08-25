@@ -1,29 +1,55 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import NewsletterCapture from "@/components/layout/NewsletterCapture";
 import { useSiteConfig } from "@/context/SiteConfigContext";
 
-const footerLinks = {
-  Shop: [
-    { label: "All Kits",   href: "/shop" },
-    { label: "Vehicles",   href: "/shop?category=Vehicles" },
-    { label: "Machines",   href: "/shop?category=Machines" },
-    { label: "Science",    href: "/shop?category=Science" },
-    { label: "Robots",     href: "/shop?category=Robots" },
-    { label: "Space",      href: "/shop?category=Space" },
-    { label: "Gift Guide", href: "/gift-guide" },
-  ],
-  Help: [
-    { label: "FAQ",                 href: "/faq" },
-    { label: "About Us",            href: "/about" },
-    { label: "Contact",             href: "/contact" },
-    { label: "Terms & Conditions",  href: "/terms" },
-  ],
-};
+interface FooterLink { label: string; href: string }
+
+// How many WooCommerce categories the Shop column lists, biggest first, before
+// the column gets unwieldy. The rest are one click away under "All Kits".
+const MAX_CATEGORY_LINKS = 5;
+
+const helpLinks: FooterLink[] = [
+  { label: "FAQ",                 href: "/faq" },
+  { label: "About Us",            href: "/about" },
+  { label: "Contact",             href: "/contact" },
+  { label: "Terms & Conditions",  href: "/terms" },
+];
 
 export default function Footer() {
   const { whatsapp, footer } = useSiteConfig();
+
+  // Category links come from WooCommerce, so the footer can never advertise an
+  // aisle the store no longer has. Until the fetch lands (or if it fails) the
+  // column simply shows the two static links.
+  const [categoryLinks, setCategoryLinks] = useState<FooterLink[]>([]);
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((data: Array<{ name: string }>) => {
+        if (!Array.isArray(data)) return;
+        setCategoryLinks(
+          data.slice(0, MAX_CATEGORY_LINKS).map((c) => ({
+            label: c.name,
+            href:  `/shop?category=${encodeURIComponent(c.name)}`,
+          })),
+        );
+      })
+      .catch(() => {});
+  }, []);
+
+  const footerLinks: Record<string, FooterLink[]> = {
+    Shop: [
+      { label: "All Kits", href: "/shop" },
+      ...categoryLinks,
+      { label: "Gift Guide", href: "/gift-guide" },
+    ],
+    Help: helpLinks,
+  };
+
   const phone    = whatsapp.phone;
   const waLink   = `https://wa.me/c/${phone}`;
   const phoneDisplay = `+${phone.slice(0, 3)} ${phone.slice(3, 6)} ${phone.slice(6, 9)} ${phone.slice(9)}`;

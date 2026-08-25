@@ -3,7 +3,7 @@
 import { Suspense, useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, ChevronDown, LayoutGrid, LayoutList } from "lucide-react";
-import { orderCategories, orderDifficulties, type Product } from "@/data/products";
+import { orderCategories, orderDifficulties, productCategories, type Product } from "@/data/products";
 import ProductCard from "@/components/products/ProductCard";
 
 type AgeGroup = "Under 7" | "Ages 7–9" | "Ages 10–12" | "Ages 12+";
@@ -47,8 +47,12 @@ function ShopContent() {
   }, []);
 
   /* Filter options come from the live catalog, so a category or difficulty
-     created in WooCommerce shows up here without a code change. */
-  const categories   = useMemo(() => orderCategories(allProducts.map((p) => p.category)), [allProducts]);
+     created in WooCommerce shows up here without a code change. A kit sits in
+     several Woo categories at once, so every one of them is offered. */
+  const categories   = useMemo(
+    () => orderCategories(allProducts.flatMap((p) => productCategories(p))),
+    [allProducts],
+  );
   const difficulties = useMemo(() => orderDifficulties(allProducts.map((p) => p.difficulty)), [allProducts]);
 
   /* Sync category filter from URL query param (?category=Science) */
@@ -69,10 +73,10 @@ function ShopContent() {
         (p) =>
           p.name.toLowerCase().includes(q) ||
           p.description.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q)
+          productCategories(p).some((c) => c.toLowerCase().includes(q))
       );
     }
-    if (activeCategory !== "All") list = list.filter((p) => p.category === activeCategory);
+    if (activeCategory !== "All") list = list.filter((p) => productCategories(p).includes(activeCategory));
     if (activeDifficulty !== "All") list = list.filter((p) => p.difficulty === activeDifficulty);
     if (activeAge !== "All") list = list.filter((p) => matchesAgeGroup(p, activeAge));
     if (sort === "price-asc") list = [...list].sort((a, b) => a.price - b.price);

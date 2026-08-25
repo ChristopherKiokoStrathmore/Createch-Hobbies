@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import { getProduct, getProducts, wooConfigured } from "@/lib/woo";
-import type { Product } from "@/data/products";
+import { productCategories, type Product } from "@/data/products";
+import { categoryEmoji } from "@/lib/category-visuals";
 import { formatPrice } from "@/lib/utils";
 import ProductCard from "@/components/products/ProductCard";
 import ProductImageGallery from "@/components/products/ProductImageGallery";
@@ -22,16 +23,6 @@ const difficultyStyles: Record<string, string> = {
   Advanced:     "bg-brand-purple/15 text-brand-purple border-brand-purple/30",
 };
 const defaultDifficultyStyle = "bg-gray-100 text-gray-800 border-gray-300";
-
-const categoryEmoji: Record<string, string> = {
-  Vehicles:     "🚗",
-  Machines:     "⚙️",
-  Science:      "🔬",
-  Space:        "🚀",
-  Robots:       "🤖",
-  Architecture: "🏗️",
-};
-const defaultCategoryEmoji = "🧩";
 
 export async function generateStaticParams() {
   if (!wooConfigured) return [];
@@ -54,7 +45,12 @@ export default async function ProductPage({ params }: Props) {
   let related: Product[] = [];
   try {
     const all = await getProducts();
-    related = all.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 3);
+    // A kit is filed under several Woo categories, so "related" is any kit that
+    // shares one of them — not just an exact match on the primary category.
+    const mine = productCategories(product);
+    related = all
+      .filter((p) => p.id !== product.id && productCategories(p).some((c) => mine.includes(c)))
+      .slice(0, 3);
   } catch {
     related = [];
   }
@@ -75,16 +71,18 @@ export default async function ProductPage({ params }: Props) {
           <ProductImageGallery
             images={product.images}
             productName={product.name}
-            fallbackEmoji={categoryEmoji[product.category] ?? defaultCategoryEmoji}
+            fallbackEmoji={categoryEmoji(product.category)}
           />
 
           {/* Info panel */}
           <div>
             {/* Tags */}
             <div className="flex flex-wrap gap-2 mb-4">
-              <span className="bg-brand-purple/15 text-brand-purple-light border border-brand-purple/25 text-xs font-semibold px-3 py-1 rounded-full font-inter">
-                {product.category}
-              </span>
+              {product.category && (
+                <span className="bg-brand-purple/15 text-brand-purple-light border border-brand-purple/25 text-xs font-semibold px-3 py-1 rounded-full font-inter">
+                  {product.category}
+                </span>
+              )}
               <span className="bg-brand-dark/8 text-brand-dark/60 border border-brand-dark/15 text-xs font-semibold px-3 py-1 rounded-full font-inter">
                 Ages {product.ageRange}
               </span>

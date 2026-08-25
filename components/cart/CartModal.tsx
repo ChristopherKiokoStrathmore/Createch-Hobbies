@@ -5,11 +5,7 @@ import { X, Minus, Plus } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import ProductImage from "@/components/products/ProductImage";
 import type { Product } from "@/data/products";
-
-const categoryEmoji: Record<string, string> = {
-  Vehicles: "🚗", Machines: "⚙️", Science: "🔬",
-  Space: "🚀", Robots: "🤖", Architecture: "🏗️",
-};
+import { categoryEmoji } from "@/lib/category-visuals";
 
 const PHONE = "254742152233";
 
@@ -80,7 +76,7 @@ export default function CartModal({ product, onClose }: Props) {
               alt={product.name}
               fill
               className="object-cover"
-              fallbackEmoji={categoryEmoji[product.category]}
+              fallbackEmoji={categoryEmoji(product.category)}
             />
           </div>
 

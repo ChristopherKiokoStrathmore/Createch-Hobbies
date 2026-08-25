@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import type { Product } from "@/data/products";
 import { formatPrice } from "@/lib/utils";
+import { categoryEmoji } from "@/lib/category-visuals";
 import { useCart } from "@/context/CartContext";
 
 const difficultyStyles: Record<string, string> = {
@@ -16,16 +17,6 @@ const difficultyStyles: Record<string, string> = {
     "bg-brand-purple/15 text-brand-purple border-brand-purple/30",
 };
 const defaultDifficultyStyle = "bg-gray-100 text-gray-800 border-gray-300";
-
-const categoryEmoji: Record<string, string> = {
-  Vehicles: "🚗",
-  Machines: "⚙️",
-  Science: "🔬",
-  Space: "🚀",
-  Robots: "🤖",
-  Architecture: "🏗️",
-};
-const defaultCategoryEmoji = "🧩";
 
 interface Props {
   product:  Product;
@@ -62,7 +53,7 @@ export default function ProductCard({ product, priority = false, compact = true 
         {/* Fallback emoji */}
         <div className="absolute inset-0 flex items-center justify-center">
           <span className="text-4xl sm:text-7xl select-none opacity-30">
-            {categoryEmoji[product.category] ?? defaultCategoryEmoji}
+            {categoryEmoji(product.category)}
           </span>
         </div>
 

@@ -108,7 +108,7 @@ export default function HeroContent() {
         {/* Badge */}
         <motion.div {...fadeUp(0)}>
           <span className="inline-block mb-6 px-4 py-1.5 rounded-full border border-white/20 bg-white/10 text-white/75 text-xs font-semibold tracking-widest uppercase font-inter backdrop-blur-sm">
-            🇰🇪 Make your dent in the universe
+            Build | Play | Learn
           </span>
         </motion.div>
 

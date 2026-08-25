@@ -87,7 +87,7 @@ export default function HowItWorks() {
                 {i < howItWorks.steps.length - 1 && (
                   <div className="hidden md:block absolute top-12 left-full w-full h-px bg-gradient-to-r from-brand-purple/30 to-transparent z-0" />
                 )}
-                <div className="section-card rounded-xl p-2 sm:p-8 border border-brand-dark/10 hover:border-brand-purple/25 transition-all duration-300 card-glow relative z-10 h-full flex flex-col" data-editor-key="howItWorks.steps">
+                <div className="feedback-card rounded-2xl p-2 sm:p-8 border hover:border-brand-purple/30 transition-all duration-300 card-glow relative z-10 h-full flex flex-col" data-editor-key="howItWorks.steps">
                   <div className="mb-1 sm:mb-5"><Icon /></div>
                   <div className="text-brand-purple font-playfair font-bold text-[9px] sm:text-sm mb-1 sm:mb-2 tracking-widest uppercase">
                     Step {String(i + 1).padStart(2, "0")}
