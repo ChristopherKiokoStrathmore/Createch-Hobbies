@@ -142,8 +142,9 @@ export default function CategoryShowcase() {
             >
               <Link
                 href={`/shop?category=${encodeURIComponent(cat.name)}`}
-                className={`group block bg-gradient-to-br ${cat.gradient} rounded-2xl p-5 sm:p-6 text-center min-h-[160px] sm:min-h-[180px] flex flex-col items-center justify-center`}
+                className="group block rounded-2xl p-5 sm:p-6 text-center min-h-[160px] sm:min-h-[180px] flex flex-col items-center justify-center"
                 style={{
+                  backgroundImage: cat.gradient,
                   boxShadow: `0 6px 28px ${cat.glowBase}, inset 0 1px 0 rgba(255,255,255,0.12)`,
                   transition: "box-shadow 0.3s ease, transform 0.2s ease",
                 }}

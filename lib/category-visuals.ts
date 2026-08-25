@@ -12,6 +12,12 @@ import {
  * name still renders, with a rotating palette and a neutral puzzle icon.
  */
 
+// `gradient` is a real CSS value, NOT Tailwind classes. Tailwind only generates
+// utilities for class strings it finds while scanning the files in its `content`
+// globs — a palette living in lib/ and interpolated into className at runtime
+// silently produces no CSS at all, and the tile renders with no background.
+// Emitting the gradient as a style value keeps this file independent of what
+// Tailwind happens to scan.
 export interface CategoryPalette {
   gradient:  string;
   glowBase:  string;
@@ -19,14 +25,14 @@ export interface CategoryPalette {
 }
 
 const PALETTES = {
-  red:    { gradient: "from-[#f56a77] to-[#b83347]", glowBase: "rgba(245,106,119,0.22)", glowHover: "rgba(245,106,119,0.60)" },
-  blue:   { gradient: "from-[#418cdb] to-[#1a5ca8]", glowBase: "rgba(65,140,219,0.22)",  glowHover: "rgba(65,140,219,0.60)"  },
-  teal:   { gradient: "from-[#82bec6] to-[#3d8c99]", glowBase: "rgba(130,190,198,0.22)", glowHover: "rgba(130,190,198,0.60)" },
-  brown:  { gradient: "from-[#644536] to-[#3a2518]", glowBase: "rgba(100,69,54,0.22)",   glowHover: "rgba(100,69,54,0.55)"   },
-  orange: { gradient: "from-[#e88062] to-[#b54a28]", glowBase: "rgba(232,128,98,0.22)",  glowHover: "rgba(232,128,98,0.60)"  },
-  purple: { gradient: "from-[#7a5fd0] to-[#452e91]", glowBase: "rgba(122,95,208,0.22)",  glowHover: "rgba(122,95,208,0.60)"  },
-  green:  { gradient: "from-[#5cc48f] to-[#2b8f5c]", glowBase: "rgba(92,196,143,0.22)",  glowHover: "rgba(92,196,143,0.60)"  },
-  amber:  { gradient: "from-[#f0b93e] to-[#b3831a]", glowBase: "rgba(240,185,62,0.22)",  glowHover: "rgba(240,185,62,0.60)"  },
+  red:    { gradient: "linear-gradient(to bottom right, #f56a77, #b83347)", glowBase: "rgba(245,106,119,0.22)", glowHover: "rgba(245,106,119,0.60)" },
+  blue:   { gradient: "linear-gradient(to bottom right, #418cdb, #1a5ca8)", glowBase: "rgba(65,140,219,0.22)",  glowHover: "rgba(65,140,219,0.60)"  },
+  teal:   { gradient: "linear-gradient(to bottom right, #82bec6, #3d8c99)", glowBase: "rgba(130,190,198,0.22)", glowHover: "rgba(130,190,198,0.60)" },
+  brown:  { gradient: "linear-gradient(to bottom right, #644536, #3a2518)", glowBase: "rgba(100,69,54,0.22)",   glowHover: "rgba(100,69,54,0.55)"   },
+  orange: { gradient: "linear-gradient(to bottom right, #e88062, #b54a28)", glowBase: "rgba(232,128,98,0.22)",  glowHover: "rgba(232,128,98,0.60)"  },
+  purple: { gradient: "linear-gradient(to bottom right, #7a5fd0, #452e91)", glowBase: "rgba(122,95,208,0.22)",  glowHover: "rgba(122,95,208,0.60)"  },
+  green:  { gradient: "linear-gradient(to bottom right, #5cc48f, #2b8f5c)", glowBase: "rgba(92,196,143,0.22)",  glowHover: "rgba(92,196,143,0.60)"  },
+  amber:  { gradient: "linear-gradient(to bottom right, #f0b93e, #b3831a)", glowBase: "rgba(240,185,62,0.22)",  glowHover: "rgba(240,185,62,0.60)"  },
 } satisfies Record<string, CategoryPalette>;
 
 interface Rule {
