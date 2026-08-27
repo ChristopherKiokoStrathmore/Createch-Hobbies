@@ -129,19 +129,19 @@ function ShopContent() {
         {/* Search + Sort — side by side on mobile */}
         <div className="flex flex-row gap-2 mb-2 sm:mb-8">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" size={14} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/45" size={14} />
             <input
               type="text"
               placeholder="Search kits..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full section-card border border-white/8 rounded-xl pl-8 pr-3 py-2 sm:py-3 text-white placeholder:text-brand-dark/40 focus:outline-none focus:border-brand-purple/50 transition-colors text-xs sm:text-sm font-inter"
+              className="w-full feedback-card border rounded-xl pl-8 pr-3 py-2 sm:py-3 text-white placeholder:text-brand-dark/40 focus:outline-none focus:border-brand-purple/50 transition-colors text-xs sm:text-sm font-inter"
             />
           </div>
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as typeof sort)}
-            className="section-card border border-white/8 rounded-xl px-2 sm:px-4 py-2 sm:py-3 text-white focus:outline-none focus:border-brand-purple/50 transition-colors cursor-pointer text-xs sm:text-sm font-inter"
+            className="feedback-card border rounded-xl px-2 sm:px-4 py-2 sm:py-3 text-white focus:outline-none focus:border-brand-purple/50 transition-colors cursor-pointer text-xs sm:text-sm font-inter"
           >
             <option value="default">Default</option>
             <option value="price-asc">Price ↑</option>
@@ -153,7 +153,7 @@ function ShopContent() {
         <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 mb-2 sm:mb-8">
 
           {/* Age Group */}
-          <div className="flex-1 rounded-xl border border-white/10 overflow-hidden">
+          <div className="flex-1 feedback-card rounded-xl border overflow-hidden">
             <button
               onClick={() => setAgeOpen(!ageOpen)}
               className="w-full flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 text-left hover:bg-white/5 transition-colors"
@@ -177,7 +177,7 @@ function ShopContent() {
                     className={`px-4 py-3 rounded-full text-xs font-semibold border transition-all font-inter ${
                       activeAge === age
                         ? "border-brand-yellow text-brand-dark bg-brand-yellow"
-                        : "border-white/15 text-white/50 hover:border-white/35 hover:text-white"
+                        : "border-white/20 text-white/60 hover:border-white/40 hover:text-white"
                     }`}
                   >
                     {age}
@@ -188,7 +188,7 @@ function ShopContent() {
           </div>
 
           {/* Category */}
-          <div className="flex-1 rounded-xl border border-white/10 overflow-hidden">
+          <div className="flex-1 feedback-card rounded-xl border overflow-hidden">
             <button
               onClick={() => setCategoryOpen(!categoryOpen)}
               className="w-full flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 text-left hover:bg-white/5 transition-colors"
@@ -212,7 +212,7 @@ function ShopContent() {
                     className={`px-4 py-3 rounded-full text-xs font-semibold border transition-all font-inter ${
                       activeCategory === cat
                         ? "border-brand-yellow text-brand-dark bg-brand-yellow"
-                        : "border-white/15 text-white/50 hover:border-white/35 hover:text-white"
+                        : "border-white/20 text-white/60 hover:border-white/40 hover:text-white"
                     }`}
                   >
                     {cat}
@@ -223,7 +223,7 @@ function ShopContent() {
           </div>
 
           {/* Difficulty */}
-          <div className="flex-1 rounded-xl border border-white/10 overflow-hidden">
+          <div className="flex-1 feedback-card rounded-xl border overflow-hidden">
             <button
               onClick={() => setDifficultyOpen(!difficultyOpen)}
               className="w-full flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 text-left hover:bg-white/5 transition-colors"
@@ -247,7 +247,7 @@ function ShopContent() {
                     className={`px-4 py-3 rounded-full text-xs font-semibold border transition-all font-inter ${
                       activeDifficulty === d
                         ? "border-brand-purple text-white bg-brand-purple"
-                        : "border-white/10 text-white/35 hover:border-white/30 hover:text-white"
+                        : "border-white/20 text-white/60 hover:border-white/40 hover:text-white"
                     }`}
                   >
                     {d}
