@@ -7,6 +7,11 @@ import { getSiteConfig, hexToRgbSpace } from "@/lib/getSiteConfig";
 export async function generateMetadata(): Promise<Metadata> {
   const cfg = await getSiteConfig();
   return {
+    // Required for og:image to resolve to an absolute URL — WhatsApp and
+    // Facebook reject relative image paths outright.
+    metadataBase: new URL(
+      process.env.NEXT_PUBLIC_SITE_URL ?? "https://createch-hobbies.co.ke",
+    ),
     title:       cfg.seo.title,
     description: cfg.seo.description,
     keywords:    "DIY kits, kids, STEM, toys, Nairobi, Kenya, educational toys, robotics, science kits",

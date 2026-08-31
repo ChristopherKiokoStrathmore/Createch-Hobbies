@@ -9,7 +9,7 @@ const stats = [
   { value: "17+",  label: "Kit Designs"    },
   { value: "500+", label: "Happy Builders" },
   { value: "1–2",  label: "Day Delivery"   },
-  { value: "4–12", label: "Years Age Range"},
+  { value: "5–14", label: "Years Age Range"},
 ];
 
 const fadeUp = (delay = 0) => ({
@@ -28,7 +28,7 @@ function animateStat(raw: string, setter: (v: string) => void) {
   const start    = performance.now();
 
   if (raw.includes("–")) {
-    // Range like "1–2" or "4–12" — animate the upper bound
+    // Range like "1–2" or "5–14" — animate the upper bound
     const [minStr, maxStr] = raw.split("–");
     const min = parseInt(minStr, 10);
     const max = parseInt(maxStr, 10);
@@ -54,11 +54,7 @@ function animateStat(raw: string, setter: (v: string) => void) {
 }
 
 function CountUpStat({ value, label }: { value: string; label: string }) {
-  const [display, setDisplay] = useState(() => {
-    if (value.includes("–")) return value.replace(/\d+$/, "0");
-    if (value.endsWith("+"))  return "0+";
-    return value;
-  });
+  const [display, setDisplay] = useState(value);
   const ref          = useRef<HTMLDivElement>(null);
   const hasAnimated  = useRef(false);
 
@@ -69,7 +65,8 @@ function CountUpStat({ value, label }: { value: string; label: string }) {
       ([entry]) => {
         if (entry.isIntersecting && !hasAnimated.current) {
           hasAnimated.current = true;
-          animateStat(value, setDisplay);
+          const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+          if (!reduced) animateStat(value, setDisplay);
         }
       },
       { threshold: 0.5 }

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
@@ -23,6 +24,43 @@ const difficultyStyles: Record<string, string> = {
   Advanced:     "bg-brand-purple/15 text-brand-purple border-brand-purple/30",
 };
 const defaultDifficultyStyle = "bg-gray-100 text-gray-800 border-gray-300";
+
+// Without this, every product page inherited the homepage title and had no
+// og:image — so a kit link shared on WhatsApp showed the generic site card
+// instead of the kit itself. Product links are the most-shared URLs on the site.
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  if (!wooConfigured) return {};
+
+  try {
+    const product = await getProduct(slug);
+    if (!product) return {};
+
+    const summary = product.description
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 155);
+
+    const title = `${product.name} | Createch Hobbies`;
+    const description =
+      summary ||
+      `${product.name} — a ${product.difficulty.toLowerCase()} DIY assembly kit for ages ${product.ageRange}. Delivered across Nairobi.`;
+
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        type: "website",
+        ...(product.images[0] ? { images: [product.images[0]] } : {}),
+      },
+    };
+  } catch {
+    return {};
+  }
+}
 
 export async function generateStaticParams() {
   if (!wooConfigured) return [];

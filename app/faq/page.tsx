@@ -12,7 +12,7 @@ const faqs = [
   },
   {
     q: "How much does delivery cost?",
-    a: "Delivery charges vary by location within Nairobi. We'll confirm the cost when you message us to order. No surprises.",
+    a: "Delivery is priced by distance within Nairobi and calculated live at checkout. Pick your neighbourhood and you'll see the exact fee before you pay — no surprises, and no need to message us first.",
   },
   {
     q: "Do I need tools or glue to build the kits?",
