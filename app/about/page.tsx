@@ -2,6 +2,19 @@ import Link from "next/link";
 import { Target, Globe, BookOpen, Heart } from "lucide-react";
 import { whatsappGeneralLink } from "@/lib/whatsapp";
 
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "About Us | Createch Hobbies",
+  description:
+    "Why we build DIY assembly kits for Kenyan children. Hands-on STEM learning for ages 5–14, designed and delivered from Nairobi.",
+  openGraph: {
+    title: "About Createch Hobbies",
+    description:
+      "Why we build DIY assembly kits for Kenyan children. Hands-on STEM learning for ages 5–14.",
+  },
+};
+
 const ICON = "w-10 h-10 text-brand-purple mb-5";
 const SW   = 1.5;
 

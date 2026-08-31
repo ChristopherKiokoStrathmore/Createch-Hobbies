@@ -1,6 +1,19 @@
 import { MessageCircle, MapPin, Clock } from "lucide-react";
 import { whatsappGeneralLink } from "@/lib/whatsapp";
 
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Contact Us | Createch Hobbies",
+  description:
+    "Questions about a kit, an order, or delivery in Nairobi? Message us on WhatsApp and we reply within minutes.",
+  openGraph: {
+    title: "Contact Createch Hobbies",
+    description:
+      "Questions about a kit, an order, or delivery in Nairobi? Message us on WhatsApp.",
+  },
+};
+
 export default function ContactPage() {
   return (
     <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6 bg-brand-dark">
