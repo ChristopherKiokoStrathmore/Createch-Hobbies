@@ -196,7 +196,7 @@ function createch_alerts_page() {
 				<tr>
 					<th scope="row"><label for="ca-whatsapp">WhatsApp recipients</label></th>
 					<td>
-						<textarea class="large-text code" id="ca-whatsapp" rows="4" name="<?php echo esc_attr( CREATECH_ALERTS_OPTION ); ?>[whatsapp]" placeholder="254785638462 9625862"><?php echo esc_textarea( $s['whatsapp'] ); ?></textarea>
+						<textarea class="large-text code" id="ca-whatsapp" rows="4" name="<?php echo esc_attr( CREATECH_ALERTS_OPTION ); ?>[whatsapp]" placeholder="2547XXXXXXXX your_callmebot_key"><?php echo esc_textarea( $s['whatsapp'] ); ?></textarea>
 						<p class="description">One recipient per line: <code>&lt;phone&gt; &lt;CallMeBot key&gt;</code>. Each number must opt in on its own phone (message "I allow callmebot to send me messages" to CallMeBot) to get its key. Leave blank to disable WhatsApp.</p>
 					</td>
 				</tr>
