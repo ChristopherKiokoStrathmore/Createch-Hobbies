@@ -448,7 +448,7 @@
   <div class="toc-item">
     <span class="toc-num">07</span>
     <span class="toc-title">Payment Integration</span>
-    <span class="toc-desc">iPay Africa: M-Pesa, Airtel Money, and card payments</span>
+    <span class="toc-desc">WooCommerce checkout: M-Pesa STK Push, DPO Pay cards, pay on delivery</span>
   </div>
   <div class="toc-item">
     <span class="toc-num">08</span>
@@ -468,7 +468,7 @@
     <thead><tr><th>What</th><th>URL</th><th>Credentials</th></tr></thead>
     <tbody>
       <tr><td>Live store</td><td><span class="url">https://createch-hobbies.co.ke</span></td><td>Public</td></tr>
-      <tr><td>Admin dashboard</td><td><span class="url">https://createch-hobbies.co.ke/admin</span></td><td>PIN: createch2026</td></tr>
+      <tr><td>Admin dashboard</td><td><span class="url">https://createch-hobbies.co.ke/admin</span></td><td>Environment variable only. Not stored in this repository.</td></tr>
       <tr><td>WordPress / WooCommerce</td><td><span class="url">https://wp.createch-hobbies.co.ke/wp/wp-admin</span></td><td>WP login</td></tr>
     </tbody>
   </table>
@@ -532,7 +532,7 @@
         <li>Individual product pages with image gallery</li>
         <li>Gift guide filtered by age, interest, and budget</li>
         <li>Shopping cart with quantity management</li>
-        <li>M-Pesa, Airtel Money, and card checkout</li>
+        <li>Checkout with M-Pesa STK Push, then DPO Pay cards, then pay on delivery</li>
         <li>Order confirmation page with order reference</li>
         <li>WhatsApp integration on every page</li>
       </ul>
@@ -595,9 +595,9 @@
         <td>Managed PostgreSQL included, auto-deploys from GitHub, simple environment variable management, predictable pricing</td>
       </tr>
       <tr>
-        <td><strong>Payment gateway</strong></td>
-        <td>iPay Africa</td>
-        <td>Kenya-focused hosted payment page. Handles M-Pesa, Airtel Money, and Visa/Mastercard. MD5-authenticated redirect, no card data on our servers. IPN callback updates order status automatically</td>
+        <td><strong>Payments</strong></td>
+        <td>WooCommerce gateways: M-Pesa STK Push and DPO Pay</td>
+        <td>Checkout offers the gateways enabled in WooCommerce, in this order: M-Pesa STK Push, card, pay on delivery. M-Pesa is a custom Daraja plugin. Cards use DPO Pay's hosted page and are confirmed with a server-side token check. The earlier Django Daraja checkout, IntaSend, and iPay are no longer what the storefront calls.</td>
       </tr>
       <tr>
         <td><strong>Database</strong></td>
@@ -620,7 +620,7 @@
       <tr><td>Next.js store (Vercel)</td><td>Vercel</td><td>Free (Hobby plan, suitable for this traffic level)</td></tr>
       <tr><td>WordPress + WooCommerce</td><td>Cloudoon cPanel</td><td>Existing hosting, no added cost</td></tr>
       <tr><td>Django backend + PostgreSQL</td><td>Railway</td><td>Pay-as-you-go, typically $5–10/month at this scale</td></tr>
-      <tr><td>Payment processing</td><td>iPay Africa</td><td>Per-transaction fee (M-Pesa ~1%, Cards ~2.9%)</td></tr>
+      <tr><td>Payment processing</td><td>Safaricom Daraja (M-Pesa STK) and DPO Pay (cards)</td><td>Charged by those providers. This repository does not record the fee schedule.</td></tr>
     </tbody>
   </table>
 </div>
@@ -721,12 +721,14 @@
   <div class="section-label">Section 04</div>
   <h2>Building the Backend</h2>
   <p>
-    The backend is a <strong>Django 5</strong> application deployed on Railway. It handles all
-    payment processing, order storage, and provides the REST API consumed by the admin dashboard.
-    It does not serve the storefront. That is Vercel's job.
+    The backend is a <strong>Django</strong> application deployed on Railway. The admin dashboard
+    reads orders from its API, and card returns ask it to run DPO <code>verifyToken</code>.
+    Live checkout — the order, the total, and M-Pesa — is a WooCommerce order (Section 07).
+    Django does not serve the storefront. That is the Next.js app's job.
   </p>
 
   <h3>Application Structure</h3>
+  <p>The list below is the June 2026 Django layout, from when this report was written around the iPay integration. It is kept so the old endpoints are still documented. It is not the live storefront payment path.</p>
   <div class="two-col">
     <div class="card">
       <h3 style="margin-top:0;">Django Apps</h3>
@@ -751,6 +753,7 @@
   </div>
 
   <h3>Order Lifecycle</h3>
+  <p>This diagram is the June 2026 iPay-era flow this report originally described. It is not the live checkout. The current flow is in Section 07.</p>
   <div class="flow">
     <div class="flow-box dark">Order created<br/><small>pending</small></div>
     <div class="flow-arrow">→</div>
@@ -813,7 +816,7 @@
       <h4>Railway</h4>
       <p style="color:#276749;">Django Backend</p>
       <hr style="margin:10px 0; border-color:#68d391;" />
-      <p style="font-size:11px;">web-production-391a4.up.railway.app<br/>Processes all payments via iPay Africa<br/>and stores every order.</p>
+      <p style="font-size:11px;">web-production-391a4.up.railway.app<br/>Admin orders API, and DPO token<br/>verification for card returns.</p>
     </div>
   </div>
 
@@ -840,15 +843,15 @@
 
   <p style="font-weight:600; font-size:11px; color:#7543a8; margin-bottom:6px;">CUSTOMER PURCHASE: checkout to confirmation</p>
   <div class="flow" style="margin-bottom:20px;">
-    <div class="flow-box dark">Add to cart<br/><small>Vercel</small></div>
+    <div class="flow-box dark">Add to cart<br/><small>Next.js</small></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box yellow">Choose payment<br/><small>M-Pesa/Airtel/Card</small></div>
+    <div class="flow-box yellow">Choose method<br/><small>M-Pesa, card, or delivery</small></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box green">POST /api/orders<br/><small>Railway (Django)</small></div>
+    <div class="flow-box purple">WooCommerce checkout<br/><small>Store API + neighbourhood fee</small></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box green">iPay Africa<br/><small>hosted payment page</small></div>
+    <div class="flow-box green">STK push or DPO page<br/><small>customer pays</small></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box green">Webhook confirms<br/><small>order marked paid</small></div>
+    <div class="flow-box green">Server confirms<br/><small>Daraja callback or verifyToken</small></div>
   </div>
 
   <p style="font-weight:600; font-size:11px; color:#1a365d; margin-bottom:6px;">ADMIN: viewing orders</p>
@@ -863,7 +866,7 @@
   </div>
 
   <div class="highlight" style="margin-top:20px;">
-    <strong>Security model:</strong> WooCommerce API credentials live only on Vercel's servers, never in the browser. The Django admin key lives only in Vercel's environment variables. iPay credentials (vendor ID and datakey) live only in Vercel's environment variables and are used server-side to compute the MD5 hash. No sensitive credential is ever accessible to a browser or included in the client-side JavaScript bundle.
+    <strong>Security model:</strong> WooCommerce API credentials live only in the host environment, never in the browser. The admin dashboard accepts <code>ADMIN_SECRET_KEY</code>, with <code>ADMIN_PIN</code> as a fallback, and refuses login when neither is set. Daraja credentials and the DPO company token live in WooCommerce gateway settings, not in this repository. Do not commit those values. The admin key that used to be printed in this report has been removed; rotate it, because older commits still contain it.
   </div>
 </div>
 
@@ -945,94 +948,76 @@
   <div class="section-label">Section 07</div>
   <h2>Payment Integration</h2>
   <p>
-    All payments are processed through <strong>iPay Africa</strong>, a Kenyan payment gateway that
-    handles M-Pesa, Airtel Money, and Visa/Mastercard through a single hosted payment page.
-    Customers are redirected to iPay's secure page to complete payment, then returned to the store.
+    Live checkout is a <strong>WooCommerce Store API</strong> checkout. The customer pays on the
+    Next.js store, but the order, the total, and the gateway all live in WooCommerce. Which
+    methods appear is decided under <strong>WooCommerce → Settings → Payments</strong>. The
+    storefront offers every enabled gateway it knows how to drive, in this order:
+    <strong>M-Pesa STK Push</strong>, then <strong>DPO Pay</strong> cards, then
+    <strong>pay on delivery</strong>.
   </p>
 
   <div class="plain">
-    <strong>Why iPay Africa?</strong> iPay is a Kenya-focused gateway that handles M-Pesa, Airtel Money, and card payments under one integration. The hosted-page model means no card data ever touches our servers, no STK push infrastructure to maintain on our side, and a single IPN (Instant Payment Notification) endpoint handles all payment methods. Competitive Kenya-market transaction rates with local support.
+    <strong>How the rails changed (from this repository's commits, not from memory).</strong>
+    On 2 June 2026 (<code>3e0a983</code>) checkout posted an order to Django and polled a Safaricom STK push (<code>checkout_request_id</code>). The 6 June report (<code>7f8c187</code>) describes that Daraja integration as already replaced by <strong>IntaSend</strong> for M-Pesa, Airtel Money, and cards. On 9 June (<code>9aad1d8</code>) IntaSend was replaced by an <strong>iPay Africa</strong> hosted page (<code>lib/ipay.ts</code>, <code>/api/ipay/initiate</code>, <code>/api/ipay/callback</code>). On 25 June (<code>6787d5f</code>) checkout stopped calling iPay: it places the order through the WooCommerce Store API and pays with <code>wordpress-plugin/wc-mpesa-stk-push</code> (Daraja API 2.0, then v1.1.0) or the DPO gateway <code>woocommerce_dpo</code>. On 14 July (<code>7a4ba12</code>) card returns gained a server-side DPO <code>verifyToken</code> check. On 19 July (<code>dc6f938</code>) checkout began offering whichever of M-Pesa, DPO, and cash on delivery is enabled in WooCommerce, and the STK plugin gained an admin pay-on-delivery push (<code>8b736ca</code>, v1.4.0). The checkout page does not call the iPay routes. Those files are still in the tree.
   </div>
 
   <div class="three-col" style="margin:20px 0;">
     <div class="card card-green" style="margin-bottom:0;">
-      <h3 style="margin-top:0; color:#276749;">M-Pesa</h3>
-      <p style="margin:0; font-size:12px;">Customer selects M-Pesa on iPay's hosted page. iPay sends STK push to phone. Customer enters PIN to approve.</p>
-    </div>
-    <div class="card card-yellow" style="margin-bottom:0;">
-      <h3 style="margin-top:0; color:#7a5a00;">Airtel Money</h3>
-      <p style="margin:0; font-size:12px;">Customer selects Airtel Money on iPay's hosted page. iPay sends STK push to Airtel number. Customer enters PIN.</p>
+      <h3 style="margin-top:0; color:#276749;">1. M-Pesa STK Push</h3>
+      <p style="margin:0; font-size:12px;">Gateway id <code>wc_mpesa_stk</code>. The plugin sends a Safaricom STK prompt to the number entered at checkout. Safaricom's callback marks the WooCommerce order paid. The page polls <code>/api/mpesa/status</code>, which reads that WordPress result. The browser is not the source of truth.</p>
     </div>
     <div class="card card-purple" style="margin-bottom:0;">
-      <h3 style="margin-top:0; color:#4a2570;">Visa / Mastercard</h3>
-      <p style="margin:0; font-size:12px;">Customer enters card details on iPay's PCI-compliant hosted page. No card data touches our servers.</p>
+      <h3 style="margin-top:0; color:#4a2570;">2. Card — DPO Pay</h3>
+      <p style="margin:0; font-size:12px;">Gateway id <code>woocommerce_dpo</code>. The customer is redirected to DPO's hosted page. This app never collects the card number. Paid is decided only by a server-side DPO <code>verifyToken</code> check: the WordPress plugin <code>createch-dpo-return-redirect</code> marks the WooCommerce order, and <code>/api/payment/status</code> asks the Django backend to verify the same token. Values on the return URL are not treated as proof.</p>
     </div>
-  </div>
-
-  <div class="plain" style="margin-top:16px;">
-    <strong>How does the redirect work?</strong> When a customer clicks "Pay", our Next.js server builds a signed form with the order details and an MD5 hash (using the vendor ID and datakey). The browser auto-submits that form to iPay's URL. iPay processes the payment on their side, then redirects the customer back to our confirmation page and sends an IPN notification to our server.
+    <div class="card card-yellow" style="margin-bottom:0;">
+      <h3 style="margin-top:0; color:#7a5a00;">3. Pay on delivery</h3>
+      <p style="margin:0; font-size:12px;">Gateway id <code>cod</code>. Shown only when Cash on delivery is enabled in WooCommerce. The order is placed with nothing charged online. The M-Pesa plugin can send an STK prompt later from the WordPress order screen.</p>
+    </div>
   </div>
 
   <div class="section-label" style="margin-top:20px;">Payment Flows</div>
 
-  <p style="font-weight:600; font-size:11px; color:#276749; margin: 16px 0 6px;">ALL PAYMENT METHODS</p>
+  <p style="font-weight:600; font-size:11px; color:#276749; margin: 16px 0 6px;">M-PESA — PAY NOW</p>
   <div class="flow" style="margin-bottom:16px;">
-    <div class="flow-box dark">Fill checkout form<br/><small>Vercel</small></div>
+    <div class="flow-box dark">Checkout form<br/><small>Next.js</small></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box green">Create order<br/><small>Django (pending)</small></div>
+    <div class="flow-box purple">WooCommerce order<br/><small>Store API</small></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box yellow">iPay hosted page<br/><small>customer pays</small></div>
+    <div class="flow-box yellow">STK prompt<br/><small>wc-mpesa-stk-push</small></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box green">IPN callback<br/><small>Next.js /api/ipay/callback</small></div>
+    <div class="flow-box green">Daraja callback<br/><small>order marked paid</small></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box green">Order marked paid<br/><small>Django updated</small></div>
+    <div class="flow-box green">Status poll<br/><small>/api/mpesa/status</small></div>
   </div>
 
-  <div class="flow" style="margin-bottom:20px;">
-    <div class="flow-box dark">Customer redirected<br/><small>back to our store</small></div>
+  <p style="font-weight:600; font-size:11px; color:#4a2570; margin: 16px 0 6px;">CARD — DPO PAY</p>
+  <div class="flow" style="margin-bottom:16px;">
+    <div class="flow-box dark">Choose card<br/><small>Next.js</small></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-box green">Confirmation page<br/><small>/checkout/confirmation/[id]</small></div>
+    <div class="flow-box purple">WooCommerce order<br/><small>redirect URL</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box yellow">DPO hosted page<br/><small>customer pays</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box green">verifyToken<br/><small>WordPress plugin + Django</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box green">/payment/return<br/><small>cart cleared only if paid</small></div>
   </div>
 
   <div class="note">
-    <strong>What is an IPN?</strong> An IPN (Instant Payment Notification) is an automatic server-to-server notification that iPay sends to our <code>/api/ipay/callback</code> endpoint the moment a payment completes or fails. Our server receives it, verifies the status code, and immediately updates the order status in the Django database. This is why the confirmation page shows the correct status.
+    <strong>Gateways can be switched off without a deploy.</strong> <code>/api/payment-methods</code> reads WooCommerce's enabled gateway list. Turning M-Pesa, DPO, or cash on delivery off in wp-admin removes that method from checkout.
+  </div>
+
+  <div class="note">
+    <strong>Delivery is priced on the server.</strong> The customer picks a Nairobi neighbourhood. <code>wordpress-plugin/createch-delivery-fees</code> computes the fee. The browser sends the neighbourhood name, not a price.
   </div>
 
   <div class="warning">
-    <strong>What if an order stays "pending" for a long time?</strong> The customer may have closed the iPay page before completing payment, or the payment was declined. The IPN will arrive and update the status automatically. If still pending after 10 minutes, the customer can try again from the checkout page. Contact iPay Africa support with the transaction reference if a payment was deducted but the order did not update.
-  </div>
-
-  <hr />
-
-  <div class="two-col">
-    <div class="card">
-      <h3 style="margin-top:0;">Changes Made</h3>
-      <ul class="checklist">
-        <li>New <code>lib/ipay.ts</code>: MD5 hash builder per iPay v3 spec</li>
-        <li>New <code>/api/ipay/initiate</code> route: creates Django order, returns signed iPay form fields</li>
-        <li>New <code>/api/ipay/callback</code> route: IPN handler, updates order on Django</li>
-        <li>Order model: <code>ipay_txn_code</code> replaces <code>intasend_invoice_id</code></li>
-        <li>Django needs: <code>POST /api/orders/&lt;id&gt;/mark-paid/</code> and <code>mark-failed/</code> endpoints</li>
-        <li>Checkout page now redirects to iPay instead of polling for STK push</li>
-      </ul>
-    </div>
-    <div class="card card-yellow">
-      <h3 style="margin-top:0;">Going Live Checklist</h3>
-      <ul class="checklist">
-        <li>Create production account at ipayafrica.com</li>
-        <li>Get Vendor ID and Datakey from iPay dashboard</li>
-        <li>Add <code>IPAY_VENDOR_ID</code> and <code>IPAY_DATAKEY</code> to Vercel environment variables</li>
-        <li>Set <code>NODE_ENV=production</code> on Vercel (sets <code>live=1</code> in hash)</li>
-        <li>Register IPN URL in iPay dashboard</li>
-        <li>Run one live M-Pesa test transaction end-to-end</li>
-      </ul>
-    </div>
+    <strong>What if a customer was charged and the order still looks unpaid?</strong> For M-Pesa, Safaricom's callback is what marks the WooCommerce order paid; the receipt on that order is the reference. For cards, paid means DPO <code>verifyToken</code> succeeded. A dismissed STK prompt or a cancelled card payment stays unpaid. iPay is not in this path, so an iPay dashboard will not show these transactions.
   </div>
 
   <div class="highlight">
-    <strong>IPN URL to register in iPay dashboard:</strong><br/>
-    <span class="url">https://createch-hobbies.co.ke/api/ipay/callback</span><br/>
-    <span style="font-size:11px; color:#555; margin-top:6px; display:block;">Go to iPay dashboard → Settings → IPN / Webhook → Add URL. iPay will POST payment status notifications to this endpoint. The endpoint returns HTTP 200 to acknowledge receipt.</span>
+    <strong>Owner alerts.</strong> <code>wordpress-plugin/createch-order-alerts</code> emails (and optionally WhatsApps) the owner once when an order becomes processing, on-hold, or completed — the statuses the M-Pesa callback and the DPO return plugin move a paid order into.
   </div>
 </div>
 
@@ -1128,7 +1113,7 @@
 
   <h3>Viewing Orders</h3>
   <ol class="steps">
-    <li>Go to <span class="url">createch-hobbies.co.ke/admin</span> and enter PIN: <strong>createch2026</strong></li>
+    <li>Go to <span class="url">createch-hobbies.co.ke/admin</span> and enter the admin key. That value is <code>ADMIN_PIN</code> or <code>ADMIN_SECRET_KEY</code> in the host environment. It is not written in this repository. If neither variable is set, login is refused.</li>
     <li>The dashboard shows today's revenue, order count, and recent failed payments</li>
     <li>Click <strong>Orders</strong> in the sidebar for the full order history with search and filter</li>
     <li>Click any row to see full order details including the payment reference</li>
@@ -1313,7 +1298,7 @@
   <div class="qa">
     <div class="qa-item">
       <div class="q">A customer was charged but their order does not appear in the dashboard.</div>
-      <div class="a">Filter orders by "Pending". The order is there but the iPay IPN has not arrived yet. Wait 5–10 minutes. If it stays pending, contact iPay Africa support with the customer's phone number and transaction reference. They can confirm whether the payment went through on their end.</div>
+      <div class="a">Check WooCommerce → Orders as well as the dashboard. M-Pesa is marked paid when Safaricom's callback reaches the STK plugin. A card payment is marked paid only after a server-side DPO token check. A prompt the customer dismissed, or a card payment they cancelled, stays unpaid. The M-Pesa receipt on a paid WooCommerce order is the reference to give Safaricom if money left the phone and the order did not update.</div>
     </div>
     <div class="qa-item">
       <div class="q">A price I updated in WooCommerce is not showing on the store yet.</div>
@@ -1339,14 +1324,14 @@
   <table>
     <thead><tr><th>Variable</th><th>Platform</th><th>Purpose</th></tr></thead>
     <tbody>
-      <tr><td>ADMIN_PIN</td><td>Vercel</td><td>Admin dashboard login PIN (createch2026)</td></tr>
+      <tr><td>ADMIN_PIN</td><td>Vercel</td><td>Admin dashboard login secret. Accepted together with ADMIN_SECRET_KEY. Login is refused if both are unset. Set it in Vercel only. Rotate it if an older commit of this report still contains a previous value.</td></tr>
       <tr><td>ADMIN_SECRET_KEY</td><td>Vercel</td><td>Server-to-server auth key. Vercel calls Django with this key</td></tr>
       <tr><td>WOO_URL</td><td>Vercel</td><td>WooCommerce base URL: https://wp.createch-hobbies.co.ke</td></tr>
       <tr><td>WOO_KEY</td><td>Vercel</td><td>WooCommerce REST API consumer key</td></tr>
       <tr><td>WOO_SECRET</td><td>Vercel</td><td>WooCommerce REST API consumer secret</td></tr>
       <tr><td>NEXT_PUBLIC_API_URL</td><td>Vercel</td><td>Django backend URL on Railway</td></tr>
-      <tr><td>IPAY_VENDOR_ID</td><td>Vercel</td><td>iPay Africa vendor ID from dashboard</td></tr>
-      <tr><td>IPAY_DATAKEY</td><td>Vercel</td><td>iPay Africa datakey (secret); used to sign the MD5 hash. Never share this</td></tr>
+      <tr><td>IPAY_VENDOR_ID</td><td>Vercel</td><td>Legacy. Read only by <code>/api/ipay/*</code>, which current checkout does not call.</td></tr>
+      <tr><td>IPAY_DATAKEY</td><td>Vercel</td><td>Legacy iPay signing secret for those same unused routes. Do not commit it.</td></tr>
       <tr><td>NEXT_PUBLIC_WOO_STORE_URL</td><td>Vercel</td><td>Public WooCommerce store URL used in customer-facing links</td></tr>
       <tr><td>WC_WEBHOOK_SECRET</td><td>Vercel</td><td>Shared secret for WooCommerce webhooks hitting /api/revalidate. Optional — without it the store refreshes on its normal 60-second cycle instead of instantly</td></tr>
     </tbody>
@@ -1355,12 +1340,12 @@
   <div class="card card-yellow" style="margin-top:16px;">
     <h3 style="margin-top:0;">Important Reminders</h3>
     <ul class="checklist">
-      <li>Never share the ADMIN_PIN or any API keys publicly or over WhatsApp</li>
+      <li>Never share the admin key or any API keys publicly or over WhatsApp. A previous value was removed from this file; rotate it, because git history still has it.</li>
       <li>Always enter prices as plain numbers; no KES symbol or commas</li>
       <li>Product tag attributes are Level, Age Group, and What You Learn (the older names Difficulty and Age Range still work)</li>
       <li>Minimum delivery charge is 150 KES anywhere; changing it means updating all three files listed above</li>
       <li>Never put an API key directly in a code file — the GitHub repository is public. Keys belong in Vercel environment variables only</li>
-      <li>Payment methods at checkout: M-Pesa, Airtel Money, Visa/Mastercard</li>
+      <li>Payment methods at checkout, when enabled in WooCommerce: M-Pesa STK Push, DPO Pay cards, pay on delivery</li>
       <li>M-Pesa till number: 3434039 (Business Short Code: 4575237)</li>
       <li>A backup of the original WordPress files is at <code>/createch-hobbies.co.ke/</code> on cPanel</li>
     </ul>
